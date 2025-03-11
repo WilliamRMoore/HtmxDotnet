@@ -1,0 +1,55 @@
+name: Build to ACR, deploy to App Service using OIDC
+
+# shamelessly copied from https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+    id-token: write # Require write permission to Fetch an OIDC token.
+    contents: read
+
+env:
+    LOCATION: eastus
+    AZURE_WEBAPP_NAME: htmxappsvc
+    AZURE_CONTAINER_REGISTRY: htmxacr.azurecr.io
+    IMAGE_NAME: htmx-image
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+        # checkout the repo
+        - uses: actions/checkout@main
+          
+        # login to Az with a federated credential OIDC
+        - name: Login via Azure CLI
+          uses: azure/login@v2
+          with:
+            # clientId can be found in Az Entra ID -> Enterprise Apps -> All apps -> 'ghactionid.appId'
+            client-id: ${{ secrets.AZURE_CLIENT_ID }}
+            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+        # login to the ACR with OIDC token so we can push docker images
+        - name: Login to ACR via OIDC
+          run: az acr login --name ${{ env.AZURE_CONTAINER_REGISTRY }}
+
+        - name: Build image
+          run: docker build . -t ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+        - name: Push image
+          run: docker push ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+        - name: Deploy to Azure Web App
+          id: deploy-to-webapp
+          uses: azure/webapps-deploy@v3
+          with:
+            app-name: ${{ env.AZURE_WEBAPP_NAME }}
+            images: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+        - name: Logout
+          run: az logout

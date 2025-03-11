@@ -1,0 +1,164 @@
+# using the MS instructions to configure a github action to create a container registry.
+# https://learn.microsoft.com/en-us/azure/container-instances/container-instances-github-action
+
+# https://learn.microsoft.com/en-us/azure/app-service/deploy-github-actions?tabs=openid%2Caspnetcore
+
+
+# set region, resource group, az container registry
+region=eastus
+rgName=will-htmx
+
+acrName=htmxacr
+appSvcName=htmxappsvc
+appSvcPlanName=htmxappsvcplan
+managedIdentityName=ghactionid
+
+# same as workflow
+dockerImageName=htmx-image
+# same as dockerfile
+dockerPort=8080
+
+
+# set default region and rg
+az config set defaults.location=$region defaults.group=$rgName
+
+########################################
+# create the Web App (with managed identity)
+########################################
+
+# create the app service plan
+az appservice plan create \
+    --resource-group $rgName \
+    --name $appSvcPlanName \
+    --is-linux \
+    --sku F1
+
+# create a web app that runs under a System Managed Identity
+# https://azure.github.io/AppService/2024/09/17/How-to-pull-from-ACR-with-Managed-Identity-using-Windows-containers.html
+az webapp create \
+   --resource-group $rgName \
+   --name $appSvcName \
+   --plan $appSvcPlanName \
+   --container-image-name $acrName.azurecr.io/$dockerImageName:latest \
+   --assign-identity [system] \
+   --acr-identity [system] \
+   --acr-use-identity
+
+# Set the port to the same as the dockerfile
+az webapp config appsettings set \
+  --resource-group $rgName \
+  --name $appSvcName \
+  --settings "WEBSITES_PORT=$dockerPort" 
+
+# Get the principalId of the System Managed Identity
+appSvcPrincipaId=$(az webapp identity show \
+    --resource-group $rgName \
+    --name $appSvcName \
+    --query principalId \
+    --output tsv)
+
+appSvcId=$(az webapp show --resource-group $rgName --name $appSvcName --query id --output tsv)
+
+
+########################################
+# create the ACR
+########################################
+
+# create az container registry
+acrId=$(az acr create \
+    --name $acrName \
+    --sku Basic \
+    --query id  \
+    --output tsv)
+
+# Grant the Web App's System Managed Identity
+# permission to access the container registry
+az role assignment create \
+    --assignee $appSvcPrincipaId \
+    --scope $acrId \
+    --role AcrPull
+
+
+########################################
+# The following is for GH Actions.
+#
+# Allow gha to push to the ACR and update the web app
+# Doesn't require any spn secrets
+########################################
+
+# create the App (AD user managed identity)
+appId=$(az ad app create \
+  --display-name $managedIdentityName \
+  --query appId --output tsv)
+
+# create the Service Principal for the App
+appObjectId=$(az ad sp create --id $appId --query id --output tsv)
+
+# Grant the App's (user managed identity)
+# Service Principal permission to update the the Web App
+az role assignment create \
+  --assignee-object-id  $appObjectId \
+  --assignee-principal-type ServicePrincipal \
+  --scope $appSvcId \
+  --role contributor 
+
+# give the App's service principal permission to push to the container registry
+az role assignment create \
+  --assignee-object-id  $appObjectId \
+  --assignee-principal-type ServicePrincipal \
+  --scope $acrId \
+  --role AcrPush
+
+
+########################################
+# Create a credential for gha to use
+########################################
+
+# create federated identity credential
+az ad app federated-credential create \
+  --id $appId \
+  --parameters '{\
+      "name": "credName",\
+      "issuer": "https://token.actions.githubusercontent.com",\
+      "subject": "repo:bravegeek/HtmxDotnet:ref:refs/heads/main",\
+      "description": "Testing",\
+      "audiences": [\
+          "api://AzureADTokenExchange"\
+      ]\
+    }'
+
+
+########################################
+# Values that you can find in the portal
+########################################
+
+AZURE_CLIENT_ID=$appId
+
+AZURE_SUBSCRIPTION_ID=$(az account show --query id --output tsv)
+
+AZURE_TENANT_ID=$(az account show --query tenantId --output tsv)
+
+echo
+echo Put these into your GH secrets
+echo
+echo AZURE_CLIENT_ID  --use the portal to get this from the App in AAD
+echo $AZURE_CLIENT_ID
+echo 
+echo AZURE_SUBSCRIPTION_ID  --find in portal
+echo $AZURE_SUBSCRIPTION_ID
+echo
+echo AZURE_TENANT_ID  --find in portal
+echo $AZURE_TENANT_ID
+
+
+###############
+# clean up  
+
+# Run these in the same cmd shell and it will reuse the vars
+###############
+
+az webapp delete --name $appSvcName
+az appservice plan delete --name $appSvcPlanName --yes
+az acr delete --name $acrName --yes
+# deletes the user managed identity
+az ad app delete --id $appId
