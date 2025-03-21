@@ -213,29 +213,13 @@ test('PlayerFlagsComponent Should Set Flags', () => {
   expect(SUT.IsFacingLeft()).toBeTruthy();
   expect(SUT.IsFacingRight()).toBeFalsy();
 
-  //ground tests
+  SUT.FastFallOn();
 
-  //ledge grab tests
-  expect(SUT.IsInLedgeGrab()).toBeFalsy();
+  expect(SUT.IsFastFalling()).toBeTruthy();
 
-  SUT.GrabLedge();
+  SUT.FastFallOff();
 
-  expect(SUT.IsInLedgeGrab()).toBeTruthy();
-
-  SUT.UnGrabLedge();
-
-  expect(SUT.IsInLedgeGrab()).toBeFalsy();
-
-  //gravity tests
-  expect(SUT.IsGravityOn()).toBeTruthy;
-
-  SUT.TurnOffGavity();
-
-  expect(SUT.IsGravityOn()).toBeFalsy();
-
-  SUT.TurnOnGravity();
-
-  expect(SUT.IsGravityOn()).toBeTruthy();
+  expect(SUT.IsFastFalling()).toBeFalsy();
 });
 
 // END PlayerFlagsComponent tests =============================================
@@ -266,8 +250,10 @@ test('VelocityComponent Should Clamp Impulses', () => {
 
   expect(SUT.Vel.X).toBe(100);
 
+  //Max of ten, add 5
   SUT.AddClampedXImpulse(10, 5);
 
+  // we were over the clamp, so it should add 0
   expect(SUT.Vel.X).toBe(100);
 
   SUT.Vel.Y = 0;

@@ -30,8 +30,6 @@ export class VelocityComponent {
     }
 
     this.Vel.X = Clamp(vel + x, upperBound);
-    //const lowerBound = -upperBound;
-    //this.Vel.X = Math.min(Math.max(this.Vel.X + x, lowerBound), upperBound);
   }
 
   public AddClampedYImpulse(clamp: number, y: number): void {
@@ -43,7 +41,6 @@ export class VelocityComponent {
     }
 
     this.Vel.Y = Clamp(vel + y, upperBound);
-    //this.Vel.Y = Math.min(Math.max(this.Vel.Y + y, lowerBound), upperBound);
   }
 }
 
@@ -61,6 +58,9 @@ export class SpeedsComponent {
   public readonly RunSpeedMultiplier: number;
   public readonly FastFallSpeed: number;
   public readonly FallSpeed: number;
+  public readonly Gravity: number;
+  public readonly DashImpulse: number;
+  public readonly MaxDashSpeed: number;
   // Might need a general Aerial speed limit for each character
 
   constructor(
@@ -72,7 +72,10 @@ export class SpeedsComponent {
     walkSpeedMultiplier: number,
     runSpeedMultiplier: number,
     fastFallSpeed: number,
-    fallSpeed: number
+    fallSpeed: number,
+    dashImpulse: number,
+    maxDashSpeed: number,
+    gravity: number
   ) {
     this.GroundedVelocityDecay = grndSpeedVelDecay;
     this.AerialVelocityDecay = aerialVelocityDecay;
@@ -83,16 +86,15 @@ export class SpeedsComponent {
     this.RunSpeedMultiplier = runSpeedMultiplier;
     this.FastFallSpeed = fastFallSpeed;
     this.FallSpeed = fallSpeed;
+    this.DashImpulse = dashImpulse;
+    this.MaxDashSpeed = maxDashSpeed;
+    this.Gravity = gravity;
   }
 }
 
 export class PlayerFlagsComponent {
   private FacingRight: boolean = false;
-  private InLedgeGrab: boolean = false;
-  private Gravity: boolean = true;
   private FastFalling: boolean = false;
-  private Walking: boolean = false;
-  private Running: boolean = false;
 
   FaceRight(): void {
     this.FacingRight = true;
@@ -110,67 +112,16 @@ export class PlayerFlagsComponent {
     return !this.IsFacingRight();
   }
 
-  FastFall(): void {
+  FastFallOn(): void {
     this.FastFalling = true;
+  }
+
+  FastFallOff(): void {
+    this.FastFalling = false;
   }
 
   IsFastFalling(): boolean {
     return this.FastFalling;
-  }
-
-  GrabLedge() {
-    this.InLedgeGrab = true;
-    this.FastFalling = false;
-  }
-
-  UnGrabLedge() {
-    this.InLedgeGrab = false;
-  }
-
-  IsInLedgeGrab(): boolean {
-    return this.InLedgeGrab;
-  }
-
-  TurnOffGavity() {
-    this.Gravity = false;
-  }
-
-  TurnOnGravity() {
-    this.Gravity = true;
-  }
-
-  IsGravityOn(): boolean {
-    return this.Gravity;
-  }
-
-  SetRunOn(): void {
-    this.Running = true;
-    this.Walking = false;
-    this.FastFalling = false;
-    this.InLedgeGrab = false;
-  }
-
-  SetRunOff(): void {
-    this.Running = false;
-  }
-
-  SetWalkOn(): void {
-    this.Walking = true;
-    this.Running = false;
-    this.FastFalling = false;
-    this.InLedgeGrab = false;
-  }
-
-  SetWalkOff(): void {
-    this.Walking = false;
-  }
-
-  IsWakling(): boolean {
-    return this.Walking;
-  }
-
-  IsRunning(): boolean {
-    return this.Running;
   }
 }
 
@@ -370,10 +321,13 @@ export class SpeedsComponentBuilder {
   private AerialSpeedInpulseLimit: number = 0;
   private MaxWalkSpeed: number = 0;
   private MaxRunSpeed: number = 0;
+  private DashImpulse: number = 0;
+  private MaxDashSpeed: number = 0;
   private WalkSpeedMulitplier: number = 0;
   private RunSpeedMultiplier: number = 0;
   private FastFallSpeed: number = 0;
   private FallSpeed: number = 0;
+  private Gravity: number = 0;
 
   SetAerialSpeeds(
     aerialVelocityDecay: number,
@@ -383,9 +337,10 @@ export class SpeedsComponentBuilder {
     this.AerialSpeedInpulseLimit = aerialSpeedImpulseLimit;
   }
 
-  SetFallSpeeds(fastFallSpeed: number, fallSpeed: number) {
+  SetFallSpeeds(fastFallSpeed: number, fallSpeed: number, gravity: number = 1) {
     this.FallSpeed = fallSpeed;
     this.FastFallSpeed = fastFallSpeed;
+    this.Gravity = gravity;
   }
 
   SetWalkSpeeds(maxWalkSpeed: number, walkSpeedMultiplier: number) {
@@ -396,6 +351,11 @@ export class SpeedsComponentBuilder {
   SetRunSpeeds(maxRunSpeed: number, runSpeedMultiplier: number) {
     this.RunSpeedMultiplier = runSpeedMultiplier;
     this.MaxRunSpeed = maxRunSpeed;
+  }
+
+  SetDashSpeeds(dashImpulse: number, maxDashSpeed: number) {
+    this.DashImpulse = dashImpulse;
+    this.MaxDashSpeed = maxDashSpeed;
   }
 
   SetGroundedVelocityDecay(groundedVelocityDecay: number) {
@@ -412,7 +372,10 @@ export class SpeedsComponentBuilder {
       this.WalkSpeedMulitplier,
       this.RunSpeedMultiplier,
       this.FastFallSpeed,
-      this.FallSpeed
+      this.FallSpeed,
+      this.DashImpulse,
+      this.MaxDashSpeed,
+      this.Gravity
     );
   }
 }

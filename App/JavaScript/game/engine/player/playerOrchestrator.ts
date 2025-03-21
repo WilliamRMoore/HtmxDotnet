@@ -19,6 +19,7 @@ const defaultSpeedsBuilderOptions: speedBuilderOptions = (
   scb.SetRunSpeeds(20, 2.5);
   scb.SetFallSpeeds(10, 15);
   scb.SetAerialSpeeds(0.8, 18);
+  scb.SetDashSpeeds(5, 25);
   scb.SetGroundedVelocityDecay(0.8);
 };
 
@@ -47,11 +48,40 @@ export class Player {
     this._world = world;
   }
 
+  public AddClampedXImpulse(clamp: number, impulse: number): void {
+    this._Velocity.AddClampedXImpulse(clamp, impulse);
+  }
+
   public AddWalkImpulse(impulse: number): void {
     this._Velocity.AddClampedXImpulse(
       this._Speeds.MaxWalkSpeed,
       impulse * this._Speeds.WalkSpeedMulitplier
     );
+  }
+
+  public AddRunImpulse(impulse: number): void {
+    this._Velocity.AddClampedXImpulse(
+      this._Speeds.MaxRunSpeed,
+      impulse * this._Speeds.RunSpeedMultiplier
+    );
+
+    return;
+  }
+
+  public AddDashImpulse(): void {
+    if (this.IsFacingRight()) {
+      this._Velocity.AddClampedXImpulse(
+        this._Speeds.MaxDashSpeed,
+        this._Speeds.DashImpulse
+      );
+      return;
+    }
+
+    this._Velocity.AddClampedXImpulse(
+      this._Speeds.MaxDashSpeed,
+      -this._Speeds.DashImpulse
+    );
+    return;
   }
 
   public AddJumpImpulse(): void {
@@ -62,13 +92,8 @@ export class Player {
   }
 
   // This method is for inputs from the player
-  public AddGravityImpulse(impulse: number): void {
-    if (this._Flags.IsFastFalling()) {
-      this._Velocity.AddClampedYImpulse(impulse, this._Speeds.FastFallSpeed);
-      return;
-    }
-
-    this._Velocity.AddClampedYImpulse(impulse, this._Speeds.FallSpeed);
+  public AddGravityImpulse(impulse: number, clamp: number): void {
+    this._Velocity.AddClampedYImpulse(impulse, clamp);
   }
 
   public SetXVelocity(vx: number): void {
@@ -128,6 +153,18 @@ export class Player {
     return this._Speeds.FallSpeed;
   }
 
+  public get FastFallSpeed(): number {
+    return this._Speeds.FastFallSpeed;
+  }
+
+  public get Gravity(): number {
+    return this._Speeds.Gravity;
+  }
+
+  public get GroundedDecay(): number {
+    return this._Speeds.GroundedVelocityDecay;
+  }
+
   public get GroundedVelocityDecay(): number {
     return this._Speeds.GroundedVelocityDecay;
   }
@@ -136,8 +173,28 @@ export class Player {
     return this._Speeds.AerialVelocityDecay;
   }
 
+  public FastFallOn(): void {
+    this._Flags.FastFallOn();
+  }
+
+  public FastFallOff(): void {
+    this._Flags.FastFallOff();
+  }
+
+  public IsFastFalling(): boolean {
+    return this._Flags.IsFastFalling();
+  }
+
   public FaceRight() {
     this._Flags.FaceRight();
+  }
+
+  public IsFacingRight(): boolean {
+    return this._Flags.IsFacingRight();
+  }
+
+  public IsFacingLeft(): boolean {
+    return this._Flags.IsFacingLeft();
   }
 
   public FaceLeft() {

@@ -86,10 +86,11 @@ export function StageCollisionDetection(p: Player, s: Stage): boolean {
 }
 
 function Gravity(p: Player) {
-  const grav = 0.5;
-
   if (!p.IsGrounded()) {
-    p.AddGravityImpulse(grav);
+    const grav = p.Gravity;
+    const fallSpeed = p.IsFastFalling() ? p.FastFallSpeed : p.FallSpeed;
+    const GravMutliplier = p.IsFastFalling() ? 1.4 : 1;
+    p.AddGravityImpulse(grav * GravMutliplier, fallSpeed);
   }
 }
 

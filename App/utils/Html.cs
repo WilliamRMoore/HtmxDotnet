@@ -185,13 +185,13 @@ namespace HtmxDotnet.utils
 
         public HtmlBuilder(Tag rootTag = Tag.Div)
         {
-            _rootNode = HtmlPools.HtmlNodePool.Get(rootTag); //new HtmlNode(rootTag);
+            _rootNode = HtmlPools.HtmlNodePool.Get(rootTag);
             _nodeStack.Push(_rootNode);
         }
 
         public HtmlBuilder Open(Tag tag)
         {
-            var newNode = HtmlPools.HtmlNodePool.Get(tag);  //new HtmlNode(tag);
+            var newNode = HtmlPools.HtmlNodePool.Get(tag);
             var parent = _nodeStack.Peek();
 
             parent.LazyChildren.Add((newNode, parent.CurrentTextContentIndex));
@@ -403,7 +403,6 @@ namespace HtmxDotnet.utils
         {
             return BuildInternal(includeDocType, pretty: true);
         }
-
 
         // Build the final HTML string
         private string BuildInternal(bool includeDocType, bool pretty)
@@ -619,6 +618,7 @@ namespace HtmxDotnet.utils
 
         public static string ToTagName(this Tag tag)
         {
+            // This can be made much faster
             return _tagNameFlyWeight.GetOrAdd(tag, tag => tag.ToString().ToLower());
         }
 

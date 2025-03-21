@@ -1,9 +1,10 @@
+import { Jump } from '../CharacterStates/TestCharacterStates';
 import { GameEvents } from '../events/events';
 
 // TYPES AND CLASSES ====================================
 
-type gameEventId = number;
-type stateId = number;
+export type gameEventId = number;
+export type stateId = number;
 
 export const STATES = {
   IDLE: 0 as stateId,
@@ -17,12 +18,12 @@ export const STATES = {
   RUN_TURN: 8 as stateId,
   STOP_RUN_TURN: 9 as stateId,
   RUN: 10 as stateId,
-  JUMPSQUAT: 11 as stateId,
+  JUMP_SQUAT: 11 as stateId,
   JUMP: 12 as stateId,
-  NFALL: 13 as stateId,
-  FFALL: 14 as stateId,
+  N_FALL: 13 as stateId,
+  F_FALL: 14 as stateId,
   LAND: 15 as stateId,
-  SOFTLAND: 16 as stateId,
+  SOFT_LAND: 16 as stateId,
 };
 
 class StateRelation {
@@ -35,7 +36,7 @@ class StateRelation {
   }
 }
 
-class ActionStateMappings {
+export class ActionStateMappings {
   private readonly mappings = new Map<gameEventId, stateId>();
   private defaultSate?: stateId;
 
@@ -115,9 +116,13 @@ export const DASH_TURN_RELATIONS = InitDashTurnRelations();
 export const STOP_DASH_RELATIONS = InitStopDashRelations();
 export const RUN_RELATIONS = InitRunRelations();
 export const RUN_TURN_RELATIONS = InitRunTurnRelations();
-export const RUN_STOP_RELATIONS = InitStopRunRelations();
+export const STOP_RUN_RELATIONS = InitStopRunRelations();
 export const JUMP_SQUAT_RELATIONS = InitJumpSquatRelations();
 export const JUMP_RELATIONS = InitJumpRelations();
+export const NFALL_RELATIONS = InitNeutralFallRelations();
+export const FFALL_RELATIONS = InitFastFallRelations();
+export const LAND_RELATIONS = InitLandRelations();
+export const SOFT_LAND_RELATIONS = InitSoftLandRelations();
 
 // ====================================================================
 
@@ -197,7 +202,7 @@ function InitStopRunRelations(): StateRelation {
 
 function InitJumpSquatRelations(): StateRelation {
   const jumpSquatRelations = new StateRelation(
-    STATES.JUMPSQUAT,
+    STATES.JUMP_SQUAT,
     InitJumpSquatTranslations()
   );
 
@@ -210,6 +215,38 @@ function InitJumpRelations(): StateRelation {
   return jumpRelations;
 }
 
+function InitNeutralFallRelations(): StateRelation {
+  const nFallRelations = new StateRelation(
+    STATES.N_FALL,
+    InitNFallTranslations()
+  );
+
+  return nFallRelations;
+}
+
+function InitFastFallRelations(): StateRelation {
+  const fastFallRelations = new StateRelation(
+    STATES.F_FALL,
+    InitFastFallTranslations()
+  );
+  return fastFallRelations;
+}
+
+function InitLandRelations(): StateRelation {
+  const landRelations = new StateRelation(STATES.LAND, InitLandTranslations());
+
+  return landRelations;
+}
+
+function InitSoftLandRelations(): StateRelation {
+  const softLandTranslations = new StateRelation(
+    STATES.SOFT_LAND,
+    InitSoftLandTranslations()
+  );
+
+  return softLandTranslations;
+}
+
 // ================================================================================
 
 function InitIdleTranslations() {
@@ -218,7 +255,7 @@ function InitIdleTranslations() {
     { geId: GameEvents.move, sId: STATES.START_WALK },
     { geId: GameEvents.moveFast, sId: STATES.DASH },
     { geId: GameEvents.turn, sId: STATES.TURN },
-    { geId: GameEvents.jump, sId: STATES.JUMPSQUAT },
+    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
   ]);
 
   return idleTranslations;
@@ -229,7 +266,7 @@ function InitStartWalkTranslations(): ActionStateMappings {
   startWalkTranslations._setMappings([
     { geId: GameEvents.idle, sId: STATES.IDLE },
     { geId: GameEvents.moveFast, sId: STATES.DASH },
-    { geId: GameEvents.jump, sId: STATES.JUMPSQUAT },
+    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
   ]);
 
   startWalkTranslations._setDefault(STATES.WALK);
@@ -240,7 +277,7 @@ function InitStartWalkTranslations(): ActionStateMappings {
 function InitTurnTranslations(): ActionStateMappings {
   const turnTranslations = new ActionStateMappings();
   turnTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMPSQUAT },
+    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
   ]);
 
   turnTranslations._setDefault(STATES.IDLE);
@@ -253,7 +290,7 @@ function InitWalkTranslations(): ActionStateMappings {
   walkTranslations._setMappings([
     { geId: GameEvents.idle, sId: STATES.IDLE },
     { geId: GameEvents.turn, sId: STATES.TURN },
-    { geId: GameEvents.jump, sId: STATES.JUMPSQUAT },
+    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
   ]);
 
   return walkTranslations;
@@ -264,7 +301,7 @@ function InitDashTranslations(): ActionStateMappings {
   dashTranslations._setMappings([
     { geId: GameEvents.idle, sId: STATES.STOP_DASH },
     { geId: GameEvents.turn, sId: STATES.DASH_TURN },
-    { geId: GameEvents.jump, sId: STATES.JUMPSQUAT },
+    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
   ]);
 
   dashTranslations._setDefault(STATES.RUN);
@@ -275,7 +312,7 @@ function InitDashTranslations(): ActionStateMappings {
 function InitDashTrunTranslations(): ActionStateMappings {
   const dashTrunTranslations = new ActionStateMappings();
   dashTrunTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMPSQUAT },
+    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
   ]);
 
   dashTrunTranslations._setDefault(STATES.DASH);
@@ -286,7 +323,7 @@ function InitDashTrunTranslations(): ActionStateMappings {
 function InitStopDashTranslations(): ActionStateMappings {
   const stopDashTranslations = new ActionStateMappings();
   stopDashTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMPSQUAT },
+    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
   ]);
 
   stopDashTranslations._setDefault(STATES.IDLE);
@@ -297,7 +334,7 @@ function InitStopDashTranslations(): ActionStateMappings {
 function InitRunTranslations(): ActionStateMappings {
   const runTranslations = new ActionStateMappings();
   runTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMPSQUAT },
+    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
     { geId: GameEvents.idle, sId: STATES.STOP_RUN },
     { geId: GameEvents.turn, sId: STATES.RUN_TURN },
   ]);
@@ -308,10 +345,10 @@ function InitRunTranslations(): ActionStateMappings {
 function InitRunTurnTranslations(): ActionStateMappings {
   const runTurnTranslations = new ActionStateMappings();
   runTurnTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMPSQUAT },
+    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
   ]);
 
-  runTurnTranslations._setDefault(STATES.STOP_RUN_TURN);
+  runTurnTranslations._setDefault(STATES.RUN);
 
   return runTurnTranslations;
 }
@@ -320,7 +357,7 @@ function InitStopRunTranslations(): ActionStateMappings {
   const stopRunTranslations = new ActionStateMappings();
   stopRunTranslations._setMappings([
     { geId: GameEvents.moveFast, sId: STATES.DASH },
-    { geId: GameEvents.jump, sId: STATES.JUMPSQUAT },
+    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
   ]);
 
   stopRunTranslations._setDefault(STATES.IDLE);
@@ -340,7 +377,38 @@ function InitJumpTranslations(): ActionStateMappings {
   const jumpTranslations = new ActionStateMappings();
   jumpTranslations._setMappings([{ geId: GameEvents.jump, sId: STATES.JUMP }]);
 
-  jumpTranslations._setDefault(STATES.NFALL);
+  jumpTranslations._setDefault(STATES.N_FALL);
 
   return jumpTranslations;
+}
+
+function InitNFallTranslations(): ActionStateMappings {
+  const nFallTranslations = new ActionStateMappings();
+  nFallTranslations._setMappings([
+    { geId: GameEvents.jump, sId: STATES.JUMP },
+    { geId: GameEvents.down, sId: STATES.F_FALL },
+  ]);
+
+  return nFallTranslations;
+}
+
+function InitFastFallTranslations(): ActionStateMappings {
+  const ffTranslations = new ActionStateMappings();
+  ffTranslations._setMappings([{ geId: GameEvents.jump, sId: STATES.JUMP }]);
+
+  return ffTranslations;
+}
+
+function InitLandTranslations(): ActionStateMappings {
+  const landTranslations = new ActionStateMappings();
+  landTranslations._setDefault(STATES.IDLE);
+
+  return landTranslations;
+}
+
+function InitSoftLandTranslations(): ActionStateMappings {
+  const softLandTranslations = new ActionStateMappings();
+  softLandTranslations._setDefault(STATES.IDLE);
+
+  return softLandTranslations;
 }

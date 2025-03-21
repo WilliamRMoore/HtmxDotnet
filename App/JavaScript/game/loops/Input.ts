@@ -48,6 +48,7 @@ export class GamePadInput {
   }
 }
 
+const previousInput = new GamePadInput();
 const currentInput = new GamePadInput();
 
 export function listenForGamePadInput(index: number = 0) {
@@ -62,6 +63,7 @@ function pollInput(index: number) {
 }
 
 function readInput(gamePad: Gamepad) {
+  CopyCurrentInputToPrevious();
   currentInput.Clear();
   let lx = setDeadzone(gamePad.axes[0]);
   let ly = setDeadzone(gamePad.axes[1]);
@@ -97,6 +99,26 @@ function readInput(gamePad: Gamepad) {
   currentInput.dpDown = gamePad.buttons[13].pressed;
   currentInput.dpLeft = gamePad.buttons[14].pressed;
   currentInput.dpRight = gamePad.buttons[15].pressed;
+}
+
+function CopyCurrentInputToPrevious() {
+  previousInput.LXAxis = currentInput.LXAxis;
+  previousInput.LYAxis = currentInput.LYAxis;
+  previousInput.RXAxis = currentInput.RXAxis;
+  previousInput.RYAxis = currentInput.RYAxis;
+
+  previousInput.action = currentInput.action;
+  previousInput.special = currentInput.special;
+  previousInput.jump = currentInput.jump;
+  previousInput.lb = currentInput.lb;
+  previousInput.rb = currentInput.rb;
+  previousInput.lt = currentInput.lt;
+  previousInput.rt = currentInput.rt;
+
+  previousInput.dpUp = currentInput.dpUp;
+  previousInput.dpDown = currentInput.dpDown;
+  previousInput.dpLeft = currentInput.dpLeft;
+  previousInput.dpRight = currentInput.dpRight;
 }
 
 export function GetInput(): InputAction {
@@ -192,6 +214,10 @@ function transcribeInput(input: GamePadInput) {
   if (input.jump) {
     inputAction.Action = GameEvents.jump;
     return inputAction;
+  }
+
+  if (input.LYAxis < 0.5) {
+    inputAction.Action = GameEvents.down;
   }
 
   if (Math.abs(input.LXAxis) > 0) {
