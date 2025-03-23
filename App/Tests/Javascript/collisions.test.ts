@@ -29,8 +29,8 @@ beforeEach(() => {
 test('Test Move', () => {
   let p1 = Move(poly1, new FlatVec(100, 0));
 
-  expect(p1[0].X).toBe(100);
-  expect(p1[1].X).toBe(150);
+  expect(p1[0].x).toBe(100);
+  expect(p1[1].x).toBe(150);
 });
 
 test('IntersectsPolygons returns false', () => {
@@ -53,15 +53,15 @@ test('IntersectsPolygons returns true', () => {
 
 function Move(poly: Array<FlatVec>, pos: FlatVec) {
   poly[0] = pos;
-  let posDto = VectorResultAllocator(pos.X, pos.Y);
+  let posDto = VectorResultAllocator(pos.x, pos.y);
   var dto = VectorResultAllocator();
 
   for (let i = 1; i < poly.length; i++) {
     let vert = poly[i];
-    dto._setXY(vert.X, vert.Y);
+    dto._setXY(vert.x, vert.y);
     let res = VectorAdder(dto, posDto);
-    vert.X = res.X;
-    vert.Y = res.Y;
+    vert.x = res.X;
+    vert.y = res.Y;
   }
 
   return poly;

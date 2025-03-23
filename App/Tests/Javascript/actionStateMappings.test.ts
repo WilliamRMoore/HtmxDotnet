@@ -1,4 +1,4 @@
-import { GameEvents } from '../../JavaScript/game/events/events';
+import { GameEvents } from '../../JavaScript/game/FSM/FiniteState';
 import {
   DASH_RELATIONS,
   DASH_TURN_RELATIONS,

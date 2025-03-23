@@ -6,9 +6,46 @@ import { InputAction } from '../loops/Input';
 export const Idle = {
   StateName: 'IDLE',
   StateId: STATES.IDLE,
+  Condition: (p, preIa, ia) => {
+    if (p.IsGrounded() == false) {
+      return undefined;
+    }
+
+    if (p.IsFacingRight() && ia.LXAxsis < 0) {
+      return STATES.TURN;
+    }
+
+    if (p.IsFacingLeft() && ia.LXAxsis > 0) {
+      return STATES.TURN;
+    }
+
+    return undefined;
+  },
 } as FSMState;
 
-function IsTurningForWalkOrRun(
+function IsTurningForRun(p: Player, prevIa: InputAction, ia: InputAction) {
+  if (p.IsGrounded() == false) {
+    return undefined;
+  }
+
+  const prevLax = prevIa.LXAxsis;
+  const curLax = ia.LXAxsis;
+
+  if ((prevLax < 0 && curLax > 0) || (prevLax > 0 && curLax < 0)) {
+    return STATES.RUN_TURN;
+  }
+
+  if (
+    (prevLax == 0 && p.IsFacingRight() && curLax < 0) ||
+    (prevLax == 0 && p.IsFacingLeft() && curLax > 0)
+  ) {
+    return STATES.RUN_TURN;
+  }
+
+  return undefined;
+}
+
+function IsTurningForWalk(
   p: Player,
   prevIa: InputAction,
   ia: InputAction
@@ -38,9 +75,9 @@ function IsTurningForDash(
   p: Player,
   prevIa: InputAction,
   ia: InputAction
-): stateId {
+): stateId | undefined {
   if (p.IsGrounded() == false) {
-    return ia.Action;
+    return undefined;
   }
 
   const prevLax = prevIa.LXAxsis;
@@ -53,15 +90,20 @@ function IsTurningForDash(
     return STATES.TURN;
   }
 
-  return ia.Action;
+  return undefined;
 }
 
 export const StartWalk: FSMState = {
   StateName: 'START_WALK',
   StateId: STATES.START_WALK,
   FrameLength: 5,
-  OnEnter: (p: Player) => {
-    console.log('Start Walk');
+  OnEnter: (p: Player, ia: InputAction) => {
+    if (p.IsFacingRight() && ia!.LXAxsis < 0) {
+      p.ChangeDirections();
+    }
+    if (p.IsFacingLeft() && ia!.LXAxsis > 0) {
+      p.ChangeDirections();
+    }
   },
   OnUpdate: (p: Player, ia: InputAction) => {
     p.AddWalkImpulse(ia.LXAxsis);
@@ -74,7 +116,7 @@ export const StartWalk: FSMState = {
     prevIa: InputAction,
     ia: InputAction
   ): stateId | undefined => {
-    return IsTurningForWalkOrRun(p, prevIa, ia);
+    return IsTurningForWalk(p, prevIa, ia);
   },
 };
 
@@ -168,7 +210,7 @@ export const Run: FSMState = {
     console.log('Exit Run');
   },
   Condition: (p: Player, prevIa: InputAction, curIa: InputAction) => {
-    return IsTurningForWalkOrRun(p, prevIa, curIa);
+    return IsTurningForRun(p, prevIa, curIa);
   },
 };
 

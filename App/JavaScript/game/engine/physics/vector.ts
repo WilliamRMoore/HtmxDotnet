@@ -3,12 +3,12 @@ import { IVecResult, VecResultPool } from '../../pools/VecResultPool';
 let vrp = new VecResultPool(1000);
 
 export class FlatVec {
-  X: number;
-  Y: number;
+  x: number;
+  y: number;
 
   constructor(x: number, y: number) {
-    this.X = x;
-    this.Y = y;
+    this.x = x;
+    this.y = y;
   }
 }
 
@@ -76,7 +76,7 @@ export const VectorResultAllocator = (
 };
 
 export const VectorToVectorResultAllocator = (fv: FlatVec) => {
-  return VectorResultAllocator(fv.X, fv.Y);
+  return VectorResultAllocator(fv.x, fv.y);
 };
 
 export function LineSegmentIntersection(
@@ -157,4 +157,66 @@ class LineSegmentIntersectionResult {
   static False(): LineSegmentIntersectionResult {
     return new LineSegmentIntersectionResult(false);
   }
+}
+
+// Function to compute the cross product of two vectors
+function cross(o: FlatVec, a: FlatVec, b: FlatVec): number {
+  return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+}
+
+const lower: Array<FlatVec> = [];
+const upper: Array<FlatVec> = [];
+const returnHull: Array<FlatVec> = [];
+// Function to create a convex hull using Andrew's monotone chain algorithm
+export function createConvexHull(points: Array<FlatVec>): Array<FlatVec> {
+  // while (lower.length > 0) {
+  //   lower.pop();
+  // }
+  // while (upper.length > 0) {
+  //   upper.pop();
+  // }
+  while (returnHull.length > 0) {
+    returnHull.pop();
+  }
+  // Sort points lexicographically
+  points.sort((a, b) => (a.x === b.x ? a.y - b.y : a.x - b.x));
+
+  //const lower: Array<FlatVec> = [];
+  for (const p of points) {
+    while (
+      lower.length >= 2 &&
+      cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0
+    ) {
+      lower.pop();
+    }
+    lower.push(p);
+  }
+
+  //const upper: Array<FlatVec> = [];
+  for (let i = points.length - 1; i >= 0; i--) {
+    const p = points[i];
+    while (
+      upper.length >= 2 &&
+      cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0
+    ) {
+      upper.pop();
+    }
+    upper.push(p);
+  }
+
+  // Remove the last point of each half because it's repeated at the beginning of the other half
+  upper.pop();
+  lower.pop();
+
+  // Concatenate lower and upper hull to get the full convex hull
+  //return lower.concat(upper);
+  while (lower.length > 0) {
+    returnHull.push(lower.pop()!);
+  }
+
+  while (upper.length > 0) {
+    returnHull.push(upper.pop()!);
+  }
+
+  return returnHull;
 }

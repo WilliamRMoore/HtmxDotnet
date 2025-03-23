@@ -1,30 +1,55 @@
 import { Jump } from '../CharacterStates/TestCharacterStates';
-import { GameEvents } from '../events/events';
+// import { GameEvents } from '../events/events';
 
 // TYPES AND CLASSES ====================================
 
 export type gameEventId = number;
 export type stateId = number;
 
-export const STATES = {
-  IDLE: 0 as stateId,
-  START_WALK: 1 as stateId,
-  TURN: 2 as stateId,
-  WALK: 3 as stateId,
-  DASH: 4 as stateId,
-  DASH_TURN: 5 as stateId,
-  STOP_DASH: 6 as stateId,
-  STOP_RUN: 7 as stateId,
-  RUN_TURN: 8 as stateId,
-  STOP_RUN_TURN: 9 as stateId,
-  RUN: 10 as stateId,
-  JUMP_SQUAT: 11 as stateId,
-  JUMP: 12 as stateId,
-  N_FALL: 13 as stateId,
-  F_FALL: 14 as stateId,
-  LAND: 15 as stateId,
-  SOFT_LAND: 16 as stateId,
-};
+class _GameEvents {
+  public readonly upSpecial = 0;
+  public readonly downSpecial = 1;
+  public readonly sideSpecial = 2;
+  public readonly special = 3;
+  public readonly upAttack = 4;
+  public readonly downAttack = 5;
+  public readonly sideAttack = 6;
+  public readonly attack = 7;
+  public readonly idle = 8;
+  public readonly move = 9;
+  public readonly moveFast = 10;
+  public readonly jump = 11;
+  public readonly grab = 12;
+  public readonly guard = 13;
+  public readonly down = 14;
+  public readonly turn = 15;
+  public readonly dashTurn = 16;
+  public readonly land = 17;
+  public readonly softLad = 18;
+}
+
+export const GameEvents = new _GameEvents();
+class _STATES {
+  public readonly IDLE = 0 as stateId;
+  public readonly START_WALK = 1 as stateId;
+  public readonly TURN = 2 as stateId;
+  public readonly WALK = 3 as stateId;
+  public readonly DASH = 4 as stateId;
+  public readonly DASH_TURN = 5 as stateId;
+  public readonly STOP_DASH = 6 as stateId;
+  public readonly STOP_RUN = 7 as stateId;
+  public readonly RUN_TURN = 8 as stateId;
+  public readonly STOP_RUN_TURN = 9 as stateId;
+  public readonly RUN = 10 as stateId;
+  public readonly JUMP_SQUAT = 11 as stateId;
+  public readonly JUMP = 12 as stateId;
+  public readonly N_FALL = 13 as stateId;
+  public readonly F_FALL = 14 as stateId;
+  public readonly LAND = 15 as stateId;
+  public readonly SOFT_LAND = 16 as stateId;
+}
+
+export const STATES = new _STATES();
 
 class StateRelation {
   readonly stateId: stateId = STATES.IDLE;

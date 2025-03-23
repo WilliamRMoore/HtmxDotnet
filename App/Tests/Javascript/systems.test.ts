@@ -24,12 +24,37 @@ test('stage collision ground', () => {
   const p = new Player();
   const world = new World(p, stage);
   p.SetWorld(world);
-  p.SetPlayerPostion(700, 455.0);
+  p.SetPlayerInitialPosition(700, 455.0);
+
   const collided = StageCollisionDetection(p, stage);
 
   expect(collided).toBeTruthy();
 
   expect(p.IsGrounded()).toBeTruthy();
+});
+
+test('stage collision ground from air', () => {
+  const stage = defaultStage();
+  const p = new Player();
+  const world = new World(p, stage);
+  p.SetWorld(world);
+  p.SetPlayerInitialPosition(680, 430.0);
+
+  const collided = StageCollisionDetection(p, stage);
+
+  expect(collided).toBeFalsy();
+
+  expect(p.IsGrounded()).toBeFalsy();
+
+  p.SetPlayerPostion(700, 455.0);
+
+  const collided2 = StageCollisionDetection(p, stage);
+
+  expect(collided2).toBeTruthy();
+
+  expect(p.IsGrounded()).toBeTruthy();
+
+  p.PreFrameEndTask();
 });
 
 test('stage collision right wall', () => {
@@ -49,3 +74,5 @@ test('stage collision corner case', () => {
 
   expect(colided).toBeTruthy();
 });
+
+// test('continious collision')

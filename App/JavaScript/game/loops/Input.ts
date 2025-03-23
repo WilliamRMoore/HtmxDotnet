@@ -1,4 +1,4 @@
-import { GameEvents } from '../events/events';
+import { GameEvents } from '../FSM/FiniteState';
 
 export type InputAction = {
   Action: number;
@@ -173,7 +173,7 @@ function transcribeInput(input: GamePadInput) {
     }
 
     if (LXAxis != 0) {
-      inputAction.Action = GameEvents.sideAttcak;
+      inputAction.Action = GameEvents.sideAttack;
       return inputAction;
     }
     inputAction.Action = GameEvents.attack;
@@ -183,7 +183,7 @@ function transcribeInput(input: GamePadInput) {
   // Right stick was used
   // Right stick more horizontal than vertical
   if (Math.abs(RXAxis) > Math.abs(RYAxis)) {
-    inputAction.Action = GameEvents.sideAttcak;
+    inputAction.Action = GameEvents.sideAttack;
     return inputAction;
   }
 

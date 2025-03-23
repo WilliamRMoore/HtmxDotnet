@@ -75,14 +75,14 @@ export class Ledges {
     const rightLedge = [] as FlatVec[];
 
     leftLedge.push(topLeft);
-    leftLedge.push(new FlatVec(topLeft.X + width, topLeft.Y));
-    leftLedge.push(new FlatVec(topLeft.X + width, topLeft.Y + height));
-    leftLedge.push(new FlatVec(topLeft.X, topLeft.Y + height));
+    leftLedge.push(new FlatVec(topLeft.x + width, topLeft.y));
+    leftLedge.push(new FlatVec(topLeft.x + width, topLeft.y + height));
+    leftLedge.push(new FlatVec(topLeft.x, topLeft.y + height));
 
     rightLedge.push(topRight);
-    rightLedge.push(new FlatVec(topRight.X, topRight.Y + height));
-    rightLedge.push(new FlatVec(topRight.X - width, topRight.Y + height));
-    rightLedge.push(new FlatVec(topRight.X - width, topRight.Y));
+    rightLedge.push(new FlatVec(topRight.x, topRight.y + height));
+    rightLedge.push(new FlatVec(topRight.x - width, topRight.y + height));
+    rightLedge.push(new FlatVec(topRight.x - width, topRight.y));
 
     this.leftLedge = leftLedge;
     this.rightLedge = rightLedge;

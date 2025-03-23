@@ -15,7 +15,7 @@ const correctionDepth: number = 0.01;
 
 export function StageCollisionDetection(p: Player, s: Stage): boolean {
   const stageVerts = s.StageVerticies.GetVerts();
-  const playerVerts = p.ECBVerts;
+  const playerVerts = p.CCHull;
 
   // detect the collision
   const collisionResult = IntersectsPolygons(playerVerts, stageVerts);
@@ -101,42 +101,42 @@ function Input(p: Player, ia: InputAction) {
 function ApplyVelocty(p: Player) {
   const grounded = p.IsGrounded();
   const playerVelocity = p.Velocity;
-  const pvx = playerVelocity.X;
-  const pvy = playerVelocity.Y;
+  const pvx = playerVelocity.x;
+  const pvy = playerVelocity.y;
   const fallSpeed = p.FallSpeed;
   const groundedVelocityDecay = p.GroundedVelocityDecay;
   const aerialVelocityDecay = p.AerialVelocityDecay;
 
   if (grounded) {
     if (pvx > 0) {
-      p.Velocity.X -= groundedVelocityDecay;
+      p.Velocity.x -= groundedVelocityDecay;
     }
     if (pvx < 0) {
-      p.Velocity.X += groundedVelocityDecay;
+      p.Velocity.x += groundedVelocityDecay;
     }
 
     return;
   }
 
   if (pvx > 0) {
-    p.Velocity.X -= aerialVelocityDecay;
+    p.Velocity.x -= aerialVelocityDecay;
   }
 
   if (pvx < 0) {
-    p.Velocity.X += aerialVelocityDecay;
+    p.Velocity.x += aerialVelocityDecay;
   }
 
   // What if we are fast falling?
   if (pvy > fallSpeed) {
-    p.Velocity.Y -= aerialVelocityDecay;
+    p.Velocity.y -= aerialVelocityDecay;
   }
 
   if (pvy < 0) {
-    p.Velocity.Y += aerialVelocityDecay;
+    p.Velocity.y += aerialVelocityDecay;
   }
 
   if (Math.abs(pvx) < 3) {
-    p.Velocity.X = 0;
+    p.Velocity.x = 0;
   }
 }
 
@@ -144,19 +144,19 @@ function OutOfBoundsCheck(w: World) {
   const pPos = w.player!.Postion;
   const deathBoundry = w.stage!.DeathBoundry;
 
-  if (pPos.Y < deathBoundry.topBoundry) {
+  if (pPos.y < deathBoundry.topBoundry) {
     // kill player if in hit stun.
   }
 
-  if (pPos.Y > deathBoundry.bottomBoundry) {
+  if (pPos.y > deathBoundry.bottomBoundry) {
     // kill player?
   }
 
-  if (pPos.X < deathBoundry.leftBoundry) {
+  if (pPos.x < deathBoundry.leftBoundry) {
     // kill Player?
   }
 
-  if (pPos.X > deathBoundry.rightBoundry) {
+  if (pPos.x > deathBoundry.rightBoundry) {
     // kill player?
   }
 }

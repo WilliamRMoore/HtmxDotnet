@@ -42,8 +42,8 @@ export function IntersectsPolygons(
     // Go through verticies in clockwise order.
     const va = verticiesA[i];
     const vb = verticiesA[(i + 1) % verticiesA.length];
-    varDto._setXY(va.X, va.Y);
-    vbrDto._setXY(vb.X, vb.Y);
+    varDto._setXY(va.x, va.y);
+    vbrDto._setXY(vb.x, vb.y);
     const edge = VectorSubtractor(vbrDto, varDto); // get the edge
     let axis = VectorResultAllocator(-edge.Y, edge.X); // get the axis
     axis = Normalize(axis);
@@ -75,8 +75,8 @@ export function IntersectsPolygons(
   for (let i = 0; i < verticiesB.length; i++) {
     const va = verticiesB[i];
     const vb = verticiesB[(i + 1) % verticiesB.length]; // Go through verticies in clockwise order.
-    varDto._setXY(va.X, va.Y);
-    vbrDto._setXY(vb.X, vb.Y);
+    varDto._setXY(va.x, va.y);
+    vbrDto._setXY(vb.x, vb.y);
     const edge = VectorSubtractor(vbrDto, varDto); // get the edge
     let axis = VectorResultAllocator(-edge.Y, edge.X); // get the axis
     axis = Normalize(axis);
@@ -124,8 +124,8 @@ function FindArithemticMean(verticies: Array<FlatVec>): IVecResult {
 
   for (let index = 0; index < verticies.length; index++) {
     const v = verticies[index];
-    sumX += v.X;
-    sumY += v.Y;
+    sumX += v.x;
+    sumY += v.y;
   }
 
   return VectorResultAllocator(
@@ -145,7 +145,7 @@ function ProjectVerticies(
 
   for (let i = 0; i < verticies.length; i++) {
     const v = verticies[i];
-    vRes._setXY(v.X, v.Y);
+    vRes._setXY(v.x, v.y);
     const projection = DotProduct(vRes, axis); // get the projection for the given axis
 
     // set the minimum projection

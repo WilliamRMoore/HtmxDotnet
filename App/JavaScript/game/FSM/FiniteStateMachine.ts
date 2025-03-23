@@ -17,7 +17,7 @@ import {
   Walk,
 } from '../CharacterStates/TestCharacterStates';
 import { Player } from '../engine/player/playerOrchestrator';
-import { GameEvents } from '../events/events';
+import { GameEvents } from '../FSM/FiniteState';
 import { InputAction } from '../loops/Input';
 import {
   ActionStateMappings,
@@ -51,7 +51,7 @@ export type FSMState = {
     p: Player,
     inputAction: InputAction
   ) => number | undefined;
-  OnEnter?: (p: Player) => void;
+  OnEnter?: (p: Player, ia: InputAction) => void;
   OnUpdate?: (p: Player, inputAction: InputAction) => void;
   OnExit?: (p: Player) => void;
   Condition?: (
@@ -140,14 +140,59 @@ export class StateMachine {
     this._states.set(SoftLand.StateId, SoftLand);
   }
 
-  public UpdateFromWorld(stateId: stateId): void {
-    const nextState = this._states.get(stateId)!;
-    this.changeState(nextState);
-    return;
-  }
+  // public UpdateFromWorld(stateId: stateId): void {
+  //   const nextState = this._states.get(stateId)!;
+  //   this.changeState(nextState);
+  //   return;
+  // }
 
   public UpdateFromInput(inputAction: InputAction): void {
     // if we have a conditional on the state, check it
+    if (this.RunConditional(inputAction)) {
+      return;
+    }
+    //we didn't meet the condition, move to next code path
+
+    //check for default
+    if (this.RunDefault(inputAction)) {
+      return;
+    }
+
+    if (this.RunNext(inputAction)) {
+      return;
+    }
+
+    this.updateState(inputAction);
+  }
+
+  private RunNext(inputAction: InputAction): boolean {
+    const state = this.GetTranslation(inputAction.Action);
+
+    if (state != undefined) {
+      this.changeState(state, inputAction);
+      this.updateState(inputAction);
+      return true;
+    }
+
+    return false;
+  }
+
+  private RunDefault(inputAction: InputAction): boolean {
+    if (this.IsDefaultFrame()) {
+      const defaultTransition = this.GetDefaultState(
+        this._currentState.StateId
+      );
+      if (defaultTransition != undefined) {
+        this.changeState(defaultTransition, inputAction);
+        this.updateState(inputAction);
+        return true;
+      }
+      return false;
+    }
+    return false;
+  }
+
+  private RunConditional(inputAction: InputAction): boolean {
     if (this._currentState.Condition) {
       // get the conditional state Id
       const condtionalStateId = this._currentState.Condition(
@@ -156,38 +201,17 @@ export class StateMachine {
         inputAction
       );
 
-      if (condtionalStateId) {
+      if (condtionalStateId != undefined) {
         const stateTranslation = this._states.get(condtionalStateId);
-        if (stateTranslation) {
-          this.changeState(stateTranslation);
+        if (stateTranslation != undefined) {
+          this.changeState(stateTranslation, inputAction);
           this.updateState(inputAction);
-          return;
+          return true;
         }
       }
+      return false;
     }
-    //we didn't meet the condition, move to next code path
-
-    //check for default
-    if (this.IsDefaultFrame()) {
-      const defaultTransition = this.GetDefaultState(
-        this._currentState.StateId
-      );
-      if (defaultTransition != undefined) {
-        this.changeState(defaultTransition);
-        this.updateState(inputAction);
-        return;
-      }
-    }
-
-    const state = this.GetTranslation(inputAction.Action);
-
-    if (state != undefined) {
-      this.changeState(state);
-      this.updateState(inputAction);
-      return;
-    }
-
-    this.updateState(inputAction);
+    return false;
   }
 
   private GetTranslation(gameEventId: gameEventId): FSMState | undefined {
@@ -209,23 +233,25 @@ export class StateMachine {
     }
     const defaultStateId = state.getDefault();
 
-    if (defaultStateId) {
+    if (defaultStateId != undefined) {
       return this._states.get(defaultStateId);
     }
 
     return undefined;
   }
 
-  private changeState(state: FSMState) {
+  private changeState(state: FSMState, ia: InputAction) {
     this._stateFrameCount = 0;
     this._currentState.OnExit?.(this._player);
     this._currentState = state;
-    this._currentState.OnEnter?.(this._player);
+    this._player.SetCurrentFSMStateId(state.StateId);
+    this._currentState.OnEnter?.(this._player, ia);
   }
 
   private updateState(inputAction: InputAction) {
     this._currentState.OnUpdate?.(this._player, inputAction);
     this._stateFrameCount++;
+    this._previousInputAction = inputAction;
   }
 
   private IsDefaultFrame(): boolean {
@@ -234,10 +260,11 @@ export class StateMachine {
       return false;
     }
 
-    if (fl >= this._stateFrameCount) {
+    if (fl == this._stateFrameCount) {
       return true;
     }
 
     return false;
   }
 }
+7;

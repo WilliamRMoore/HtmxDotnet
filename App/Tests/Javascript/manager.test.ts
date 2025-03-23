@@ -1,5 +1,5 @@
 import { InputStorageManagerLocal } from '../../JavaScript/game/engine/engine-state-management/Managers';
-import { GameEvents } from '../../JavaScript/game/events/events';
+import { GameEvents } from '../../JavaScript/game/FSM/FiniteState';
 import { InputAction, NewInputAction } from '../../JavaScript/game/loops/Input';
 
 test('input storage manager', () => {

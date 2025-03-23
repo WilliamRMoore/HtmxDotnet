@@ -1,7 +1,9 @@
+import { stateId } from '../../FSM/FiniteState';
 import { FlatVec } from '../physics/vector';
 import { World } from '../world/world';
 import {
   ECBComponent,
+  FSMInfo,
   JumpComponent,
   PlayerFlagsComponent,
   PositionComponent,
@@ -31,6 +33,7 @@ export class Player {
   private readonly _Speeds: SpeedsComponent;
   private readonly _ECB: ECBComponent;
   private readonly _Jump: JumpComponent;
+  private readonly _FSMInfo: FSMInfo;
 
   constructor(sbo: speedBuilderOptions = defaultSpeedsBuilderOptions) {
     const speedsBuilder = new SpeedsComponentBuilder();
@@ -42,6 +45,15 @@ export class Player {
     this._Flags = new PlayerFlagsComponent();
     this._ECB = new ECBComponent();
     this._Jump = new JumpComponent(20, 2);
+    this._FSMInfo = new FSMInfo();
+  }
+
+  public SetCurrentFSMStateId(sId: stateId): void {
+    this._FSMInfo.StateId = sId;
+  }
+
+  public GetCurrentFSMStateId(): stateId {
+    return this._FSMInfo.StateId;
   }
 
   public SetWorld(world: World) {
@@ -86,7 +98,7 @@ export class Player {
 
   public AddJumpImpulse(): void {
     if (this._Jump.HasJumps()) {
-      this._Velocity.Vel.Y = -this._Jump.JumpVelocity;
+      this._Velocity.Vel.y = -this._Jump.JumpVelocity;
       this._Jump.IncrementJumps();
     }
   }
@@ -97,25 +109,33 @@ export class Player {
   }
 
   public SetXVelocity(vx: number): void {
-    this._Velocity.Vel.X = vx;
+    this._Velocity.Vel.x = vx;
   }
 
   public SetYVelocity(vy: number): void {
-    this._Velocity.Vel.Y = vy;
+    this._Velocity.Vel.y = vy;
   }
 
   public SetPlayerPostion(x: number, y: number): void {
-    this._Position.Pos.X = x;
-    this._Position.Pos.Y = y;
+    this._Position.Pos.x = x;
+    this._Position.Pos.y = y;
     this._ECB.MoveToPosition(x, y);
   }
 
+  public SetPlayerInitialPosition(x: number, y: number): void {
+    this._Position.Pos.x = x;
+    this._Position.Pos.y = y;
+    this._ECB.SetInitialPosition(x, y);
+  }
+
   public AddToPlayerXPosition(x: number): void {
-    this._Position.Pos.X += x;
+    this._Position.Pos.x += x;
+    this._ECB.MoveToPosition(this._Position.Pos.x, this._Position.Pos.y);
   }
 
   public AddToPlayerYPosition(y: number): void {
-    this._Position.Pos.Y += y;
+    this._Position.Pos.y += y;
+    this._ECB.MoveToPosition(this._Position.Pos.x, this._Position.Pos.y);
   }
 
   public IsGrounded(): boolean {
@@ -139,6 +159,10 @@ export class Player {
 
   public get ECBVerts(): FlatVec[] {
     return this._ECB.GetVerts();
+  }
+
+  public get CCHull(): FlatVec[] {
+    return this._ECB.GetHull();
   }
 
   public get Postion(): FlatVec {
@@ -207,5 +231,9 @@ export class Player {
       return;
     }
     this.FaceRight();
+  }
+
+  public PreFrameEndTask(): void {
+    this._ECB.UpdatePreviousPosition();
   }
 }

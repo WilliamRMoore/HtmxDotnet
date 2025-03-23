@@ -1,4 +1,9 @@
-import { FlatVec, LineSegmentIntersection } from '../physics/vector';
+import { stateId, STATES } from '../../FSM/FiniteState';
+import {
+  createConvexHull,
+  FlatVec,
+  LineSegmentIntersection,
+} from '../physics/vector';
 import { FillArrayWithFlatVec } from '../utils';
 
 // Player Components
@@ -14,6 +19,10 @@ export class PositionComponent {
   }
 }
 
+export class FSMInfo {
+  public StateId: number = STATES.IDLE;
+}
+
 export class VelocityComponent {
   public readonly Vel: FlatVec;
 
@@ -23,24 +32,24 @@ export class VelocityComponent {
 
   public AddClampedXImpulse(clamp: number, x: number): void {
     const upperBound = Math.abs(clamp);
-    const vel = this.Vel.X;
+    const vel = this.Vel.x;
 
     if (Math.abs(vel) > upperBound) {
       return;
     }
 
-    this.Vel.X = Clamp(vel + x, upperBound);
+    this.Vel.x = Clamp(vel + x, upperBound);
   }
 
   public AddClampedYImpulse(clamp: number, y: number): void {
     const upperBound = Math.abs(clamp);
-    const vel = this.Vel.Y;
+    const vel = this.Vel.y;
 
     if (Math.abs(vel) > clamp) {
       return;
     }
 
-    this.Vel.Y = Clamp(vel + y, upperBound);
+    this.Vel.y = Clamp(vel + y, upperBound);
   }
 }
 
@@ -128,30 +137,71 @@ export class PlayerFlagsComponent {
 export class ECBComponent {
   private SesnsorDepth: number = 0.02;
   private Position: FlatVec = new FlatVec(0, 0);
+  private PreviousPosition: FlatVec = new FlatVec(0, 0);
   private Height: number;
   private Width: number;
   private YOffset: number;
-  private Verts = new Array<FlatVec>(4);
+  private CurVerts = new Array<FlatVec>(4);
+  private PrevVerts = new Array<FlatVec>(4);
   private Color: string;
+  private AllVerts = new Array<FlatVec>(8);
 
   constructor(height: number = 100, width: number = 100, yOffset: number = 0) {
     this.Color = 'orange';
     this.Height = height;
     this.Width = width;
     this.YOffset = yOffset;
-    FillArrayWithFlatVec(this.Verts);
+    FillArrayWithFlatVec(this.CurVerts);
+    FillArrayWithFlatVec(this.PrevVerts);
     this.Update();
   }
 
+  public GetHull() {
+    this.LoadAllVerts();
+    return createConvexHull(this.AllVerts);
+  }
+
+  private LoadAllVerts() {
+    this.AllVerts.length = 0;
+
+    for (let i = 0; i < 4; i++) {
+      this.AllVerts.push(this.PrevVerts[i]);
+    }
+
+    for (let i = 0; i < 4; i++) {
+      this.AllVerts.push(this.CurVerts[i]);
+    }
+  }
+
+  public UpdatePreviousPosition() {
+    this.PreviousPosition.x = this.Position.x;
+    this.PreviousPosition.y = this.Position.y;
+
+    let preVert: FlatVec;
+    let curVert: FlatVec;
+
+    for (let i = 0; i < 4; i++) {
+      preVert = this.PrevVerts[i];
+      curVert = this.CurVerts[i];
+      preVert.x = curVert.x;
+      preVert.y = curVert.y;
+    }
+  }
+
+  public SetInitialPosition(x: number, y: number) {
+    this.MoveToPosition(x, y);
+    this.UpdatePreviousPosition();
+  }
+
   public MoveToPosition(x: number, y: number) {
-    this.Position.X = x;
-    this.Position.Y = y;
+    this.Position.x = x;
+    this.Position.y = y;
     this.Update();
   }
 
   Update(): void {
-    const px = this.Position.X;
-    const py = this.Position.Y;
+    const px = this.Position.x;
+    const py = this.Position.y;
     const height = this.Height;
     const width = this.Width;
     const yOffset = this.YOffset;
@@ -168,17 +218,17 @@ export class ECBComponent {
     const rightX = bottomX + width / 2;
     const rightY = leftY;
 
-    this.Verts[0].X = bottomX;
-    this.Verts[0].Y = bottomY;
+    this.CurVerts[0].x = bottomX;
+    this.CurVerts[0].y = bottomY;
 
-    this.Verts[1].X = leftX;
-    this.Verts[1].Y = leftY;
+    this.CurVerts[1].x = leftX;
+    this.CurVerts[1].y = leftY;
 
-    this.Verts[2].X = topX;
-    this.Verts[2].Y = topY;
+    this.CurVerts[2].x = topX;
+    this.CurVerts[2].y = topY;
 
-    this.Verts[3].X = rightX;
-    this.Verts[3].Y = rightY;
+    this.CurVerts[3].x = rightX;
+    this.CurVerts[3].y = rightY;
   }
 
   public DetectGroundCollision(
@@ -186,14 +236,14 @@ export class ECBComponent {
     groundEnd: FlatVec
   ): boolean {
     const bottom = this.Bottom();
-    const bx = bottom.X;
-    const by = bottom.Y;
+    const bx = bottom.x;
+    const by = bottom.y;
 
     return LineSegmentIntersection(
-      groundStart.X,
-      groundStart.Y,
-      groundEnd.X,
-      groundEnd.Y,
+      groundStart.x,
+      groundStart.y,
+      groundEnd.x,
+      groundEnd.y,
       bx,
       by,
       bx,
@@ -206,14 +256,14 @@ export class ECBComponent {
     leftWallEnd: FlatVec
   ): boolean {
     const left = this.Left();
-    const lx = left.X;
-    const ly = left.Y;
+    const lx = left.x;
+    const ly = left.y;
 
     return LineSegmentIntersection(
-      leftWallStart.X,
-      leftWallStart.Y,
-      leftWallEnd.X,
-      leftWallEnd.Y,
+      leftWallStart.x,
+      leftWallStart.y,
+      leftWallEnd.x,
+      leftWallEnd.y,
       lx,
       ly,
       lx + this.SesnsorDepth,
@@ -226,14 +276,14 @@ export class ECBComponent {
     ceilingEnd: FlatVec
   ): boolean {
     const top = this.Top();
-    const tx = top.X;
-    const ty = top.Y;
+    const tx = top.x;
+    const ty = top.y;
 
     return LineSegmentIntersection(
-      ceilingStart.X,
-      ceilingStart.Y,
-      ceilingEnd.X,
-      ceilingEnd.Y,
+      ceilingStart.x,
+      ceilingStart.y,
+      ceilingEnd.x,
+      ceilingEnd.y,
       tx,
       ty,
       tx,
@@ -246,14 +296,14 @@ export class ECBComponent {
     rightWallEnd: FlatVec
   ): boolean {
     const right = this.Right();
-    const rx = right.X;
-    const ry = right.Y;
+    const rx = right.x;
+    const ry = right.y;
 
     return LineSegmentIntersection(
-      rightWallStart.X,
-      rightWallStart.Y,
-      rightWallEnd.X,
-      rightWallEnd.Y,
+      rightWallStart.x,
+      rightWallStart.y,
+      rightWallEnd.x,
+      rightWallEnd.y,
       rx,
       ry,
       rx - this.SesnsorDepth,
@@ -262,23 +312,23 @@ export class ECBComponent {
   }
 
   public Bottom(): FlatVec {
-    return this.Verts[0];
+    return this.CurVerts[0];
   }
 
   public Left(): FlatVec {
-    return this.Verts[1];
+    return this.CurVerts[1];
   }
 
   public Top(): FlatVec {
-    return this.Verts[2];
+    return this.CurVerts[2];
   }
 
   public Right(): FlatVec {
-    return this.Verts[3];
+    return this.CurVerts[3];
   }
 
   public GetVerts(): Array<FlatVec> {
-    return this.Verts;
+    return this.CurVerts;
   }
 
   public GetColor(): string {

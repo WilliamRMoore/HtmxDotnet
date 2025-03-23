@@ -20,14 +20,14 @@ test('ECB Should Update Position', () => {
   const SUT = new ECBComponent();
   SUT.MoveToPosition(10, 0);
 
-  expect(SUT.Bottom().X).toBe(10);
-  expect(SUT.Bottom().Y).toBe(0);
-  expect(SUT.Left().X).toBe(-40);
-  expect(SUT.Left().Y).toBe(-50);
-  expect(SUT.Top().X).toBe(10);
-  expect(SUT.Top().Y).toBe(-100);
-  expect(SUT.Right().X).toBe(60);
-  expect(SUT.Right().Y).toBe(-50);
+  expect(SUT.Bottom().x).toBe(10);
+  expect(SUT.Bottom().y).toBe(0);
+  expect(SUT.Left().x).toBe(-40);
+  expect(SUT.Left().y).toBe(-50);
+  expect(SUT.Top().x).toBe(10);
+  expect(SUT.Top().y).toBe(-100);
+  expect(SUT.Right().x).toBe(60);
+  expect(SUT.Right().y).toBe(-50);
 });
 
 test('ECB Should Detect Ground Collision', () => {
@@ -231,48 +231,48 @@ test('VelocityComponent Should Clamp Impulses', () => {
 
   // Test X impulse
   SUT.AddClampedXImpulse(10, 5);
-  expect(SUT.Vel.X).toBe(5);
+  expect(SUT.Vel.x).toBe(5);
 
   // Test Y impulse
   SUT.AddClampedYImpulse(10, 5);
-  expect(SUT.Vel.Y).toBe(5);
+  expect(SUT.Vel.y).toBe(5);
 
   // Add more to reach clamp
   SUT.AddClampedXImpulse(10, 7);
   SUT.AddClampedYImpulse(10, 7);
 
   // Should be clamped at 10
-  expect(SUT.Vel.X).toBe(10);
-  expect(SUT.Vel.Y).toBe(10);
+  expect(SUT.Vel.x).toBe(10);
+  expect(SUT.Vel.y).toBe(10);
 
-  SUT.Vel.X = 100;
-  SUT.Vel.Y = 100;
+  SUT.Vel.x = 100;
+  SUT.Vel.y = 100;
 
-  expect(SUT.Vel.X).toBe(100);
+  expect(SUT.Vel.x).toBe(100);
 
   //Max of ten, add 5
   SUT.AddClampedXImpulse(10, 5);
 
   // we were over the clamp, so it should add 0
-  expect(SUT.Vel.X).toBe(100);
+  expect(SUT.Vel.x).toBe(100);
 
-  SUT.Vel.Y = 0;
-  SUT.Vel.X = 0;
+  SUT.Vel.y = 0;
+  SUT.Vel.x = 0;
 
   SUT.AddClampedYImpulse(10, -5);
 
-  expect(SUT.Vel.Y).toBe(-5);
+  expect(SUT.Vel.y).toBe(-5);
 
   SUT.AddClampedXImpulse(10, -2);
 
-  expect(SUT.Vel.X).toBe(-2);
+  expect(SUT.Vel.x).toBe(-2);
 
-  SUT.Vel.X = 0;
-  SUT.Vel.Y = 0;
+  SUT.Vel.x = 0;
+  SUT.Vel.y = 0;
 
   SUT.AddClampedXImpulse(10, 20);
 
-  expect(SUT.Vel.X).toBe(10);
+  expect(SUT.Vel.x).toBe(10);
 });
 
 //END VelocityComponent tests =============================================

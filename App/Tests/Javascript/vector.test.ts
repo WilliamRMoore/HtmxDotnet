@@ -19,8 +19,8 @@ test('vec library pool test', () => {
 
   const result = VectorAdder(vt1, vt2);
 
-  update.X = result.X;
-  update.Y = result.Y;
+  update.x = result.X;
+  update.y = result.Y;
 
   expect(result.X).toBe(4);
   expect(result.Y).toBe(6);
