@@ -85,7 +85,7 @@ export function StageCollisionDetection(p: Player, s: Stage): boolean {
   return false;
 }
 
-function Gravity(p: Player) {
+export function Gravity(p: Player) {
   if (!p.IsGrounded()) {
     const grav = p.Gravity;
     const fallSpeed = p.IsFastFalling() ? p.FastFallSpeed : p.FallSpeed;
@@ -94,11 +94,11 @@ function Gravity(p: Player) {
   }
 }
 
-function Input(p: Player, ia: InputAction) {
-  // Apply controller input
+export function PlayerInput(p: Player, ia: InputAction) {
+  p.StateMachine?.UpdateFromInput(ia);
 }
 
-function ApplyVelocty(p: Player) {
+export function ApplyVelocty(p: Player) {
   const grounded = p.IsGrounded();
   const playerVelocity = p.Velocity;
   const pvx = playerVelocity.x;
@@ -140,7 +140,7 @@ function ApplyVelocty(p: Player) {
   }
 }
 
-function OutOfBoundsCheck(w: World) {
+export function OutOfBoundsCheck(w: World) {
   const pPos = w.player!.Postion;
   const deathBoundry = w.stage!.DeathBoundry;
 

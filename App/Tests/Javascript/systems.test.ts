@@ -60,7 +60,7 @@ test('stage collision ground from air', () => {
 test('stage collision right wall', () => {
   const stage = defaultStage();
   const p = new Player();
-  p.SetPlayerPostion(555, 525);
+  p.SetPlayerInitialPosition(555, 525);
 
   const collided = StageCollisionDetection(p, stage);
   expect(collided).toBeTruthy();
@@ -69,7 +69,7 @@ test('stage collision right wall', () => {
 test('stage collision corner case', () => {
   const stage = defaultStage();
   const p = new Player();
-  p.SetPlayerPostion(595, 460);
+  p.SetPlayerInitialPosition(595, 460);
   const colided = StageCollisionDetection(p, stage);
 
   expect(colided).toBeTruthy();

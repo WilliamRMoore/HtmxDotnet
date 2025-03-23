@@ -1,4 +1,5 @@
 import { stateId } from '../../FSM/FiniteState';
+import { StateMachine } from '../../FSM/FiniteStateMachine';
 import { FlatVec } from '../physics/vector';
 import { World } from '../world/world';
 import {
@@ -34,6 +35,7 @@ export class Player {
   private readonly _ECB: ECBComponent;
   private readonly _Jump: JumpComponent;
   private readonly _FSMInfo: FSMInfo;
+  private _stateMachine?: StateMachine;
 
   constructor(sbo: speedBuilderOptions = defaultSpeedsBuilderOptions) {
     const speedsBuilder = new SpeedsComponentBuilder();
@@ -58,6 +60,10 @@ export class Player {
 
   public SetWorld(world: World) {
     this._world = world;
+  }
+
+  public SetStateMachine(sm: StateMachine) {
+    this._stateMachine = sm;
   }
 
   public AddClampedXImpulse(clamp: number, impulse: number): void {
@@ -195,6 +201,10 @@ export class Player {
 
   public get AerialVelocityDecay(): number {
     return this._Speeds.AerialVelocityDecay;
+  }
+
+  public get StateMachine(): StateMachine | undefined {
+    return this._stateMachine;
   }
 
   public FastFallOn(): void {

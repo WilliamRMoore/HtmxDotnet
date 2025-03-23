@@ -1,3 +1,4 @@
+import { StateMachine } from '../../FSM/FiniteStateMachine';
 import { Player } from '../player/playerOrchestrator';
 import { Stage } from '../stage/stageComponents';
 

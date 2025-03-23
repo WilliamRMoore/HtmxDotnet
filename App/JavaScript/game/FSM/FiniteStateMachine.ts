@@ -146,6 +146,8 @@ export class StateMachine {
   //   return;
   // }
 
+  public UpdateFromWorld(stateId: stateId) {}
+
   public UpdateFromInput(inputAction: InputAction): void {
     // if we have a conditional on the state, check it
     if (this.RunConditional(inputAction)) {
