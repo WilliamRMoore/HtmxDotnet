@@ -51,8 +51,8 @@ export type FSMState = {
     p: Player,
     inputAction: InputAction
   ) => number | undefined;
-  OnEnter?: (p: Player, ia: InputAction) => void;
-  OnUpdate?: (p: Player, inputAction: InputAction) => void;
+  OnEnter?: (p: Player, ia?: InputAction) => void;
+  OnUpdate?: (p: Player, inputAction?: InputAction) => void;
   OnExit?: (p: Player) => void;
   Condition?: (
     p: Player,
@@ -140,13 +140,16 @@ export class StateMachine {
     this._states.set(SoftLand.StateId, SoftLand);
   }
 
-  // public UpdateFromWorld(stateId: stateId): void {
-  //   const nextState = this._states.get(stateId)!;
-  //   this.changeState(nextState);
-  //   return;
-  // }
+  public SetInitialState(stateId: stateId) {
+    this.changeState(this._states.get(stateId)!);
+  }
 
-  public UpdateFromWorld(stateId: stateId) {}
+  public UpdateFromWorld(stateId: stateId) {
+    const state = this._states.get(stateId)!;
+
+    this.changeState(state);
+    this.updateStateFromWorld();
+  }
 
   public UpdateFromInput(inputAction: InputAction): void {
     // if we have a conditional on the state, check it
@@ -242,7 +245,7 @@ export class StateMachine {
     return undefined;
   }
 
-  private changeState(state: FSMState, ia: InputAction) {
+  private changeState(state: FSMState, ia?: InputAction) {
     this._stateFrameCount = 0;
     this._currentState.OnExit?.(this._player);
     this._currentState = state;
@@ -254,6 +257,11 @@ export class StateMachine {
     this._currentState.OnUpdate?.(this._player, inputAction);
     this._stateFrameCount++;
     this._previousInputAction = inputAction;
+  }
+
+  private updateStateFromWorld() {
+    this._currentState.OnUpdate?.(this._player);
+    this._stateFrameCount++;
   }
 
   private IsDefaultFrame(): boolean {

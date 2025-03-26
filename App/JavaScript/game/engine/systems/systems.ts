@@ -1,5 +1,6 @@
 import { InputAction } from '../../loops/Input';
 import { IntersectsPolygons } from '../physics/collisions';
+import { STATES } from '../../FSM/FiniteState';
 import {
   VectorAdder,
   VectorMultiplier,
@@ -12,10 +13,34 @@ import { Stage } from '../stage/stageComponents';
 import { World } from '../world/world';
 
 const correctionDepth: number = 0.01;
+export const GROUND_COLLISION: number = 0;
+export const LEFT_WALL_COLLISION: number = 1;
+export const RIGHT_WALL_COLLISION: number = 2;
+export const CEILING_COLLISION: number = 3;
+export const CORNER_COLLISION: number = 4;
+export const NO_COLLISION: number = 5;
 
-export function StageCollisionDetection(p: Player, s: Stage): boolean {
+export function StageCollisionDetection(p: Player, s: Stage): number {
+  const playerVelY = p.Velocity.y;
+
+  var collision = _stageCollision(p, s);
+
+  if (collision === NO_COLLISION) {
+    return NO_COLLISION;
+  }
+
+  if (collision === GROUND_COLLISION) {
+    const landState = playerVelY > 2 ? STATES.LAND : STATES.SOFT_LAND;
+    p.StateMachine?.UpdateFromWorld(landState);
+    return GROUND_COLLISION;
+  }
+
+  return collision;
+}
+
+function _stageCollision(p: Player, s: Stage): number {
   const stageVerts = s.StageVerticies.GetVerts();
-  const playerVerts = p.CCHull;
+  const playerVerts = p.GetCCHull();
 
   // detect the collision
   const collisionResult = IntersectsPolygons(playerVerts, stageVerts);
@@ -38,7 +63,7 @@ export function StageCollisionDetection(p: Player, s: Stage): boolean {
       move.AddToY(correctionDepth);
       let resolution = VectorAdder(playerPosDTO, move);
       p.SetPlayerPostion(resolution.X, resolution.Y);
-      return true;
+      return GROUND_COLLISION;
     }
 
     //Right wall correction
@@ -47,7 +72,7 @@ export function StageCollisionDetection(p: Player, s: Stage): boolean {
       let resolution = VectorAdder(playerPosDTO, move);
       p.SetPlayerPostion(resolution.X, resolution.Y);
 
-      return true;
+      return RIGHT_WALL_COLLISION;
     }
 
     // Left Wall Correction
@@ -56,7 +81,7 @@ export function StageCollisionDetection(p: Player, s: Stage): boolean {
       let resolution = VectorAdder(playerPosDTO, move);
       p.SetPlayerPostion(resolution.X, resolution.Y);
 
-      return true;
+      return LEFT_WALL_COLLISION;
     }
 
     //ceiling
@@ -65,7 +90,7 @@ export function StageCollisionDetection(p: Player, s: Stage): boolean {
       let resolution = VectorAdder(playerPosDTO, move);
       p.SetPlayerPostion(resolution.X, resolution.Y);
 
-      return true;
+      return CEILING_COLLISION;
     }
 
     // corner case, literally
@@ -76,13 +101,13 @@ export function StageCollisionDetection(p: Player, s: Stage): boolean {
       const resolution = VectorAdder(playerPosDTO, move);
       p.SetPlayerPostion(resolution.X, resolution.Y);
 
-      return true;
+      return CORNER_COLLISION;
     }
 
-    return false;
+    return NO_COLLISION;
   }
 
-  return false;
+  return NO_COLLISION;
 }
 
 export function Gravity(p: Player) {
@@ -106,6 +131,9 @@ export function ApplyVelocty(p: Player) {
   const fallSpeed = p.FallSpeed;
   const groundedVelocityDecay = p.GroundedVelocityDecay;
   const aerialVelocityDecay = p.AerialVelocityDecay;
+
+  p.AddToPlayerXPosition(pvx);
+  p.AddToPlayerYPosition(pvy);
 
   if (grounded) {
     if (pvx > 0) {

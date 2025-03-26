@@ -97,16 +97,20 @@ export const StartWalk: FSMState = {
   StateName: 'START_WALK',
   StateId: STATES.START_WALK,
   FrameLength: 5,
-  OnEnter: (p: Player, ia: InputAction) => {
-    if (p.IsFacingRight() && ia!.LXAxsis < 0) {
-      p.ChangeDirections();
-    }
-    if (p.IsFacingLeft() && ia!.LXAxsis > 0) {
-      p.ChangeDirections();
+  OnEnter: (p: Player, ia?: InputAction) => {
+    if (ia != undefined) {
+      if (p.IsFacingRight() && ia!.LXAxsis < 0) {
+        p.ChangeDirections();
+      }
+      if (p.IsFacingLeft() && ia!.LXAxsis > 0) {
+        p.ChangeDirections();
+      }
     }
   },
-  OnUpdate: (p: Player, ia: InputAction) => {
-    p.AddWalkImpulse(ia.LXAxsis);
+  OnUpdate: (p: Player, ia?: InputAction) => {
+    if (ia != undefined) {
+      p.AddWalkImpulse(ia.LXAxsis);
+    }
   },
   OnExit: (p: Player) => {
     console.log('Exit Start Walk');
@@ -126,8 +130,10 @@ export const Walk: FSMState = {
   OnEnter: (p: Player) => {
     console.log('Walk');
   },
-  OnUpdate: (p: Player, ia: InputAction) => {
-    p.AddWalkImpulse(ia.LXAxsis);
+  OnUpdate: (p: Player, ia?: InputAction) => {
+    if (ia != undefined) {
+      p.AddWalkImpulse(ia.LXAxsis);
+    }
   },
   OnExit: (p: Player) => {
     console.log('Exit Walk');
@@ -153,7 +159,7 @@ export const Dash: FSMState = {
   OnEnter: (p: Player) => {
     console.log('Dash');
   },
-  OnUpdate: (p: Player, ia: InputAction) => {
+  OnUpdate: (p: Player, ia?: InputAction) => {
     p.AddDashImpulse();
   },
   OnExit: (p: Player) => {
@@ -203,8 +209,10 @@ export const Run: FSMState = {
   OnEnter: (p: Player) => {
     console.log('Run');
   },
-  OnUpdate: (p: Player, ia: InputAction) => {
-    p.AddRunImpulse(ia.LXAxsis);
+  OnUpdate: (p: Player, ia?: InputAction) => {
+    if (ia != undefined) {
+      p.AddRunImpulse(ia.LXAxsis);
+    }
   },
   OnExit: (p: Player) => {
     console.log('Exit Run');

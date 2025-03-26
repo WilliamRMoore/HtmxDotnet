@@ -8,7 +8,11 @@ import {
 } from '../../JavaScript/game/engine/physics/vector';
 import { Player } from '../../JavaScript/game/engine/player/playerOrchestrator';
 import { defaultStage } from '../../JavaScript/game/engine/stage/stageComponents';
-import { StageCollisionDetection } from '../../JavaScript/game/engine/systems/systems';
+import {
+  GROUND_COLLISION,
+  NO_COLLISION,
+  StageCollisionDetection,
+} from '../../JavaScript/game/engine/systems/systems';
 import { World } from '../../JavaScript/game/engine/world/world';
 import { VecResultPool } from '../../JavaScript/game/pools/VecResultPool';
 
@@ -28,7 +32,7 @@ test('stage collision ground', () => {
 
   const collided = StageCollisionDetection(p, stage);
 
-  expect(collided).toBeTruthy();
+  expect(collided).toBe(GROUND_COLLISION);
 
   expect(p.IsGrounded()).toBeTruthy();
 });
@@ -42,7 +46,7 @@ test('stage collision ground from air', () => {
 
   const collided = StageCollisionDetection(p, stage);
 
-  expect(collided).toBeFalsy();
+  expect(collided).toBe(NO_COLLISION);
 
   expect(p.IsGrounded()).toBeFalsy();
 
@@ -50,7 +54,7 @@ test('stage collision ground from air', () => {
 
   const collided2 = StageCollisionDetection(p, stage);
 
-  expect(collided2).toBeTruthy();
+  expect(collided2).toBe(GROUND_COLLISION);
 
   expect(p.IsGrounded()).toBeTruthy();
 

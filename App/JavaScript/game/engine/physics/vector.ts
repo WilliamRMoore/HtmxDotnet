@@ -169,20 +169,17 @@ const upper: Array<FlatVec> = [];
 const returnHull: Array<FlatVec> = [];
 // Function to create a convex hull using Andrew's monotone chain algorithm
 export function createConvexHull(points: Array<FlatVec>): Array<FlatVec> {
-  // while (lower.length > 0) {
-  //   lower.pop();
-  // }
-  // while (upper.length > 0) {
-  //   upper.pop();
-  // }
   while (returnHull.length > 0) {
     returnHull.pop();
   }
+
   // Sort points lexicographically
   points.sort((a, b) => (a.x === b.x ? a.y - b.y : a.x - b.x));
 
-  //const lower: Array<FlatVec> = [];
-  for (const p of points) {
+  const pointsLength = points.length;
+
+  for (let i = pointsLength - 1; i >= 0; i++) {
+    const p = points[i];
     while (
       lower.length >= 2 &&
       cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0
@@ -192,8 +189,7 @@ export function createConvexHull(points: Array<FlatVec>): Array<FlatVec> {
     lower.push(p);
   }
 
-  //const upper: Array<FlatVec> = [];
-  for (let i = points.length - 1; i >= 0; i--) {
+  for (let i = pointsLength - 1; i >= 0; i--) {
     const p = points[i];
     while (
       upper.length >= 2 &&

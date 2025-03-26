@@ -20,7 +20,7 @@ const defaultSpeedsBuilderOptions: speedBuilderOptions = (
 ) => {
   scb.SetWalkSpeeds(12, 2);
   scb.SetRunSpeeds(20, 2.5);
-  scb.SetFallSpeeds(10, 15);
+  scb.SetFallSpeeds(21, 15, 0.5);
   scb.SetAerialSpeeds(0.8, 18);
   scb.SetDashSpeeds(5, 25);
   scb.SetGroundedVelocityDecay(0.8);
@@ -111,7 +111,7 @@ export class Player {
 
   // This method is for inputs from the player
   public AddGravityImpulse(impulse: number, clamp: number): void {
-    this._Velocity.AddClampedYImpulse(impulse, clamp);
+    this._Velocity.AddClampedYImpulse(clamp, impulse);
   }
 
   public SetXVelocity(vx: number): void {
@@ -163,11 +163,11 @@ export class Player {
     return false;
   }
 
-  public get ECBVerts(): FlatVec[] {
+  public GetECBVerts(): FlatVec[] {
     return this._ECB.GetVerts();
   }
 
-  public get CCHull(): FlatVec[] {
+  public GetCCHull(): FlatVec[] {
     return this._ECB.GetHull();
   }
 
