@@ -25,8 +25,13 @@ export class ProjectionResultPool implements IPool<ProjectionResult> {
 
     return new ProjectionResult();
   }
+
   Zero(): void {
     this.poolIndex = 0;
+  }
+
+  get ActiveCount(): number {
+    return this.poolIndex;
   }
 }
 

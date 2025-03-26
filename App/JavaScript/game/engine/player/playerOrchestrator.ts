@@ -144,6 +144,13 @@ export class Player {
     this._ECB.MoveToPosition(this._Position.Pos.x, this._Position.Pos.y);
   }
 
+  public AddToPlayerPosition(x: number, y: number): void {
+    const pos = this._Position.Pos;
+    pos.x += x;
+    pos.y += y;
+    this._ECB.MoveToPosition(pos.x, pos.y);
+  }
+
   public IsGrounded(): boolean {
     const grnd = this._world?.stage?.StageVerticies?.GetGround() ?? undefined;
 
@@ -243,7 +250,7 @@ export class Player {
     this.FaceRight();
   }
 
-  public PreFrameEndTask(): void {
+  public PostTickTask(): void {
     this._ECB.UpdatePreviousPosition();
   }
 }

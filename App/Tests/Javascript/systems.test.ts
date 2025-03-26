@@ -1,11 +1,3 @@
-import {
-  ZERO_CR_POOL,
-  ZERO_PR_POOL,
-} from '../../JavaScript/game/engine/physics/collisions';
-import {
-  SET_POOL,
-  ZERO_VR_POOL,
-} from '../../JavaScript/game/engine/physics/vector';
 import { Player } from '../../JavaScript/game/engine/player/playerOrchestrator';
 import { defaultStage } from '../../JavaScript/game/engine/stage/stageComponents';
 import {
@@ -14,14 +6,7 @@ import {
   StageCollisionDetection,
 } from '../../JavaScript/game/engine/systems/systems';
 import { World } from '../../JavaScript/game/engine/world/world';
-import { VecResultPool } from '../../JavaScript/game/pools/VecResultPool';
-
-beforeEach(() => {
-  SET_POOL(new VecResultPool(200));
-  ZERO_CR_POOL();
-  ZERO_PR_POOL();
-  ZERO_VR_POOL();
-});
+import { VecPool } from '../../JavaScript/game/pools/VecResultPool';
 
 test('stage collision ground', () => {
   const stage = defaultStage();
@@ -30,7 +15,13 @@ test('stage collision ground', () => {
   p.SetWorld(world);
   p.SetPlayerInitialPosition(700, 455.0);
 
-  const collided = StageCollisionDetection(p, stage);
+  const collided = StageCollisionDetection(
+    p,
+    stage,
+    world.VecPool,
+    world.ColResPool,
+    world.ProjResPool
+  );
 
   expect(collided).toBe(GROUND_COLLISION);
 
@@ -44,7 +35,13 @@ test('stage collision ground from air', () => {
   p.SetWorld(world);
   p.SetPlayerInitialPosition(680, 430.0);
 
-  const collided = StageCollisionDetection(p, stage);
+  const collided = StageCollisionDetection(
+    p,
+    stage,
+    world.VecPool,
+    world.ColResPool,
+    world.ProjResPool
+  );
 
   expect(collided).toBe(NO_COLLISION);
 
@@ -52,30 +49,51 @@ test('stage collision ground from air', () => {
 
   p.SetPlayerPostion(700, 455.0);
 
-  const collided2 = StageCollisionDetection(p, stage);
+  const collided2 = StageCollisionDetection(
+    p,
+    stage,
+    world.VecPool,
+    world.ColResPool,
+    world.ProjResPool
+  );
 
   expect(collided2).toBe(GROUND_COLLISION);
 
   expect(p.IsGrounded()).toBeTruthy();
 
-  p.PreFrameEndTask();
+  p.PostTickTask();
 });
 
 test('stage collision right wall', () => {
   const stage = defaultStage();
   const p = new Player();
+  const world = new World(p, stage);
+  p.SetWorld(world);
   p.SetPlayerInitialPosition(555, 525);
 
-  const collided = StageCollisionDetection(p, stage);
+  const collided = StageCollisionDetection(
+    p,
+    stage,
+    world.VecPool,
+    world.ColResPool,
+    world.ProjResPool
+  );
   expect(collided).toBeTruthy();
 });
 
 test('stage collision corner case', () => {
   const stage = defaultStage();
   const p = new Player();
+  const world = new World(p, stage);
+  p.SetWorld(world);
   p.SetPlayerInitialPosition(595, 460);
-  const colided = StageCollisionDetection(p, stage);
-
+  const colided = StageCollisionDetection(
+    p,
+    stage,
+    world.VecPool,
+    world.ColResPool,
+    world.ProjResPool
+  );
   expect(colided).toBeTruthy();
 });
 

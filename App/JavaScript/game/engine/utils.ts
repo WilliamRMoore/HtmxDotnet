@@ -1,4 +1,4 @@
-import { FlatVec, VectorResultAllocator } from './physics/vector';
+import { FlatVec } from './physics/vector';
 
 export function FillArrayWithFlatVec(fvArr: FlatVec[]): void {
   for (let index = 0; index < fvArr.length; index++) {

@@ -1,16 +1,12 @@
 import { InputAction } from '../../loops/Input';
 import { IntersectsPolygons } from '../physics/collisions';
 import { STATES } from '../../FSM/FiniteState';
-import {
-  VectorAdder,
-  VectorMultiplier,
-  VectorNegator,
-  VectorResultAllocator,
-  VectorToVectorResultAllocator,
-} from '../physics/vector';
 import { Player } from '../player/playerOrchestrator';
 import { Stage } from '../stage/stageComponents';
 import { World } from '../world/world';
+import { VecPool } from '../../pools/VecResultPool';
+import { CollisionResultPool } from '../../pools/CollisionResultPool';
+import { ProjectionResultPool } from '../../pools/ProjectResultPool';
 
 const correctionDepth: number = 0.01;
 export const GROUND_COLLISION: number = 0;
@@ -20,10 +16,16 @@ export const CEILING_COLLISION: number = 3;
 export const CORNER_COLLISION: number = 4;
 export const NO_COLLISION: number = 5;
 
-export function StageCollisionDetection(p: Player, s: Stage): number {
+export function StageCollisionDetection(
+  p: Player,
+  s: Stage,
+  vecPool: VecPool,
+  colResPool: CollisionResultPool,
+  projResPool: ProjectionResultPool
+): number {
   const playerVelY = p.Velocity.y;
 
-  var collision = _stageCollision(p, s);
+  var collision = _stageCollision(p, s, vecPool, colResPool, projResPool);
 
   if (collision === NO_COLLISION) {
     return NO_COLLISION;
@@ -32,45 +34,54 @@ export function StageCollisionDetection(p: Player, s: Stage): number {
   if (collision === GROUND_COLLISION) {
     const landState = playerVelY > 2 ? STATES.LAND : STATES.SOFT_LAND;
     p.StateMachine?.UpdateFromWorld(landState);
-    return GROUND_COLLISION;
+    return collision;
   }
 
   return collision;
 }
 
-function _stageCollision(p: Player, s: Stage): number {
+function _stageCollision(
+  p: Player,
+  s: Stage,
+  vecPool: VecPool,
+  colResPool: CollisionResultPool,
+  projResPool: ProjectionResultPool
+): number {
   const stageVerts = s.StageVerticies.GetVerts();
   const playerVerts = p.GetCCHull();
 
   // detect the collision
-  const collisionResult = IntersectsPolygons(playerVerts, stageVerts);
+  const collisionResult = IntersectsPolygons(
+    playerVerts,
+    stageVerts,
+    vecPool,
+    colResPool,
+    projResPool
+  );
 
   if (collisionResult.collision) {
-    let dto = VectorResultAllocator(
-      collisionResult.normX,
-      collisionResult.normY
-    );
-    const move = VectorMultiplier(VectorNegator(dto), collisionResult.depth);
+    const vec = vecPool.Rent();
+    vec._setXY(collisionResult.normX, collisionResult.normY);
+    const move = vec.Negate().Multiply(collisionResult.depth);
 
     const normalX = collisionResult.normX;
     const normalY = collisionResult.normY;
-    const playerPos = p.Postion;
-    const playerPosDTO = VectorToVectorResultAllocator(playerPos);
+    const playerPosDTO = vecPool.Rent().SetFromFlatVec(p.Postion);
 
     //Ground correction
     if (normalX == 0 && normalY > 0) {
       //add the correction depth
       move.AddToY(correctionDepth);
-      let resolution = VectorAdder(playerPosDTO, move);
-      p.SetPlayerPostion(resolution.X, resolution.Y);
+      playerPosDTO.Add(move);
+      p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
       return GROUND_COLLISION;
     }
 
     //Right wall correction
     if (normalX > 0 && normalY == 0) {
       move.AddToX(correctionDepth);
-      let resolution = VectorAdder(playerPosDTO, move);
-      p.SetPlayerPostion(resolution.X, resolution.Y);
+      playerPosDTO.Add(move);
+      p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
 
       return RIGHT_WALL_COLLISION;
     }
@@ -78,8 +89,8 @@ function _stageCollision(p: Player, s: Stage): number {
     // Left Wall Correction
     if (normalX < 0 && normalY == 0) {
       move.AddToX(-correctionDepth);
-      let resolution = VectorAdder(playerPosDTO, move);
-      p.SetPlayerPostion(resolution.X, resolution.Y);
+      playerPosDTO.Add(move);
+      p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
 
       return LEFT_WALL_COLLISION;
     }
@@ -87,8 +98,8 @@ function _stageCollision(p: Player, s: Stage): number {
     //ceiling
     if (normalX == 0 && normalY < 0) {
       move.AddToY(-correctionDepth);
-      let resolution = VectorAdder(playerPosDTO, move);
-      p.SetPlayerPostion(resolution.X, resolution.Y);
+      playerPosDTO.Add(move);
+      p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
 
       return CEILING_COLLISION;
     }
@@ -98,8 +109,8 @@ function _stageCollision(p: Player, s: Stage): number {
       const fix = move.X <= 0 ? move.Y : -move.Y;
       move.AddToX(fix);
       move._setY(0);
-      const resolution = VectorAdder(playerPosDTO, move);
-      p.SetPlayerPostion(resolution.X, resolution.Y);
+      playerPosDTO.Add(move);
+      p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
 
       return CORNER_COLLISION;
     }
@@ -128,43 +139,42 @@ export function ApplyVelocty(p: Player) {
   const playerVelocity = p.Velocity;
   const pvx = playerVelocity.x;
   const pvy = playerVelocity.y;
-  const fallSpeed = p.FallSpeed;
+  const fallSpeed = p.IsFastFalling() ? p.FastFallSpeed : p.FallSpeed;
   const groundedVelocityDecay = p.GroundedVelocityDecay;
   const aerialVelocityDecay = p.AerialVelocityDecay;
 
-  p.AddToPlayerXPosition(pvx);
-  p.AddToPlayerYPosition(pvy);
+  p.AddToPlayerPosition(pvx, pvy);
 
   if (grounded) {
     if (pvx > 0) {
-      p.Velocity.x -= groundedVelocityDecay;
+      playerVelocity.x -= groundedVelocityDecay;
     }
     if (pvx < 0) {
-      p.Velocity.x += groundedVelocityDecay;
+      playerVelocity.x += groundedVelocityDecay;
     }
 
     return;
   }
 
   if (pvx > 0) {
-    p.Velocity.x -= aerialVelocityDecay;
+    playerVelocity.x -= aerialVelocityDecay;
   }
 
   if (pvx < 0) {
-    p.Velocity.x += aerialVelocityDecay;
+    playerVelocity.x += aerialVelocityDecay;
   }
 
   // What if we are fast falling?
   if (pvy > fallSpeed) {
-    p.Velocity.y -= aerialVelocityDecay;
+    playerVelocity.y -= aerialVelocityDecay;
   }
 
   if (pvy < 0) {
-    p.Velocity.y += aerialVelocityDecay;
+    playerVelocity.y += aerialVelocityDecay;
   }
 
   if (Math.abs(pvx) < 3) {
-    p.Velocity.x = 0;
+    playerVelocity.x = 0;
   }
 }
 

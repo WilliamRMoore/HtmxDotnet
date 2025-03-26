@@ -1,7 +1,5 @@
-import { STATES } from '../FSM/FiniteState';
 import { StateMachine } from '../FSM/FiniteStateMachine';
 import { InputAction } from '../loops/Input';
-import { MessageProtocol, MessageTypes } from '../network/protocol';
 import { RenderData } from '../render/debug-2d';
 import { InputStorageManagerLocal } from './engine-state-management/Managers';
 import { Player } from './player/playerOrchestrator';
@@ -41,24 +39,11 @@ export class Jazz {
   public tick() {
     let frameTimeStart = performance.now();
 
-    const p1Input = this.LocalInputStorage.GetP1LocalInputForFrame(
-      this.localFrame
-    );
-    const p = this._world!.player!;
-    const s = this._world!.stage!;
-
-    PlayerInput(p, p1Input);
-    Gravity(p);
-    ApplyVelocty(p);
-    StageCollisionDetection(p, s);
-
-    this.PostTick();
+    this.Tick();
 
     let frameTimeDelta = performance.now() - frameTimeStart;
 
     this.renderDataCallBackExec(frameTimeDelta);
-
-    this.localFrame++;
   }
 
   public UpdateLocalInputForCurrentFrame(ia: InputAction) {
@@ -75,7 +60,30 @@ export class Jazz {
     this.renderDataCallBack(this.renderDataDto);
   }
 
-  private PostTick() {
-    this._world?.player?.PreFrameEndTask();
+  private Tick() {
+    const p1Input = this.LocalInputStorage.GetP1LocalInputForFrame(
+      this.localFrame
+    );
+
+    const p = this._world!.player!;
+    const s = this._world!.stage!;
+
+    PlayerInput(p, p1Input);
+    Gravity(p);
+    ApplyVelocty(p);
+    StageCollisionDetection(
+      p,
+      s,
+      this._world!.VecPool,
+      this._world!.ColResPool,
+      this._world!.ProjResPool
+    );
+
+    p.PostTickTask();
+    this._world?.VecPool.Zero();
+    this._world?.ColResPool.Zero();
+    this._world?.ProjResPool.Zero();
+
+    this.localFrame++;
   }
 }

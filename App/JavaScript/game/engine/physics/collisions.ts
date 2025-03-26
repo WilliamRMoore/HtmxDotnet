@@ -6,54 +6,39 @@ import {
   IProjectionResult,
   ProjectionResultPool,
 } from '../../pools/ProjectResultPool';
-import { IVecResult } from '../../pools/VecResultPool';
-import {
-  DotProduct,
-  FlatVec,
-  Normalize,
-  VectorResultAllocator,
-  VectorNegator,
-  VectorSubtractor,
-} from './vector';
-
-const crp = new CollisionResultPool(1000);
-
-const prp = new ProjectionResultPool(1000);
-
-export function ZERO_CR_POOL() {
-  crp.Zero();
-}
-
-export function ZERO_PR_POOL() {
-  prp.Zero();
-}
+import { IPooledVector, VecPool } from '../../pools/VecResultPool';
+import { FlatVec } from './vector';
 
 export function IntersectsPolygons(
   verticiesA: Array<FlatVec>,
-  verticiesB: Array<FlatVec>
+  verticiesB: Array<FlatVec>,
+  vecPool: VecPool,
+  colResPool: CollisionResultPool,
+  projResPool: ProjectionResultPool
 ): ICollisionResult {
-  let normal = VectorResultAllocator();
+  let normal = vecPool.Rent();
   let depth = Number.MAX_SAFE_INTEGER;
 
-  const varDto = VectorResultAllocator(0, 0);
-  const vbrDto = VectorResultAllocator(0, 0);
+  const verticiesAVec = vecPool.Rent();
+  const verticiesBVec = vecPool.Rent();
 
   for (let i = 0; i < verticiesA.length; i++) {
     // Go through verticies in clockwise order.
     const va = verticiesA[i];
     const vb = verticiesA[(i + 1) % verticiesA.length];
-    varDto._setXY(va.x, va.y);
-    vbrDto._setXY(vb.x, vb.y);
-    const edge = VectorSubtractor(vbrDto, varDto); // get the edge
-    let axis = VectorResultAllocator(-edge.Y, edge.X); // get the axis
-    axis = Normalize(axis);
+    verticiesAVec._setXY(va.x, va.y);
+    verticiesBVec._setXY(vb.x, vb.y);
+    let axis = verticiesBVec
+      .Subtract(verticiesAVec)
+      ._setY(-verticiesBVec.Y)
+      .Normalize();
     // Project verticies for both polygons.
-    const vaProj = ProjectVerticies(verticiesA, axis);
-    const vbProj = ProjectVerticies(verticiesB, axis);
+    const vaProj = ProjectVerticies(verticiesA, axis, vecPool, projResPool);
+    const vbProj = ProjectVerticies(verticiesB, axis, vecPool, projResPool);
 
     if (vaProj.min >= vbProj.max || vbProj.min >= vaProj.max) {
       //return { collision: false, normal: null, depth: null } as collisionResult;
-      const res = crp.Rent();
+      const res = colResPool.Rent();
       res._setCollisionFalse();
       return res;
     }
@@ -65,28 +50,28 @@ export function IntersectsPolygons(
 
     if (axisDepth < depth) {
       depth = axisDepth;
-      normal = axis;
+      normal._setX(axis.X)._setY(axis.Y);
     }
   }
 
-  varDto._setXY(0, 0);
-  vbrDto._setXY(0, 0);
+  verticiesAVec._setXY(0, 0);
+  verticiesBVec._setXY(0, 0);
 
   for (let i = 0; i < verticiesB.length; i++) {
     const va = verticiesB[i];
     const vb = verticiesB[(i + 1) % verticiesB.length]; // Go through verticies in clockwise order.
-    varDto._setXY(va.x, va.y);
-    vbrDto._setXY(vb.x, vb.y);
-    const edge = VectorSubtractor(vbrDto, varDto); // get the edge
-    let axis = VectorResultAllocator(-edge.Y, edge.X); // get the axis
-    axis = Normalize(axis);
-
+    verticiesAVec._setXY(va.x, va.y);
+    verticiesBVec._setXY(vb.x, vb.y);
+    const axis = verticiesBVec
+      .Subtract(verticiesAVec)
+      ._setY(-verticiesBVec.Y)
+      .Normalize();
     // Project verticies for both polygons.
-    const vaProj = ProjectVerticies(verticiesA, axis);
-    const vbProj = ProjectVerticies(verticiesB, axis);
+    const vaProj = ProjectVerticies(verticiesA, axis, vecPool, projResPool);
+    const vbProj = ProjectVerticies(verticiesB, axis, vecPool, projResPool);
 
     if (vaProj.min >= vbProj.max || vbProj.min >= vaProj.max) {
-      const res = crp.Rent();
+      const res = colResPool.Rent();
       res._setCollisionFalse();
       return res;
       //return { collision: false, normal: null, depth: null } as collisionResult;
@@ -97,20 +82,20 @@ export function IntersectsPolygons(
     );
     if (axisDepth < depth) {
       depth = axisDepth;
-      normal = axis;
+      normal._setX(axis.X)._setY(axis.Y);
     }
   }
 
-  const centerA = FindArithemticMean(verticiesA);
-  const centerB = FindArithemticMean(verticiesB);
+  const centerA = FindArithemticMean(verticiesA, vecPool.Rent());
+  const centerB = FindArithemticMean(verticiesB, vecPool.Rent());
 
-  const direction = VectorSubtractor(centerB, centerA);
+  const direction = centerB.Subtract(centerA);
 
-  if (DotProduct(direction, normal) < 0) {
-    normal = VectorNegator(normal);
+  if (direction.DotProduct(normal) < 0) {
+    normal.Negate();
   }
 
-  const res = crp.Rent();
+  const res = colResPool.Rent();
   res._setCollisionTrue(normal.X, normal.Y, depth);
   return res;
   //return { collision: true, normal, depth } as collisionResult;
@@ -118,35 +103,40 @@ export function IntersectsPolygons(
 
 // suplimental functions ====================================
 
-function FindArithemticMean(verticies: Array<FlatVec>): IVecResult {
+function FindArithemticMean(
+  verticies: Array<FlatVec>,
+  pooledVec: IPooledVector
+): IPooledVector {
   let sumX = 0;
   let sumY = 0;
+  const vertLength = verticies.length;
 
-  for (let index = 0; index < verticies.length; index++) {
+  for (let index = 0; index < vertLength; index++) {
     const v = verticies[index];
     sumX += v.x;
     sumY += v.y;
   }
 
-  return VectorResultAllocator(
-    sumX / verticies.length,
-    sumY / verticies.length
-  );
+  return pooledVec._setXY(sumX, sumY).Divide(vertLength);
 }
 
 function ProjectVerticies(
   verticies: Array<FlatVec>,
-  axis: IVecResult
+  axis: IPooledVector,
+  vecPool: VecPool,
+  projResPool: ProjectionResultPool
 ): IProjectionResult {
   let min = Number.MAX_SAFE_INTEGER;
   let max = Number.MIN_SAFE_INTEGER;
 
-  const vRes = VectorResultAllocator(0, 0);
+  const vRes = vecPool.Rent(); //VectorResultAllocator(0, 0);
 
   for (let i = 0; i < verticies.length; i++) {
     const v = verticies[i];
     vRes._setXY(v.x, v.y);
-    const projection = DotProduct(vRes, axis); // get the projection for the given axis
+
+    // get the projection for the given axis
+    const projection = vRes.DotProduct(axis);
 
     // set the minimum projection
     if (projection < min) {
@@ -158,7 +148,7 @@ function ProjectVerticies(
     }
   }
 
-  let result = prp.Rent();
+  let result = projResPool.Rent();
   result._setMinMax(min, max);
   return result;
 }

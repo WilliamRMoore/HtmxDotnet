@@ -1,7 +1,7 @@
-import { VecResultPool } from '../../JavaScript/game/pools/VecResultPool';
+import { VecPool } from '../../JavaScript/game/pools/VecResultPool';
 
 test('VecResultPool Test', () => {
-  const SUT = new VecResultPool(1000);
+  const SUT = new VecPool(1000);
   const result = SUT.Rent();
 
   expect(result.X).toBe(0);

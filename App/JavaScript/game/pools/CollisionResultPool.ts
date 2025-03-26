@@ -28,6 +28,10 @@ export class CollisionResultPool implements IPool<CollisionResult> {
   Zero(): void {
     this.poolIndex = 0;
   }
+
+  get ActiveCount(): number {
+    return this.poolIndex;
+  }
 }
 
 export interface ICollisionResult {

@@ -1,7 +1,4 @@
-import {
-  FlatVec,
-  ZERO_VR_POOL,
-} from '../../JavaScript/game/engine/physics/vector';
+import { FlatVec } from '../../JavaScript/game/engine/physics/vector';
 import {
   ECBComponent,
   JumpComponent,
@@ -10,9 +7,7 @@ import {
 } from '../../JavaScript/game/engine/player/playerComponents';
 import { defaultStage } from '../../JavaScript/game/engine/stage/stageComponents';
 
-beforeEach(() => {
-  ZERO_VR_POOL();
-});
+beforeEach(() => {});
 
 // ECBComponent tests ========================================================
 

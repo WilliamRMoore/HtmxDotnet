@@ -136,6 +136,7 @@ export class InputStorageManagerLocal<Type>
   GetP1LocalInputForFrame(frame: number): Type {
     return this.P1localInputStore[frame];
   }
+
   GetP2LocalInputForFrame(frame: number): Type {
     return this.P2localInputStore[frame];
   }

@@ -35,7 +35,6 @@ import {
   SOFT_LAND_RELATIONS,
   START_WALK_RELATIONS,
   stateId,
-  STATES,
   STOP_DASH_RELATIONS,
   STOP_RUN_RELATIONS,
   TURN_RELATIONS,
@@ -183,16 +182,14 @@ export class StateMachine {
   }
 
   private RunDefault(inputAction: InputAction): boolean {
-    if (this.IsDefaultFrame()) {
-      const defaultTransition = this.GetDefaultState(
-        this._currentState.StateId
-      );
-      if (defaultTransition != undefined) {
-        this.changeState(defaultTransition, inputAction);
-        this.updateState(inputAction);
-        return true;
-      }
+    if (!this.IsDefaultFrame()) {
       return false;
+    }
+    const defaultTransition = this.GetDefaultState(this._currentState.StateId);
+    if (defaultTransition != undefined) {
+      this.changeState(defaultTransition, inputAction);
+      this.updateState(inputAction);
+      return true;
     }
     return false;
   }
@@ -277,4 +274,3 @@ export class StateMachine {
     return false;
   }
 }
-7;
