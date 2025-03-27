@@ -15,13 +15,11 @@ import { World } from './world/world';
 export class Jazz {
   private renderDataCallBack: (rd: RenderData) => void;
   private readonly renderDataDto = new RenderData();
-  private localFrame = 0;
-  private LocalInputStorage: InputStorageManagerLocal<InputAction> =
-    new InputStorageManagerLocal<InputAction>();
-  private _world?: World;
+  private readonly _world: World;
 
   constructor(renderDataCallBack: (rd: RenderData) => void) {
     this.renderDataCallBack = renderDataCallBack;
+    this._world = new World();
   }
 
   public get World(): World | undefined {
@@ -29,10 +27,11 @@ export class Jazz {
   }
 
   public Init(): void {
-    const p = new Player();
+    const p = new Player(0);
     p.SetStateMachine(new StateMachine(p));
     const s = defaultStage();
-    this._world = new World(p, s);
+    this._world.SetPlayer(p);
+    this._world.SetStage(s);
     p.SetWorld(this._world);
   }
 
@@ -46,12 +45,18 @@ export class Jazz {
     this.renderDataCallBackExec(frameTimeDelta);
   }
 
-  public UpdateLocalInputForCurrentFrame(ia: InputAction) {
-    this.UpdateLocalInput(ia, this.localFrame);
+  public UpdateLocalInputForCurrentFrame(ia: InputAction, pIndex: number) {
+    this.UpdateLocalInput(pIndex, ia, this.localFrame);
   }
 
-  private UpdateLocalInput(inputAction: InputAction, frameNumber: number) {
-    this.LocalInputStorage.StoreLocalInputForP1(frameNumber, inputAction);
+  private UpdateLocalInput(
+    pIndex: number,
+    inputAction: InputAction,
+    frameNumber: number
+  ) {
+    this._world
+      .GetInputManager(pIndex)
+      .StoreInputForFrame(frameNumber, inputAction);
   }
 
   private renderDataCallBackExec(frameTime: number = 0) {
@@ -61,12 +66,12 @@ export class Jazz {
   }
 
   private Tick() {
-    const p1Input = this.LocalInputStorage.GetP1LocalInputForFrame(
-      this.localFrame
-    );
+    const p1Input = this._world
+      .GetInputManager(this.World!.Player!.ID)
+      .GetInputForFrame(this.localFrame);
 
-    const p = this._world!.player!;
-    const s = this._world!.stage!;
+    const p = this._world!.Player!;
+    const s = this._world!.Stage!;
 
     PlayerInput(p, p1Input);
     Gravity(p);
@@ -85,5 +90,13 @@ export class Jazz {
     this._world?.ProjResPool.Zero();
 
     this.localFrame++;
+  }
+
+  private get localFrame() {
+    return this._world.localFrame;
+  }
+
+  private set localFrame(frame: number) {
+    this._world.localFrame = frame;
   }
 }

@@ -10,8 +10,10 @@ import { VecPool } from '../../JavaScript/game/pools/VecResultPool';
 
 test('stage collision ground', () => {
   const stage = defaultStage();
-  const p = new Player();
-  const world = new World(p, stage);
+  const p = new Player(0);
+  const world = new World();
+  world.SetPlayer(p);
+  world.SetStage(stage);
   p.SetWorld(world);
   p.SetPlayerInitialPosition(700, 455.0);
 
@@ -30,8 +32,10 @@ test('stage collision ground', () => {
 
 test('stage collision ground from air', () => {
   const stage = defaultStage();
-  const p = new Player();
-  const world = new World(p, stage);
+  const p = new Player(0);
+  const world = new World();
+  world.SetPlayer(p);
+  world.SetStage(stage);
   p.SetWorld(world);
   p.SetPlayerInitialPosition(680, 430.0);
 
@@ -66,8 +70,10 @@ test('stage collision ground from air', () => {
 
 test('stage collision right wall', () => {
   const stage = defaultStage();
-  const p = new Player();
-  const world = new World(p, stage);
+  const p = new Player(0);
+  const world = new World();
+  world.SetPlayer(p);
+  world.SetStage(stage);
   p.SetWorld(world);
   p.SetPlayerInitialPosition(555, 525);
 
@@ -83,8 +89,10 @@ test('stage collision right wall', () => {
 
 test('stage collision corner case', () => {
   const stage = defaultStage();
-  const p = new Player();
-  const world = new World(p, stage);
+  const p = new Player(0);
+  const world = new World();
+  world.SetPlayer(p);
+  world.SetStage(stage);
   p.SetWorld(world);
   p.SetPlayerInitialPosition(595, 460);
   const colided = StageCollisionDetection(

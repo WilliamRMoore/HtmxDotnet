@@ -129,7 +129,7 @@ function ProjectVerticies(
   let min = Number.MAX_SAFE_INTEGER;
   let max = Number.MIN_SAFE_INTEGER;
 
-  const vRes = vecPool.Rent(); //VectorResultAllocator(0, 0);
+  const vRes = vecPool.Rent();
 
   for (let i = 0; i < verticies.length; i++) {
     const v = verticies[i];

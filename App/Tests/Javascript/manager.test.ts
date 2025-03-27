@@ -9,11 +9,11 @@ test('input storage manager', () => {
   const secondInput = NewInputAction();
   secondInput.Action = GameEvents.jump;
 
-  ism.StoreLocalInputForP1(0, firstInput);
-  ism.StoreLocalInputForP1(1, secondInput);
+  ism.StoreInputForFrame(0, firstInput);
+  ism.StoreInputForFrame(1, secondInput);
 
-  expect(ism.GetP1LocalInputForFrame(0).Action).toBe(GameEvents.idle);
-  expect(ism.GetP1LocalInputForFrame(1).Action).toBe(GameEvents.jump);
+  expect(ism.GetInputForFrame(0).Action).toBe(GameEvents.idle);
+  expect(ism.GetInputForFrame(1).Action).toBe(GameEvents.jump);
 });
 
 // npx jest

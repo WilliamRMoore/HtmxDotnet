@@ -118,35 +118,23 @@ export class InputStorageManagerLocal<Type>
   implements IInputStorageManagerLocal<Type>
 {
   private readonly P1localInputStore: Array<Type>;
-  private readonly P2localInputStore: Array<Type>;
 
   constructor() {
     this.P1localInputStore = new Array<Type>(1000);
-    this.P2localInputStore = new Array<Type>(1000);
   }
 
-  StoreLocalInputForP1(frame: number, input: Type): void {
+  StoreInputForFrame(frame: number, input: Type): void {
     this.P1localInputStore[frame] = input;
   }
 
-  StoreLocalInputForP2(frame: number, input: Type): void {
-    this.P2localInputStore[frame] = input;
-  }
-
-  GetP1LocalInputForFrame(frame: number): Type {
+  GetInputForFrame(frame: number): Type {
     return this.P1localInputStore[frame];
-  }
-
-  GetP2LocalInputForFrame(frame: number): Type {
-    return this.P2localInputStore[frame];
   }
 }
 
 export interface IInputStorageManagerLocal<Type> {
-  StoreLocalInputForP1(frame: number, input: Type): void;
-  StoreLocalInputForP2(frame: number, input: Type): void;
-  GetP1LocalInputForFrame(frame: number): Type;
-  GetP2LocalInputForFrame(frame: number): Type;
+  StoreInputForFrame(frame: number, input: Type): void;
+  GetInputForFrame(frame: number): Type;
 }
 
 export class FrameComparisonManager<Type>

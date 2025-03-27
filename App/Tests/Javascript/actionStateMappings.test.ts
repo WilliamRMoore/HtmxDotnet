@@ -52,10 +52,15 @@ test('TURN', () => {
 
 test('WALK', () => {
   expect(WALK_RELATIONS.mappings.getMapping(GameEvents.idle)).toBe(STATES.IDLE);
-  expect(WALK_RELATIONS.mappings.getMapping(GameEvents.turn)).toBe(STATES.TURN);
   expect(WALK_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
     STATES.JUMP_SQUAT
   );
+
+  const conditions = WALK_RELATIONS.mappings.GetConditions();
+
+  const cond = conditions?.find((c) => c.Name == 'WalkToRun');
+
+  expect(cond).not.toBeUndefined();
 });
 
 test('DASH', () => {
@@ -89,12 +94,15 @@ test('RUN', () => {
   expect(RUN_RELATIONS.mappings.getMapping(GameEvents.idle)).toBe(
     STATES.STOP_RUN
   );
-  expect(RUN_RELATIONS.mappings.getMapping(GameEvents.turn)).toBe(
-    STATES.RUN_TURN
-  );
   expect(RUN_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
     STATES.JUMP_SQUAT
   );
+
+  const con = RUN_RELATIONS.mappings.GetConditions();
+
+  var c = con?.find((c) => c.Name == 'RunToTurn');
+
+  expect(c).not.toBeUndefined();
 });
 
 test('RUN_TURN', () => {

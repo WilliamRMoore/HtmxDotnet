@@ -46,18 +46,9 @@ export type FSMState = {
   StateId: number;
   FrameLength?: number;
   InteruptFrame?: number;
-  ConditionalStateId?: (
-    p: Player,
-    inputAction: InputAction
-  ) => number | undefined;
   OnEnter?: (p: Player, ia?: InputAction) => void;
   OnUpdate?: (p: Player, inputAction?: InputAction) => void;
   OnExit?: (p: Player) => void;
-  Condition?: (
-    p: Player,
-    _previousInputAction: InputAction,
-    InputAction: InputAction
-  ) => stateId | undefined;
 };
 
 export class StateMachine {
@@ -152,7 +143,8 @@ export class StateMachine {
 
   public UpdateFromInput(inputAction: InputAction): void {
     // if we have a conditional on the state, check it
-    if (this.RunConditional(inputAction)) {
+    const condtionalStateId = this.RunConditional(inputAction);
+    if (condtionalStateId) {
       return;
     }
     //we didn't meet the condition, move to next code path
@@ -195,23 +187,35 @@ export class StateMachine {
   }
 
   private RunConditional(inputAction: InputAction): boolean {
-    if (this._currentState.Condition) {
-      // get the conditional state Id
-      const condtionalStateId = this._currentState.Condition(
+    const mappings = this._stateMappings.get(this._currentState.StateId);
+    const conditionsCollection = mappings?.GetConditions();
+    const conditions = conditionsCollection;
+
+    if (conditions === undefined) {
+      return false;
+    }
+
+    const conditionalsLength = conditions.length;
+
+    for (let i = 0; i < conditionalsLength; i++) {
+      const res = conditions[i].ConditionFunc(
         this._player,
-        this._previousInputAction,
-        inputAction
+        this._player.World!.localFrame!,
+        inputAction,
+        this.GetPreviousInputForPlayer()
       );
 
-      if (condtionalStateId != undefined) {
-        const stateTranslation = this._states.get(condtionalStateId);
-        if (stateTranslation != undefined) {
-          this.changeState(stateTranslation, inputAction);
-          this.updateState(inputAction);
-          return true;
+      if (res !== undefined) {
+        const state = this._states.get(res);
+
+        if (state == undefined) {
+          return false;
         }
+
+        this.changeState(state, inputAction);
+        this.updateState(inputAction);
+        return true;
       }
-      return false;
     }
     return false;
   }
@@ -272,5 +276,16 @@ export class StateMachine {
     }
 
     return false;
+  }
+
+  private GetPreviousInputForPlayer(): InputAction | undefined {
+    const p = this._player;
+    const localFrame = p.World!.localFrame;
+
+    if (localFrame < 1) {
+      return undefined;
+    }
+
+    return p.World!.GetInputManager(p.ID).GetInputForFrame(localFrame - 1);
   }
 }

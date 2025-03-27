@@ -145,6 +145,7 @@ export class ECBComponent {
   private PrevVerts = new Array<FlatVec>(4);
   private Color: string;
   private AllVerts = new Array<FlatVec>(8);
+  private ccHull?: Array<FlatVec>;
 
   constructor(height: number = 100, width: number = 100, yOffset: number = 0) {
     this.Color = 'orange';
@@ -157,6 +158,9 @@ export class ECBComponent {
   }
 
   public GetHull() {
+    if (this.ccHull != undefined) {
+      return this.ccHull;
+    }
     this.LoadAllVerts();
     return createConvexHull(this.AllVerts);
   }
@@ -197,6 +201,7 @@ export class ECBComponent {
     this.Position.x = x;
     this.Position.y = y;
     this.Update();
+    this.ccHull = undefined;
   }
 
   Update(): void {

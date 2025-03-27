@@ -60,13 +60,14 @@ function _stageCollision(
   );
 
   if (collisionResult.collision) {
-    const vec = vecPool.Rent();
-    vec._setXY(collisionResult.normX, collisionResult.normY);
-    const move = vec.Negate().Multiply(collisionResult.depth);
-
     const normalX = collisionResult.normX;
     const normalY = collisionResult.normY;
     const playerPosDTO = vecPool.Rent().SetFromFlatVec(p.Postion);
+    const move = vecPool
+      .Rent()
+      ._setXY(normalX, normalY)
+      .Negate()
+      .Multiply(collisionResult.depth);
 
     //Ground correction
     if (normalX == 0 && normalY > 0) {
@@ -74,6 +75,7 @@ function _stageCollision(
       move.AddToY(correctionDepth);
       playerPosDTO.Add(move);
       p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
+
       return GROUND_COLLISION;
     }
 
@@ -106,8 +108,7 @@ function _stageCollision(
 
     // corner case, literally
     if (Math.abs(normalX) > 0 && Math.abs(normalY) > 0) {
-      const fix = move.X <= 0 ? move.Y : -move.Y;
-      move.AddToX(fix);
+      move.AddToX(move.X <= 0 ? move.Y : -move.Y); // add the y valie into x
       move._setY(0);
       playerPosDTO.Add(move);
       p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
@@ -164,7 +165,6 @@ export function ApplyVelocty(p: Player) {
     playerVelocity.x += aerialVelocityDecay;
   }
 
-  // What if we are fast falling?
   if (pvy > fallSpeed) {
     playerVelocity.y -= aerialVelocityDecay;
   }
@@ -178,9 +178,9 @@ export function ApplyVelocty(p: Player) {
   }
 }
 
-export function OutOfBoundsCheck(w: World) {
-  const pPos = w.player!.Postion;
-  const deathBoundry = w.stage!.DeathBoundry;
+export function OutOfBoundsCheck(p: Player) {
+  const pPos = p.Postion;
+  const deathBoundry = p.World!.Stage!.DeathBoundry!;
 
   if (pPos.y < deathBoundry.topBoundry) {
     // kill player if in hit stun.

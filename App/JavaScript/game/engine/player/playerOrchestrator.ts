@@ -1,5 +1,6 @@
 import { stateId } from '../../FSM/FiniteState';
 import { StateMachine } from '../../FSM/FiniteStateMachine';
+import { InputAction } from '../../loops/Input';
 import { FlatVec } from '../physics/vector';
 import { World } from '../world/world';
 import {
@@ -28,6 +29,8 @@ const defaultSpeedsBuilderOptions: speedBuilderOptions = (
 
 export class Player {
   private _world?: World;
+  private _stateMachine?: StateMachine;
+
   private readonly _Position: PositionComponent;
   private readonly _Velocity: VelocityComponent;
   private readonly _Flags: PlayerFlagsComponent;
@@ -35,9 +38,12 @@ export class Player {
   private readonly _ECB: ECBComponent;
   private readonly _Jump: JumpComponent;
   private readonly _FSMInfo: FSMInfo;
-  private _stateMachine?: StateMachine;
+  public readonly ID: number = 0;
 
-  constructor(sbo: speedBuilderOptions = defaultSpeedsBuilderOptions) {
+  constructor(
+    Id: number,
+    sbo: speedBuilderOptions = defaultSpeedsBuilderOptions
+  ) {
     const speedsBuilder = new SpeedsComponentBuilder();
     sbo(speedsBuilder);
 
@@ -82,8 +88,6 @@ export class Player {
       this._Speeds.MaxRunSpeed,
       impulse * this._Speeds.RunSpeedMultiplier
     );
-
-    return;
   }
 
   public AddDashImpulse(): void {
@@ -99,7 +103,6 @@ export class Player {
       this._Speeds.MaxDashSpeed,
       -this._Speeds.DashImpulse
     );
-    return;
   }
 
   public AddJumpImpulse(): void {
@@ -152,7 +155,7 @@ export class Player {
   }
 
   public IsGrounded(): boolean {
-    const grnd = this._world?.stage?.StageVerticies?.GetGround() ?? undefined;
+    const grnd = this._world?.Stage?.StageVerticies?.GetGround() ?? undefined;
 
     if (grnd == undefined) {
       return false;
@@ -176,6 +179,11 @@ export class Player {
 
   public GetCCHull(): FlatVec[] {
     return this._ECB.GetHull();
+  }
+
+  public GetInputForFrame(frame: number): InputAction | undefined {
+    const manager = this._world!.GetInputManager(this.ID);
+    return manager.GetInputForFrame(frame);
   }
 
   public get Postion(): FlatVec {
@@ -212,6 +220,10 @@ export class Player {
 
   public get StateMachine(): StateMachine | undefined {
     return this._stateMachine;
+  }
+
+  public get World(): World | undefined {
+    return this._world;
   }
 
   public FastFallOn(): void {
