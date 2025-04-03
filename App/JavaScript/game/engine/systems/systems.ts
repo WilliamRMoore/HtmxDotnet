@@ -1,12 +1,6 @@
-import { InputAction } from '../../loops/Input';
 import { IntersectsPolygons } from '../physics/collisions';
 import { STATES } from '../../FSM/FiniteState';
-import { Player } from '../player/playerOrchestrator';
-import { Stage } from '../stage/stageComponents';
 import { World } from '../world/world';
-import { VecPool } from '../../pools/VecResultPool';
-import { CollisionResultPool } from '../../pools/CollisionResultPool';
-import { ProjectionResultPool } from '../../pools/ProjectResultPool';
 
 const correctionDepth: number = 0.01;
 export const GROUND_COLLISION: number = 0;
@@ -16,16 +10,13 @@ export const CEILING_COLLISION: number = 3;
 export const CORNER_COLLISION: number = 4;
 export const NO_COLLISION: number = 5;
 
-export function StageCollisionDetection(
-  p: Player,
-  s: Stage,
-  vecPool: VecPool,
-  colResPool: CollisionResultPool,
-  projResPool: ProjectionResultPool
-): number {
+export function StageCollisionDetection(world: World): number {
+  const p = world.Player!;
+  const sm = world.StateMachine!;
+
   const playerVelY = p.Velocity.y;
 
-  var collision = _stageCollision(p, s, vecPool, colResPool, projResPool);
+  var collision = _stageCollision(world);
 
   if (collision === NO_COLLISION) {
     return NO_COLLISION;
@@ -33,20 +24,20 @@ export function StageCollisionDetection(
 
   if (collision === GROUND_COLLISION) {
     const landState = playerVelY > 2 ? STATES.LAND : STATES.SOFT_LAND;
-    p.StateMachine?.UpdateFromWorld(landState);
+    sm.UpdateFromWorld(landState);
     return collision;
   }
 
   return collision;
 }
 
-function _stageCollision(
-  p: Player,
-  s: Stage,
-  vecPool: VecPool,
-  colResPool: CollisionResultPool,
-  projResPool: ProjectionResultPool
-): number {
+function _stageCollision(world: World): number {
+  const s = world.Stage!;
+  const p = world.Player!;
+  const vecPool = world.VecPool;
+  const colResPool = world.ColResPool;
+  const projResPool = world.ProjResPool;
+
   const stageVerts = s.StageVerticies.GetVerts();
   const playerVerts = p.GetCCHull();
 
@@ -122,8 +113,10 @@ function _stageCollision(
   return NO_COLLISION;
 }
 
-export function Gravity(p: Player) {
-  if (!p.IsGrounded()) {
+export function Gravity(world: World) {
+  const p = world.Player!;
+  const s = world.Stage!;
+  if (!p.IsGrounded(s)) {
     const grav = p.Gravity;
     const fallSpeed = p.IsFastFalling() ? p.FastFallSpeed : p.FallSpeed;
     const GravMutliplier = p.IsFastFalling() ? 1.4 : 1;
@@ -131,12 +124,19 @@ export function Gravity(p: Player) {
   }
 }
 
-export function PlayerInput(p: Player, ia: InputAction) {
-  p.StateMachine?.UpdateFromInput(ia);
+export function PlayerInput(world: World) {
+  const p1Input = world
+    .GetInputManager(world!.Player!.ID)
+    .GetInputForFrame(world.localFrame);
+
+  world?.StateMachine?.UpdateFromInput(p1Input, world);
 }
 
-export function ApplyVelocty(p: Player) {
-  const grounded = p.IsGrounded();
+export function ApplyVelocty(world: World) {
+  const p = world.Player!;
+  const s = world.Stage!;
+
+  const grounded = p.IsGrounded(s);
   const playerVelocity = p.Velocity;
   const pvx = playerVelocity.x;
   const pvy = playerVelocity.y;
@@ -178,9 +178,12 @@ export function ApplyVelocty(p: Player) {
   }
 }
 
-export function OutOfBoundsCheck(p: Player) {
+export function OutOfBoundsCheck(world: World) {
+  const p = world.Player!;
+  const s = world.Stage!;
+
   const pPos = p.Postion;
-  const deathBoundry = p.World!.Stage!.DeathBoundry!;
+  const deathBoundry = s.DeathBoundry!;
 
   if (pPos.y < deathBoundry.topBoundry) {
     // kill player if in hit stun.

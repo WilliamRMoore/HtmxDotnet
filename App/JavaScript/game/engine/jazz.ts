@@ -1,9 +1,7 @@
-import { StateMachine } from '../FSM/FiniteStateMachine';
 import { InputAction } from '../loops/Input';
 import { RenderData } from '../render/debug-2d';
-import { InputStorageManagerLocal } from './engine-state-management/Managers';
 import { Player } from './player/playerOrchestrator';
-import { defaultStage, Stage } from './stage/stageComponents';
+import { defaultStage } from './stage/stageComponents';
 import {
   ApplyVelocty,
   Gravity,
@@ -28,11 +26,9 @@ export class Jazz {
 
   public Init(): void {
     const p = new Player(0);
-    p.SetStateMachine(new StateMachine(p));
     const s = defaultStage();
     this._world.SetPlayer(p);
     this._world.SetStage(s);
-    p.SetWorld(this._world);
   }
 
   public tick() {
@@ -60,36 +56,69 @@ export class Jazz {
   }
 
   private renderDataCallBackExec(frameTime: number = 0) {
+    const worldPlayer = this._world.Player;
+    const worldStage = this._world.Stage;
+    const playerRenderData = this.renderDataDto.player;
+    const stageRenderData = this.renderDataDto.stage;
     this.renderDataDto.frameTime = frameTime;
     this.renderDataDto.frame = this.localFrame;
+    playerRenderData.postion.x = worldPlayer?.Postion.x ?? 0;
+    playerRenderData.postion.y = worldPlayer?.Postion.y ?? 0;
+    playerRenderData.facingRight = worldPlayer?.IsFacingRight() ?? true;
+
+    const curEcb = worldPlayer?.GetECBVerts();
+    const curEcbLength = curEcb?.length ?? 0;
+    playerRenderData.curEcb.length = curEcbLength;
+    for (let i = 0; i < curEcbLength; i++) {
+      const vec = playerRenderData.curEcb[i];
+      const newVec = curEcb![i];
+      vec.x = newVec.x;
+      vec.y = newVec.y;
+    }
+
+    const prevEcb = worldPlayer?.GetPrevECBVerts();
+    const prevEcbLength = prevEcb?.length ?? 0;
+    playerRenderData.curEcb.length = prevEcbLength;
+    for (let i = 0; i < prevEcbLength; i++) {
+      const vec = playerRenderData.prevEcb[i];
+      const newVec = prevEcb![i];
+      vec.x = newVec.x;
+      vec.y = newVec.y;
+    }
+
+    const ccHull = worldPlayer?.GetCCHull();
+    const ccHullLength = ccHull?.length ?? 0;
+    playerRenderData.ccHull.length = ccHullLength;
+    for (let i = 0; i < ccHullLength; i++) {
+      const vec = playerRenderData.ccHull[i];
+      const newVec = ccHull![i];
+      vec.x = newVec.x;
+      vec.y = newVec.y;
+    }
+
+    const stageVerts = worldStage?.StageVerticies.GetVerts();
+
+    stageRenderData.stage = stageVerts ?? [];
+    stageRenderData.leftLegd = worldStage?.Ledges.GetLeftLedge() ?? [];
+    stageRenderData.rightLegd = worldStage?.Ledges.GetRightLedge() ?? [];
+
     this.renderDataCallBack(this.renderDataDto);
   }
 
   private Tick() {
-    const p1Input = this._world
-      .GetInputManager(this.World!.Player!.ID)
-      .GetInputForFrame(this.localFrame);
+    const world = this._world;
 
-    const p = this._world!.Player!;
-    const s = this._world!.Stage!;
+    PlayerInput(world);
+    Gravity(world);
+    ApplyVelocty(world);
+    StageCollisionDetection(world);
 
-    PlayerInput(p, p1Input);
-    Gravity(p);
-    ApplyVelocty(p);
-    StageCollisionDetection(
-      p,
-      s,
-      this._world!.VecPool,
-      this._world!.ColResPool,
-      this._world!.ProjResPool
-    );
+    world.Player?.PostTickTask();
+    world?.VecPool.Zero();
+    world?.ColResPool.Zero();
+    world?.ProjResPool.Zero();
 
-    p.PostTickTask();
-    this._world?.VecPool.Zero();
-    this._world?.ColResPool.Zero();
-    this._world?.ProjResPool.Zero();
-
-    this.localFrame++;
+    world.localFrame++;
   }
 
   private get localFrame() {

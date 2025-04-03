@@ -14,20 +14,13 @@ test('stage collision ground', () => {
   const world = new World();
   world.SetPlayer(p);
   world.SetStage(stage);
-  p.SetWorld(world);
   p.SetPlayerInitialPosition(700, 455.0);
 
-  const collided = StageCollisionDetection(
-    p,
-    stage,
-    world.VecPool,
-    world.ColResPool,
-    world.ProjResPool
-  );
+  const collided = StageCollisionDetection(world);
 
   expect(collided).toBe(GROUND_COLLISION);
 
-  expect(p.IsGrounded()).toBeTruthy();
+  expect(p.IsGrounded(world.Stage!)).toBeTruthy();
 });
 
 test('stage collision ground from air', () => {
@@ -36,34 +29,21 @@ test('stage collision ground from air', () => {
   const world = new World();
   world.SetPlayer(p);
   world.SetStage(stage);
-  p.SetWorld(world);
   p.SetPlayerInitialPosition(680, 430.0);
 
-  const collided = StageCollisionDetection(
-    p,
-    stage,
-    world.VecPool,
-    world.ColResPool,
-    world.ProjResPool
-  );
+  const collided = StageCollisionDetection(world);
 
   expect(collided).toBe(NO_COLLISION);
 
-  expect(p.IsGrounded()).toBeFalsy();
+  expect(p.IsGrounded(world.Stage!)).toBeFalsy();
 
   p.SetPlayerPostion(700, 455.0);
 
-  const collided2 = StageCollisionDetection(
-    p,
-    stage,
-    world.VecPool,
-    world.ColResPool,
-    world.ProjResPool
-  );
+  const collided2 = StageCollisionDetection(world);
 
   expect(collided2).toBe(GROUND_COLLISION);
 
-  expect(p.IsGrounded()).toBeTruthy();
+  expect(p.IsGrounded(world.Stage!)).toBeTruthy();
 
   p.PostTickTask();
 });
@@ -74,16 +54,9 @@ test('stage collision right wall', () => {
   const world = new World();
   world.SetPlayer(p);
   world.SetStage(stage);
-  p.SetWorld(world);
   p.SetPlayerInitialPosition(555, 525);
 
-  const collided = StageCollisionDetection(
-    p,
-    stage,
-    world.VecPool,
-    world.ColResPool,
-    world.ProjResPool
-  );
+  const collided = StageCollisionDetection(world);
   expect(collided).toBeTruthy();
 });
 
@@ -93,15 +66,8 @@ test('stage collision corner case', () => {
   const world = new World();
   world.SetPlayer(p);
   world.SetStage(stage);
-  p.SetWorld(world);
   p.SetPlayerInitialPosition(595, 460);
-  const colided = StageCollisionDetection(
-    p,
-    stage,
-    world.VecPool,
-    world.ColResPool,
-    world.ProjResPool
-  );
+  const colided = StageCollisionDetection(world);
   expect(colided).toBeTruthy();
 });
 

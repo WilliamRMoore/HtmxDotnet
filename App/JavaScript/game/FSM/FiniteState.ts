@@ -1,5 +1,4 @@
-import { Player } from '../engine/player/playerOrchestrator';
-import { InputAction } from '../loops/Input';
+import { World } from '../engine/world/world';
 
 //Conditional functions =================================================
 type condition = {
@@ -7,19 +6,12 @@ type condition = {
   ConditionFunc: conditionFunc;
 };
 
-type conditionFunc = (
-  p: Player,
-  frame: number,
-  ia: InputAction,
-  prevIa: InputAction | undefined
-) => stateId | undefined;
+type conditionFunc = (world: World) => stateId | undefined;
 
-const IdleToTurn: conditionFunc = (
-  p: Player,
-  frame: number,
-  ia: InputAction,
-  prevIa?: InputAction | undefined
-) => {
+const IdleToTurn: conditionFunc = (world: World) => {
+  const p = world.Player!;
+  const ia = world.GetInputManager(0).GetInputForFrame(world.localFrame)!;
+
   if (p.IsFacingRight() && ia.LXAxsis < 0) {
     return STATES.TURN;
   }
@@ -31,12 +23,11 @@ const IdleToTurn: conditionFunc = (
   return undefined;
 };
 
-const WalkToTurn: conditionFunc = (
-  p: Player,
-  frame: number,
-  ia: InputAction,
-  prevIa?: InputAction | undefined
-) => {
+const WalkToTurn: conditionFunc = (world: World) => {
+  const p = world.Player!;
+  const ia = world.GetInputManager(p.ID).GetInputForFrame(world.localFrame)!;
+  const prevIa = world.GetPlayerPreviousInput(p.ID);
+
   if (prevIa === undefined) {
     return undefined;
   }
@@ -57,12 +48,11 @@ const WalkToTurn: conditionFunc = (
   return undefined;
 };
 
-const RuntToTurn: conditionFunc = (
-  p: Player,
-  frame: number,
-  ia: InputAction,
-  prevIa?: InputAction | undefined
-) => {
+const RuntToTurn: conditionFunc = (world: World) => {
+  const p = world.Player!;
+  const ia = world.GetInputManager(p.ID).GetInputForFrame(world.localFrame)!;
+  const prevIa = world.GetPlayerPreviousInput(p.ID);
+
   if (prevIa == undefined) {
     return undefined;
   }
@@ -84,12 +74,11 @@ const RuntToTurn: conditionFunc = (
   return undefined;
 };
 
-const DashToTurn: conditionFunc = (
-  p: Player,
-  frame: number,
-  ia: InputAction,
-  prevIa?: InputAction | undefined
-) => {
+const DashToTurn: conditionFunc = (world: World) => {
+  const p = world.Player!;
+  const ia = world.GetInputManager(p.ID).GetInputForFrame(world.localFrame)!;
+  const prevIa = world.GetPlayerPreviousInput(p.ID);
+
   if (prevIa === undefined) {
     return undefined;
   }

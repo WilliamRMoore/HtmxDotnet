@@ -17,7 +17,7 @@ import {
   Walk,
 } from '../CharacterStates/TestCharacterStates';
 import { Player } from '../engine/player/playerOrchestrator';
-import { GameEvents } from '../FSM/FiniteState';
+import { World } from '../engine/world/world';
 import { InputAction } from '../loops/Input';
 import {
   ActionStateMappings,
@@ -60,13 +60,7 @@ export class StateMachine {
     ActionStateMappings
   >();
   private _states: Map<stateId, FSMState> = new Map<stateId, FSMState>();
-  private _previousInputAction: InputAction = {
-    Action: GameEvents.idle,
-    LXAxsis: 0,
-    LYAxsis: 0,
-    RXAxis: 0,
-    RYAxsis: 0,
-  };
+
   constructor(p: Player) {
     this._player = p;
     this._currentState = Idle;
@@ -141,23 +135,23 @@ export class StateMachine {
     this.updateStateFromWorld();
   }
 
-  public UpdateFromInput(inputAction: InputAction): void {
+  public UpdateFromInput(inputAction: InputAction, world: World): void {
     // if we have a conditional on the state, check it
-    const condtionalStateId = this.RunConditional(inputAction);
-    if (condtionalStateId) {
-      return;
-    }
-    //we didn't meet the condition, move to next code path
-
-    //check for default
-    if (this.RunDefault(inputAction)) {
+    if (this.RunConditional(inputAction, world)) {
       return;
     }
 
+    // if our input is a valid transition, run it
     if (this.RunNext(inputAction)) {
       return;
     }
 
+    // if we have a default state, run it
+    if (this.RunDefault(inputAction)) {
+      return;
+    }
+
+    // None of the above? Update current state
     this.updateState(inputAction);
   }
 
@@ -174,49 +168,59 @@ export class StateMachine {
   }
 
   private RunDefault(inputAction: InputAction): boolean {
+    // Check to see if we are on a default frame
+    // If not, return false
     if (!this.IsDefaultFrame()) {
       return false;
     }
+
     const defaultTransition = this.GetDefaultState(this._currentState.StateId);
-    if (defaultTransition != undefined) {
-      this.changeState(defaultTransition, inputAction);
-      this.updateState(inputAction);
-      return true;
+
+    // No default transition resolved, return false
+    if (defaultTransition == undefined) {
+      return false;
     }
-    return false;
+
+    // Default transition resolved, change/update state, return true
+    this.changeState(defaultTransition, inputAction);
+    this.updateState(inputAction);
+
+    return true;
   }
 
-  private RunConditional(inputAction: InputAction): boolean {
+  private RunConditional(inputAction: InputAction, world: World): boolean {
     const mappings = this._stateMappings.get(this._currentState.StateId);
-    const conditionsCollection = mappings?.GetConditions();
-    const conditions = conditionsCollection;
+    const conditions = mappings?.GetConditions();
 
+    // We have no conditionals, return
     if (conditions === undefined) {
       return false;
     }
 
     const conditionalsLength = conditions.length;
 
+    // Loop through all conditionals, if one returns a stateId, run it and return true, otherwise return false
     for (let i = 0; i < conditionalsLength; i++) {
-      const res = conditions[i].ConditionFunc(
-        this._player,
-        this._player.World!.localFrame!,
-        inputAction,
-        this.GetPreviousInputForPlayer()
-      );
+      const res = conditions[i].ConditionFunc(world);
 
+      // Condition returned a stateId, check it
       if (res !== undefined) {
         const state = this._states.get(res);
 
+        // stateId did not resolve, return false
         if (state == undefined) {
           return false;
         }
 
+        // stateId resolved, change state and return true
         this.changeState(state, inputAction);
         this.updateState(inputAction);
+
         return true;
       }
     }
+
+    // None of the conditions returned a stateId, return false
     return false;
   }
 
@@ -257,7 +261,6 @@ export class StateMachine {
   private updateState(inputAction: InputAction) {
     this._currentState.OnUpdate?.(this._player, inputAction);
     this._stateFrameCount++;
-    this._previousInputAction = inputAction;
   }
 
   private updateStateFromWorld() {
@@ -276,16 +279,5 @@ export class StateMachine {
     }
 
     return false;
-  }
-
-  private GetPreviousInputForPlayer(): InputAction | undefined {
-    const p = this._player;
-    const localFrame = p.World!.localFrame;
-
-    if (localFrame < 1) {
-      return undefined;
-    }
-
-    return p.World!.GetInputManager(p.ID).GetInputForFrame(localFrame - 1);
   }
 }

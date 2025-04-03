@@ -69,14 +69,20 @@ export function populateControllerList(selectId)
     const gamePads = GetConnectedGamePads();
 
     if (gamePads === false) {
-        // Add a default option if no gamepads are detected
+        //Add a default option if no gamepads are detected
         const option = document.createElement("option");
         option.value = "";
         option.textContent = "No controllers connected";
         option.selected = true;
         elem.appendChild(option);
         return;
-    }
+   }else {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No controllers connected";
+    option.selected = true;
+    elem.appendChild(option);
+   }
 
        // Populate the select element with gamepad options
     gamePads.forEach((index, id) => {

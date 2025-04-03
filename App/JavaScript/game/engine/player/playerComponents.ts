@@ -336,6 +336,10 @@ export class ECBComponent {
     return this.CurVerts;
   }
 
+  public GetPrevVerts(): Array<FlatVec> {
+    return this.PrevVerts;
+  }
+
   public GetColor(): string {
     return this.Color;
   }

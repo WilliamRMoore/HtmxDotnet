@@ -10,6 +10,7 @@ import { Stage } from '../stage/stageComponents';
 export class World {
   private player?: Player;
   private stage?: Stage;
+  private stateMachine?: StateMachine;
   public readonly VecPool: VecPool;
   public readonly ColResPool: CollisionResultPool;
   public readonly ProjResPool: ProjectionResultPool;
@@ -27,6 +28,7 @@ export class World {
 
   public SetPlayer(p: Player): void {
     this.player = p;
+    this.stateMachine = new StateMachine(p);
   }
 
   public SetStage(s: Stage) {
@@ -37,8 +39,16 @@ export class World {
     return this.player;
   }
 
+  public get StateMachine(): StateMachine | undefined {
+    return this.stateMachine;
+  }
+
   public get Stage(): Stage | undefined {
     return this.stage;
+  }
+
+  public GetPlayerPreviousInput(playerId: number): InputAction | undefined {
+    return this.InputStorage[playerId].GetInputForFrame(this.localFrame - 1);
   }
 
   public GetInputManager(

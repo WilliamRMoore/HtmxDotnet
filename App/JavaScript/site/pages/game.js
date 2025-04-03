@@ -8,6 +8,7 @@ export function InitGamePage()
 
 function setUpListeners()
 {
+    debugger;
     /**
      * Controller refresh button
      *
@@ -15,14 +16,41 @@ function setUpListeners()
      */
     const btn = document.getElementById('refresh-gamepad-select');
 
-    btn.addEventListener('click', refreshGamePadList)
+    btn.addEventListener('click', refreshGamePadList);
 
     window.addEventListener("gamepadconnected", (event) => {
         console.log("Gamepad connected:", event.gamepad);
       });
+    
+      
+    /**
+     * Description placeholder
+     *
+     * @type {HTMLSelectElement}
+     */
+    const select = document.getElementById("gamepad-select");
+
+
+    select.addEventListener("change", (event) => {
+
+        const selectedValue = event.target.value;
+
+        console.log("Selected gamepad:", selectedValue);
+
+        
+        /**
+         * button to start game
+         *
+         * @type {HTMLButtonElement}
+         */
+        const btn = document.getElementById('start-game');
+
+        btn.disabled = false;
+    });
 }
 
 function refreshGamePadList()
 {
     populateControllerList("gamepad-select");
 }
+

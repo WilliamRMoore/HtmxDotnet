@@ -1,23 +1,23 @@
 import { Jazz } from '../engine/jazz';
+import { STATES } from '../FSM/FiniteState';
 import { NewMessageFromLocalInput } from '../network/protocol';
 import { DebugRenderer, RenderData, resolution } from '../render/debug-2d';
 import { RENDERFPS60Loop } from './FPS60LoopExecutor';
 import { GetInput, listenForGamePadInput } from './Input';
 
-let localFrame = 0;
 let renderData = new RenderData();
 const frameInterval = 1000 / 60;
 
-export function start() {
+export function start(localPlayerIndex: number = 0) {
   debugger;
-  INPUT_LOOP();
+  INPUT_LOOP(localPlayerIndex);
   LOGIC_LOOP();
   RENDER_LOOP();
 }
 
-function INPUT_LOOP() {
-  const p1Controller = getPlayerControllerIndex();
-  listenForGamePadInput(p1Controller);
+function INPUT_LOOP(playerIndex: number) {
+  //const p1Controller = getPlayerControllerIndex();
+  listenForGamePadInput(playerIndex);
 }
 
 function LOGIC_LOOP() {
@@ -26,6 +26,9 @@ function LOGIC_LOOP() {
     renderData.frameTime = newRdDto.frameTime;
   });
 
+  engine.Init();
+  engine.World?.Player?.SetPlayerInitialPosition(610, 100);
+  engine.World?.StateMachine?.SetInitialState(STATES.N_FALL);
   const logicLoopHandle = setInterval(() => {
     logicStep(engine);
   }, frameInterval);
@@ -40,14 +43,13 @@ function RENDER_LOOP() {
   });
 }
 
-function getPlayerControllerIndex(): number {
-  return 0;
-}
+// function getPlayerControllerIndex(): number {
+//   return 0;
+// }
 
 function logicStep(engine: Jazz) {
   const input = GetInput();
-  const message = NewMessageFromLocalInput(input, localFrame);
-  engine.postMessage(message);
-
-  localFrame++;
+  //const message = NewMessageFromLocalInput(input, localFrame);
+  engine.UpdateLocalInputForCurrentFrame(input, 0);
+  engine.tick();
 }

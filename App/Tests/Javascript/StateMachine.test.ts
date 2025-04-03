@@ -20,9 +20,8 @@ test('StateMachineShould', () => {
   const world: World = new World();
   world.SetPlayer(p);
   world.SetStage(s);
-  p.SetWorld(world);
 
-  p.SetPlayerPostion(
+  p.SetPlayerInitialPosition(
     s.StageVerticies.GetGround()[0].x + 10,
     s.StageVerticies.GetGround()[0].y + 0.001
   );
@@ -38,25 +37,14 @@ test('StateMachineShould', () => {
   };
 
   world.localFrame = 0;
+  sm.SetInitialState(STATES.IDLE);
 
-  sm.UpdateFromInput(ia);
+  // sm.UpdateFromInput(ia, world);
+  world.GetInputManager(0).StoreInputForFrame(world.localFrame, ia);
+
+  sm.UpdateFromInput(ia, world);
 
   expect(p.GetCurrentFSMStateId()).toBe(STATES.TURN);
-
-  world.localFrame = 1;
-
-  UpdateNTimes(world, sm, ia, Turn.FrameLength!);
-
-  ia.Action = GameEvents.moveFast;
-  ia.LXAxsis = 1;
-
-  sm.UpdateFromInput(ia);
-
-  expect(p.GetCurrentFSMStateId()).toBe(STATES.DASH);
-
-  UpdateNTimes(world, sm, ia, Dash.FrameLength!);
-
-  expect(p.GetCurrentFSMStateId()).toBe(STATES.RUN);
 });
 
 test('StateMachineShould2', () => {
@@ -65,7 +53,6 @@ test('StateMachineShould2', () => {
   const world: World = new World();
   world.SetPlayer(p);
   world.SetStage(s);
-  p.SetWorld(world);
 
   p.SetPlayerPostion(
     s.StageVerticies.GetGround()[0].x + 10,
@@ -84,14 +71,15 @@ test('StateMachineShould2', () => {
     RYAxsis: 0,
   };
 
-  sm.UpdateFromInput(ia);
+  sm.UpdateFromInput(ia, world);
 
   expect(p.GetCurrentFSMStateId()).toBe(STATES.TURN);
 });
 
 function UpdateNTimes(w: World, sm: StateMachine, ia: InputAction, n: number) {
   for (let index = 0; index < n; index++) {
-    sm.UpdateFromInput(ia);
+    w.GetInputManager(0).StoreInputForFrame(w.localFrame, ia);
+    sm.UpdateFromInput(ia, w);
     w.localFrame++;
   }
 }

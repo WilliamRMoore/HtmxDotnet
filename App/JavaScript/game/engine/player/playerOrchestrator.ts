@@ -1,8 +1,6 @@
 import { stateId } from '../../FSM/FiniteState';
-import { StateMachine } from '../../FSM/FiniteStateMachine';
-import { InputAction } from '../../loops/Input';
 import { FlatVec } from '../physics/vector';
-import { World } from '../world/world';
+import { Stage } from '../stage/stageComponents';
 import {
   ECBComponent,
   FSMInfo,
@@ -28,9 +26,6 @@ const defaultSpeedsBuilderOptions: speedBuilderOptions = (
 };
 
 export class Player {
-  private _world?: World;
-  private _stateMachine?: StateMachine;
-
   private readonly _Position: PositionComponent;
   private readonly _Velocity: VelocityComponent;
   private readonly _Flags: PlayerFlagsComponent;
@@ -47,6 +42,7 @@ export class Player {
     const speedsBuilder = new SpeedsComponentBuilder();
     sbo(speedsBuilder);
 
+    this.ID = Id;
     this._Position = new PositionComponent();
     this._Velocity = new VelocityComponent();
     this._Speeds = speedsBuilder.Build();
@@ -62,14 +58,6 @@ export class Player {
 
   public GetCurrentFSMStateId(): stateId {
     return this._FSMInfo.StateId;
-  }
-
-  public SetWorld(world: World) {
-    this._world = world;
-  }
-
-  public SetStateMachine(sm: StateMachine) {
-    this._stateMachine = sm;
   }
 
   public AddClampedXImpulse(clamp: number, impulse: number): void {
@@ -154,9 +142,9 @@ export class Player {
     this._ECB.MoveToPosition(pos.x, pos.y);
   }
 
-  public IsGrounded(): boolean {
-    const grnd = this._world?.Stage?.StageVerticies?.GetGround() ?? undefined;
-
+  public IsGrounded(s: Stage): boolean {
+    //const grnd = this._world?.Stage?.StageVerticies?.GetGround() ?? undefined;
+    const grnd = s.StageVerticies.GetGround();
     if (grnd == undefined) {
       return false;
     }
@@ -177,13 +165,12 @@ export class Player {
     return this._ECB.GetVerts();
   }
 
-  public GetCCHull(): FlatVec[] {
-    return this._ECB.GetHull();
+  public GetPrevECBVerts(): FlatVec[] {
+    return this._ECB.GetPrevVerts();
   }
 
-  public GetInputForFrame(frame: number): InputAction | undefined {
-    const manager = this._world!.GetInputManager(this.ID);
-    return manager.GetInputForFrame(frame);
+  public GetCCHull(): FlatVec[] {
+    return this._ECB.GetHull();
   }
 
   public get Postion(): FlatVec {
@@ -216,14 +203,6 @@ export class Player {
 
   public get AerialVelocityDecay(): number {
     return this._Speeds.AerialVelocityDecay;
-  }
-
-  public get StateMachine(): StateMachine | undefined {
-    return this._stateMachine;
-  }
-
-  public get World(): World | undefined {
-    return this._world;
   }
 
   public FastFallOn(): void {
