@@ -121,7 +121,7 @@ const watchSite = async () => {
 const watchGame = async () => {
     console.log('Watching game for changes...');
     //createDirIfNotExists('wwwroot/dist/js/game');
-    const gctx = esbuild.context({
+    const gctx = await esbuild.context({
         entryPoints: ['JavaScript/game/index.ts'],
         bundle: true,
         outdir: 'wwwroot/dist/js/game',

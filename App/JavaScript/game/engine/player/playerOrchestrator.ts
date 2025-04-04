@@ -93,12 +93,12 @@ export class Player {
     );
   }
 
-  public AddJumpImpulse(): void {
-    if (this._Jump.HasJumps()) {
-      this._Velocity.Vel.y = -this._Jump.JumpVelocity;
-      this._Jump.IncrementJumps();
-    }
-  }
+  // public AddJumpImpulse(): void {
+  //   if (this._Jump.HasJumps()) {
+  //     this._Velocity.Vel.y = -this._Jump.JumpVelocity;
+  //     this._Jump.IncrementJumps();
+  //   }
+  // }
 
   // This method is for inputs from the player
   public AddGravityImpulse(impulse: number, clamp: number): void {
@@ -173,6 +173,10 @@ export class Player {
     return this._ECB.GetHull();
   }
 
+  public HasJumps(): boolean {
+    return this._Jump.HasJumps();
+  }
+
   public get Postion(): FlatVec {
     return this._Position.Pos;
   }
@@ -205,6 +209,42 @@ export class Player {
     return this._Speeds.AerialVelocityDecay;
   }
 
+  public get JumpVelocity(): number {
+    return this._Jump.JumpVelocity;
+  }
+
+  public get ECBLeft(): FlatVec {
+    return this._ECB.Left();
+  }
+
+  public get PrevECBLeft(): FlatVec {
+    return this._ECB.PrevLeft();
+  }
+
+  public get ECBRight(): FlatVec {
+    return this._ECB.Right();
+  }
+
+  public get PrevECBRight(): FlatVec {
+    return this._ECB.PrevRight();
+  }
+
+  public get ECBTop(): FlatVec {
+    return this._ECB.Top();
+  }
+
+  public get PrevECBTop(): FlatVec {
+    return this._ECB.PrevTop();
+  }
+
+  public get ECBBottom(): FlatVec {
+    return this._ECB.Bottom();
+  }
+
+  public get PrevECBBottom(): FlatVec {
+    return this._ECB.PrevBottom();
+  }
+
   public FastFallOn(): void {
     this._Flags.FastFallOn();
   }
@@ -231,6 +271,10 @@ export class Player {
 
   public FaceLeft() {
     this._Flags.FaceLeft();
+  }
+
+  public ResetJumpCount(): void {
+    this._Jump.ResetJumps();
   }
 
   public ChangeDirections() {

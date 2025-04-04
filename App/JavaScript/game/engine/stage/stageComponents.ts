@@ -27,10 +27,10 @@ export class StageVerticies {
   private Ceiling: Array<FlatVec> = new Array<FlatVec>();
 
   public constructor() {
-    let groundStart = new FlatVec(600, 450);
-    let groundEnd = new FlatVec(900, 450);
-    let rightBottom = new FlatVec(900, 500);
-    let leftBottom = new FlatVec(600, 500);
+    let groundStart = new FlatVec(500, 450);
+    let groundEnd = new FlatVec(1600, 450);
+    let rightBottom = new FlatVec(1600, 500);
+    let leftBottom = new FlatVec(500, 500);
 
     this.Verts.push(groundStart, groundEnd, rightBottom, leftBottom);
 

@@ -119,7 +119,7 @@ class _GameEvents {
   public readonly turn = 15;
   public readonly dashTurn = 16;
   public readonly land = 17;
-  public readonly softLad = 18;
+  public readonly softLand = 18;
 }
 
 export const GameEvents = new _GameEvents();
@@ -543,6 +543,8 @@ function InitNFallTranslations(): ActionStateMappings {
   nFallTranslations._setMappings([
     { geId: GameEvents.jump, sId: STATES.JUMP },
     { geId: GameEvents.down, sId: STATES.F_FALL },
+    { geId: GameEvents.land, sId: STATES.LAND },
+    { geId: GameEvents.softLand, sId: STATES.SOFT_LAND },
   ]);
 
   return nFallTranslations;

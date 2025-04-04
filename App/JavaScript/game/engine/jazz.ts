@@ -59,48 +59,33 @@ export class Jazz {
     const worldPlayer = this._world.Player;
     const worldStage = this._world.Stage;
     const playerRenderData = this.renderDataDto.player;
-    const stageRenderData = this.renderDataDto.stage;
     this.renderDataDto.frameTime = frameTime;
     this.renderDataDto.frame = this.localFrame;
-    playerRenderData.postion.x = worldPlayer?.Postion.x ?? 0;
-    playerRenderData.postion.y = worldPlayer?.Postion.y ?? 0;
+    playerRenderData.playerState =
+      this._world.StateMachine?.CurrentStateName ?? 'n/a';
+    playerRenderData.postionx = worldPlayer?.Postion.x ?? 0;
+    playerRenderData.postiony = worldPlayer?.Postion.y ?? 0;
     playerRenderData.facingRight = worldPlayer?.IsFacingRight() ?? true;
 
-    const curEcb = worldPlayer?.GetECBVerts();
-    const curEcbLength = curEcb?.length ?? 0;
-    playerRenderData.curEcb.length = curEcbLength;
-    for (let i = 0; i < curEcbLength; i++) {
-      const vec = playerRenderData.curEcb[i];
-      const newVec = curEcb![i];
-      vec.x = newVec.x;
-      vec.y = newVec.y;
-    }
+    playerRenderData.currentLeftX = worldPlayer?.ECBLeft.x ?? 0;
+    playerRenderData.currenltLeftY = worldPlayer?.ECBLeft.y ?? 0;
+    playerRenderData.currentRightX = worldPlayer?.ECBRight.x ?? 0;
+    playerRenderData.currentRightY = worldPlayer?.ECBRight.y ?? 0;
+    playerRenderData.currentTopX = worldPlayer?.ECBTop.x ?? 0;
+    playerRenderData.currentTopY = worldPlayer?.ECBTop.y ?? 0;
+    playerRenderData.currentBottomX = worldPlayer?.ECBBottom.x ?? 0;
+    playerRenderData.currentBottomY = worldPlayer?.ECBBottom.y ?? 0;
 
-    const prevEcb = worldPlayer?.GetPrevECBVerts();
-    const prevEcbLength = prevEcb?.length ?? 0;
-    playerRenderData.curEcb.length = prevEcbLength;
-    for (let i = 0; i < prevEcbLength; i++) {
-      const vec = playerRenderData.prevEcb[i];
-      const newVec = prevEcb![i];
-      vec.x = newVec.x;
-      vec.y = newVec.y;
-    }
+    playerRenderData.prevLeftX = worldPlayer?.PrevECBLeft.x ?? 0;
+    playerRenderData.prevLeftY = worldPlayer?.PrevECBLeft.y ?? 0;
+    playerRenderData.prevRightX = worldPlayer?.PrevECBRight.x ?? 0;
+    playerRenderData.prevRightY = worldPlayer?.PrevECBRight.y ?? 0;
+    playerRenderData.prevTopX = worldPlayer?.PrevECBTop.x ?? 0;
+    playerRenderData.prevTopY = worldPlayer?.PrevECBTop.y ?? 0;
+    playerRenderData.prevBottomX = worldPlayer?.PrevECBBottom.x ?? 0;
+    playerRenderData.prevBottomY = worldPlayer?.PrevECBBottom.y ?? 0;
 
-    const ccHull = worldPlayer?.GetCCHull();
-    const ccHullLength = ccHull?.length ?? 0;
-    playerRenderData.ccHull.length = ccHullLength;
-    for (let i = 0; i < ccHullLength; i++) {
-      const vec = playerRenderData.ccHull[i];
-      const newVec = ccHull![i];
-      vec.x = newVec.x;
-      vec.y = newVec.y;
-    }
-
-    const stageVerts = worldStage?.StageVerticies.GetVerts();
-
-    stageRenderData.stage = stageVerts ?? [];
-    stageRenderData.leftLegd = worldStage?.Ledges.GetLeftLedge() ?? [];
-    stageRenderData.rightLegd = worldStage?.Ledges.GetRightLedge() ?? [];
+    this.renderDataDto.stage = worldStage;
 
     this.renderDataCallBack(this.renderDataDto);
   }

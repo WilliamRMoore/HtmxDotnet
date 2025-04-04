@@ -163,9 +163,11 @@ export const Jump: FSMState = {
   StateId: STATES.JUMP,
   FrameLength: 5,
   OnEnter: (p: Player) => {
-    p.AddToPlayerYPosition(-0.5);
-    p.AddJumpImpulse();
-    console.log('Jump');
+    if (p.HasJumps()) {
+      p.AddToPlayerYPosition(-0.5);
+      p.Velocity.y = -p.JumpVelocity;
+      console.log('Jump');
+    }
   },
   OnExit: (p: Player) => {
     console.log('Exit Jump');
@@ -192,6 +194,9 @@ export const Land: FSMState = {
   FrameLength: 3,
   StateName: 'Land',
   StateId: STATES.LAND,
+  OnEnter: (p: Player) => {
+    p.ResetJumpCount();
+  },
 };
 
 export const SoftLand: FSMState = {

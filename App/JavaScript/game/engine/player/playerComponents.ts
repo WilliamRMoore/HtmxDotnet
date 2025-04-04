@@ -320,16 +320,32 @@ export class ECBComponent {
     return this.CurVerts[0];
   }
 
+  public PrevBottom(): FlatVec {
+    return this.PrevVerts[0];
+  }
+
   public Left(): FlatVec {
     return this.CurVerts[1];
+  }
+
+  public PrevLeft(): FlatVec {
+    return this.PrevVerts[1];
   }
 
   public Top(): FlatVec {
     return this.CurVerts[2];
   }
 
+  public PrevTop(): FlatVec {
+    return this.PrevVerts[2];
+  }
+
   public Right(): FlatVec {
     return this.CurVerts[3];
+  }
+
+  public PrevRight(): FlatVec {
+    return this.PrevVerts[3];
   }
 
   public GetVerts(): Array<FlatVec> {

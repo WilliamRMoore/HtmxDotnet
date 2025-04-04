@@ -1,5 +1,5 @@
 import { IntersectsPolygons } from '../physics/collisions';
-import { STATES } from '../../FSM/FiniteState';
+import { GameEvents, STATES } from '../../FSM/FiniteState';
 import { World } from '../world/world';
 
 const correctionDepth: number = 0.01;
@@ -23,7 +23,7 @@ export function StageCollisionDetection(world: World): number {
   }
 
   if (collision === GROUND_COLLISION) {
-    const landState = playerVelY > 2 ? STATES.LAND : STATES.SOFT_LAND;
+    const landState = playerVelY > 2 ? GameEvents.land : GameEvents.softLand;
     sm.UpdateFromWorld(landState);
     return collision;
   }
@@ -153,7 +153,9 @@ export function ApplyVelocty(world: World) {
     if (pvx < 0) {
       playerVelocity.x += groundedVelocityDecay;
     }
-
+    if (Math.abs(pvx) < 3) {
+      playerVelocity.x = 0;
+    }
     return;
   }
 

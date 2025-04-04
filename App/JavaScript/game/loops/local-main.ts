@@ -8,22 +8,21 @@ import { GetInput, listenForGamePadInput } from './Input';
 let renderData = new RenderData();
 const frameInterval = 1000 / 60;
 
-export function start(localPlayerIndex: number = 0) {
+export function start(localPlayerGamePadIndex: number = 0) {
   debugger;
-  INPUT_LOOP(localPlayerIndex);
+  INPUT_LOOP(localPlayerGamePadIndex);
   LOGIC_LOOP();
   RENDER_LOOP();
 }
 
-function INPUT_LOOP(playerIndex: number) {
+function INPUT_LOOP(gamePadIndex: number) {
   //const p1Controller = getPlayerControllerIndex();
-  listenForGamePadInput(playerIndex);
+  listenForGamePadInput(gamePadIndex);
 }
 
 function LOGIC_LOOP() {
   const engine = new Jazz((newRdDto: RenderData) => {
-    renderData.frame = newRdDto.frame;
-    renderData.frameTime = newRdDto.frameTime;
+    renderData = newRdDto;
   });
 
   engine.Init();

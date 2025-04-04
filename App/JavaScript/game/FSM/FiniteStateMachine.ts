@@ -128,11 +128,13 @@ export class StateMachine {
     this.changeState(this._states.get(stateId)!);
   }
 
-  public UpdateFromWorld(stateId: stateId) {
-    const state = this._states.get(stateId)!;
-
-    this.changeState(state);
-    this.updateStateFromWorld();
+  public UpdateFromWorld(gameEventId: gameEventId) {
+    const state = this.GetTranslation(gameEventId);
+    if (state != undefined) {
+      this.changeState(state);
+      this._currentState.OnUpdate?.(this._player);
+      this._stateFrameCount++;
+    }
   }
 
   public UpdateFromInput(inputAction: InputAction, world: World): void {
@@ -263,10 +265,10 @@ export class StateMachine {
     this._stateFrameCount++;
   }
 
-  private updateStateFromWorld() {
-    this._currentState.OnUpdate?.(this._player);
-    this._stateFrameCount++;
-  }
+  // private updateStateFromWorld() {
+  //   this._currentState.OnUpdate?.(this._player);
+  //   this._stateFrameCount++;
+  // }
 
   private IsDefaultFrame(): boolean {
     const fl = this._currentState.FrameLength;
@@ -279,5 +281,9 @@ export class StateMachine {
     }
 
     return false;
+  }
+
+  public get CurrentStateName(): string {
+    return this._currentState.StateName;
   }
 }
