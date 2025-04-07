@@ -129,12 +129,26 @@ export class StateMachine {
   }
 
   public UpdateFromWorld(gameEventId: gameEventId) {
+    // world events should still have to follow mapping rules
     const state = this.GetTranslation(gameEventId);
     if (state != undefined) {
       this.changeState(state);
       this._currentState.OnUpdate?.(this._player);
       this._stateFrameCount++;
     }
+  }
+
+  public ForceState(sateId: stateId) {
+    //ignore mapping rules and force a state change
+    const state = this._states.get(sateId);
+
+    if (state == undefined) {
+      return;
+    }
+
+    this.changeState(state);
+    this._currentState.OnUpdate?.(this._player);
+    this._stateFrameCount++;
   }
 
   public UpdateFromInput(inputAction: InputAction, world: World): void {
@@ -149,7 +163,7 @@ export class StateMachine {
     }
 
     // if we have a default state, run it
-    if (this.RunDefault(inputAction)) {
+    if (this.RunDefault(inputAction, world)) {
       return;
     }
 
@@ -169,14 +183,17 @@ export class StateMachine {
     return false;
   }
 
-  private RunDefault(inputAction: InputAction): boolean {
+  private RunDefault(inputAction: InputAction, w: World): boolean {
     // Check to see if we are on a default frame
     // If not, return false
     if (!this.IsDefaultFrame()) {
       return false;
     }
 
-    const defaultTransition = this.GetDefaultState(this._currentState.StateId);
+    const defaultTransition = this.GetDefaultState(
+      this._currentState.StateId,
+      w
+    );
 
     // No default transition resolved, return false
     if (defaultTransition == undefined) {
@@ -238,12 +255,13 @@ export class StateMachine {
     return undefined;
   }
 
-  private GetDefaultState(stateId: stateId): FSMState | undefined {
+  private GetDefaultState(stateId: stateId, w: World): FSMState | undefined {
     const state = this._stateMappings.get(stateId);
     if (state == undefined) {
       return undefined;
     }
-    const defaultStateId = state.getDefault();
+    const defaultStateCondition = state.getDefault();
+    const defaultStateId = defaultStateCondition?.ConditionFunc(w) ?? undefined;
 
     if (defaultStateId != undefined) {
       return this._states.get(defaultStateId);

@@ -1,5 +1,53 @@
 import { World } from '../engine/world/world';
 
+export type gameEventId = number;
+export type stateId = number;
+
+class _GameEvents {
+  public readonly upSpecial = 0;
+  public readonly downSpecial = 1;
+  public readonly sideSpecial = 2;
+  public readonly special = 3;
+  public readonly upAttack = 4;
+  public readonly downAttack = 5;
+  public readonly sideAttack = 6;
+  public readonly attack = 7;
+  public readonly idle = 8;
+  public readonly move = 9;
+  public readonly moveFast = 10;
+  public readonly jump = 11;
+  public readonly grab = 12;
+  public readonly guard = 13;
+  public readonly down = 14;
+  public readonly turn = 15;
+  public readonly dashTurn = 16;
+  public readonly land = 17;
+  public readonly softLand = 18;
+  public readonly fall = 19;
+}
+
+export const GameEvents = new _GameEvents();
+class _STATES {
+  public readonly IDLE = 0 as stateId;
+  public readonly START_WALK = 1 as stateId;
+  public readonly TURN = 2 as stateId;
+  public readonly WALK = 3 as stateId;
+  public readonly DASH = 4 as stateId;
+  public readonly DASH_TURN = 5 as stateId;
+  public readonly STOP_DASH = 6 as stateId;
+  public readonly STOP_RUN = 7 as stateId;
+  public readonly RUN_TURN = 8 as stateId;
+  public readonly STOP_RUN_TURN = 9 as stateId;
+  public readonly RUN = 10 as stateId;
+  public readonly JUMP_SQUAT = 11 as stateId;
+  public readonly JUMP = 12 as stateId;
+  public readonly N_FALL = 13 as stateId;
+  public readonly F_FALL = 14 as stateId;
+  public readonly LAND = 15 as stateId;
+  public readonly SOFT_LAND = 16 as stateId;
+}
+
+export const STATES = new _STATES();
 //Conditional functions =================================================
 type condition = {
   Name: string;
@@ -82,68 +130,142 @@ const DashToTurn: conditionFunc = (world: World) => {
   if (prevIa === undefined) {
     return undefined;
   }
-  const prevLax = prevIa.LXAxsis;
-  const curLax = ia.LXAxsis;
 
-  if (
-    (prevLax == 0 && p.IsFacingRight() && curLax < 0) ||
-    (prevLax == 0 && p.IsFacingLeft() && curLax > 0)
-  ) {
-    return STATES.DASH_TURN;
+  const prevLax = prevIa.LXAxsis; // Previous left stick X-axis
+  const curLax = ia.LXAxsis; // Current left stick X-axis
+  const laxDifference = curLax - prevLax; // Difference between current and previous X-axis
+  const threshold = 0.6; // Threshold for detecting significant variation
+
+  // Check if the variation exceeds the threshold and is in the opposite direction of the player's facing direction
+  if (p.IsFacingRight() && laxDifference < -threshold) {
+    // Player is facing right, but the stick moved significantly to the left
+    if (curLax < 0) {
+      return STATES.DASH_TURN;
+    }
+  }
+
+  if (p.IsFacingLeft() && laxDifference > threshold) {
+    // Player is facing left, but the stick moved significantly to the right
+    if (curLax > 0) {
+      return STATES.DASH_TURN;
+    }
+  }
+
+  // When do I register turn???
+  //return STATES.DASH_TURN;
+
+  // if (curLax === 0) {
+  //   return STATES.STOP_DASH;
+  // }
+
+  return undefined;
+};
+
+//const RunStopToTurn;
+
+const DashDefaultRunOrIdle: conditionFunc = (world: World) => {
+  const p = world.Player!;
+  const ia = world.GetInputManager(p.ID).GetInputForFrame(world.localFrame)!;
+
+  if (p.IsFacingRight() && ia.LXAxsis > 0) {
+    return STATES.RUN;
+  }
+
+  if (p.IsFacingLeft() && ia.LXAxsis < 0) {
+    return STATES.RUN;
+  }
+  return STATES.STOP_DASH;
+};
+
+const DashRunOrIdleCondition: condition = {
+  Name: 'DashRunOrIdle',
+  ConditionFunc: DashDefaultRunOrIdle,
+};
+
+const defaultWalk: condition = {
+  Name: 'Walk',
+  ConditionFunc: (w: World) => {
+    return STATES.WALK;
+  },
+};
+
+const defaultRun: condition = {
+  Name: 'Run',
+  ConditionFunc: (w: World) => {
+    return STATES.RUN;
+  },
+};
+
+const defaultIdle: condition = {
+  Name: 'Idle',
+  ConditionFunc: (w: World) => {
+    return STATES.IDLE;
+  },
+};
+
+const defaultDash: condition = {
+  Name: 'Dash',
+  ConditionFunc: (w: World) => {
+    return STATES.DASH;
+  },
+};
+
+const defaultJump: condition = {
+  Name: 'Jump',
+  ConditionFunc: (w: World) => {
+    return STATES.JUMP;
+  },
+};
+
+const defaultNFall: condition = {
+  Name: 'NFall',
+  ConditionFunc: (w: World) => {
+    return STATES.N_FALL;
+  },
+};
+
+const LandToIdleOrWalk: condition = {
+  Name: 'LandToIdleOrWalk',
+  ConditionFunc: (w: World) => {
+    const p = w.Player!;
+    const ia = w.GetInputManager(p.ID).GetInputForFrame(w.localFrame)!;
+
+    if (ia.LXAxsis > 0 && p.IsFacingRight()) {
+      return STATES.WALK;
+    }
+
+    if (ia.LXAxsis < 0 && p.IsFacingLeft()) {
+      return STATES.WALK;
+    }
+
+    if (ia.LXAxsis > 0 && p.IsFacingLeft()) {
+      return STATES.TURN;
+    }
+
+    if (ia.LXAxsis < 0 && p.IsFacingRight()) {
+      return STATES.TURN;
+    }
+
+    return STATES.IDLE;
+  },
+};
+
+const RunStopToTurn: conditionFunc = (w: World) => {
+  const p = w.Player!;
+  const ia = w.GetInputManager(p.ID).GetInputForFrame(w.localFrame)!;
+
+  if (ia.LXAxsis > 0 && p.IsFacingLeft()) {
+    return STATES.RUN_TURN;
+  }
+
+  if (ia.LXAxsis < 0 && p.IsFacingRight()) {
+    return STATES.RUN_TURN;
   }
 
   return undefined;
 };
 
 // TYPES AND CLASSES ====================================
-
-export type gameEventId = number;
-export type stateId = number;
-
-class _GameEvents {
-  public readonly upSpecial = 0;
-  public readonly downSpecial = 1;
-  public readonly sideSpecial = 2;
-  public readonly special = 3;
-  public readonly upAttack = 4;
-  public readonly downAttack = 5;
-  public readonly sideAttack = 6;
-  public readonly attack = 7;
-  public readonly idle = 8;
-  public readonly move = 9;
-  public readonly moveFast = 10;
-  public readonly jump = 11;
-  public readonly grab = 12;
-  public readonly guard = 13;
-  public readonly down = 14;
-  public readonly turn = 15;
-  public readonly dashTurn = 16;
-  public readonly land = 17;
-  public readonly softLand = 18;
-}
-
-export const GameEvents = new _GameEvents();
-class _STATES {
-  public readonly IDLE = 0 as stateId;
-  public readonly START_WALK = 1 as stateId;
-  public readonly TURN = 2 as stateId;
-  public readonly WALK = 3 as stateId;
-  public readonly DASH = 4 as stateId;
-  public readonly DASH_TURN = 5 as stateId;
-  public readonly STOP_DASH = 6 as stateId;
-  public readonly STOP_RUN = 7 as stateId;
-  public readonly RUN_TURN = 8 as stateId;
-  public readonly STOP_RUN_TURN = 9 as stateId;
-  public readonly RUN = 10 as stateId;
-  public readonly JUMP_SQUAT = 11 as stateId;
-  public readonly JUMP = 12 as stateId;
-  public readonly N_FALL = 13 as stateId;
-  public readonly F_FALL = 14 as stateId;
-  public readonly LAND = 15 as stateId;
-  public readonly SOFT_LAND = 16 as stateId;
-}
-
-export const STATES = new _STATES();
 
 class StateRelation {
   readonly stateId: stateId = STATES.IDLE;
@@ -157,12 +279,14 @@ class StateRelation {
 
 export class ActionStateMappings {
   private readonly mappings = new Map<gameEventId, stateId>();
-  private defaultSate?: stateId;
+  // private readonly validStates = new Set<stateId>();
+  private defaultCondition?: condition;
   private Condtions?: Array<condition>;
 
   _setMappings(mappingsArray: { geId: gameEventId; sId: stateId }[]) {
     mappingsArray.forEach((actSt) => {
       this.mappings.set(actSt.geId, actSt.sId);
+      //this.validStates.add(actSt.sId);
     });
   }
 
@@ -170,17 +294,17 @@ export class ActionStateMappings {
     return this.mappings.get(geId);
   }
 
-  public getDefault(): stateId | undefined {
-    return this.defaultSate;
+  public getDefault(): condition | undefined {
+    return this.defaultCondition;
   }
 
   public GetConditions() {
     return this.Condtions;
   }
 
-  _setDefault(stateId: stateId) {
-    if (!this.defaultSate) {
-      this.defaultSate = stateId;
+  _setDefault(condition: condition) {
+    if (!this.defaultCondition) {
+      this.defaultCondition = condition;
     }
   }
 
@@ -384,6 +508,7 @@ function InitIdleTranslations() {
     { geId: GameEvents.moveFast, sId: STATES.DASH },
     { geId: GameEvents.turn, sId: STATES.TURN },
     { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
+    { geId: GameEvents.fall, sId: STATES.N_FALL },
   ]);
 
   const condtions: Array<condition> = [
@@ -409,7 +534,7 @@ function InitStartWalkTranslations(): ActionStateMappings {
 
   startWalkTranslations._setConditions(conditions);
 
-  startWalkTranslations._setDefault(STATES.WALK);
+  startWalkTranslations._setDefault(defaultWalk);
 
   return startWalkTranslations;
 }
@@ -420,7 +545,7 @@ function InitTurnTranslations(): ActionStateMappings {
     { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
   ]);
 
-  turnTranslations._setDefault(STATES.IDLE);
+  turnTranslations._setDefault(defaultIdle);
 
   return turnTranslations;
 }
@@ -444,18 +569,17 @@ function InitWalkTranslations(): ActionStateMappings {
 function InitDashTranslations(): ActionStateMappings {
   const dashTranslations = new ActionStateMappings();
   dashTranslations._setMappings([
-    { geId: GameEvents.idle, sId: STATES.STOP_DASH },
-    { geId: GameEvents.turn, sId: STATES.DASH_TURN },
     { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
+    { geId: GameEvents.fall, sId: STATES.N_FALL },
   ]);
 
   const conditions: Array<condition> = [
-    { Name: 'DashToRun', ConditionFunc: DashToTurn },
+    { Name: 'DashToDashTurn', ConditionFunc: DashToTurn },
   ];
 
   dashTranslations._setConditions(conditions);
 
-  dashTranslations._setDefault(STATES.RUN);
+  dashTranslations._setDefault(DashRunOrIdleCondition);
 
   return dashTranslations;
 }
@@ -466,7 +590,7 @@ function InitDashTrunTranslations(): ActionStateMappings {
     { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
   ]);
 
-  dashTrunTranslations._setDefault(STATES.DASH);
+  dashTrunTranslations._setDefault(defaultDash);
 
   return dashTrunTranslations;
 }
@@ -475,9 +599,10 @@ function InitStopDashTranslations(): ActionStateMappings {
   const stopDashTranslations = new ActionStateMappings();
   stopDashTranslations._setMappings([
     { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
+    { geId: GameEvents.fall, sId: STATES.N_FALL },
   ]);
 
-  stopDashTranslations._setDefault(STATES.IDLE);
+  stopDashTranslations._setDefault(defaultIdle);
 
   return stopDashTranslations;
 }
@@ -487,6 +612,7 @@ function InitRunTranslations(): ActionStateMappings {
   runTranslations._setMappings([
     { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
     { geId: GameEvents.idle, sId: STATES.STOP_RUN },
+    { geId: GameEvents.fall, sId: STATES.N_FALL },
   ]);
 
   const conditions: Array<condition> = [
@@ -504,7 +630,7 @@ function InitRunTurnTranslations(): ActionStateMappings {
     { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
   ]);
 
-  runTurnTranslations._setDefault(STATES.RUN);
+  runTurnTranslations._setDefault(defaultRun);
 
   return runTurnTranslations;
 }
@@ -514,9 +640,17 @@ function InitStopRunTranslations(): ActionStateMappings {
   stopRunTranslations._setMappings([
     { geId: GameEvents.moveFast, sId: STATES.DASH },
     { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
+    { geId: GameEvents.fall, sId: STATES.N_FALL },
+    { geId: GameEvents.turn, sId: STATES.RUN_TURN },
   ]);
 
-  stopRunTranslations._setDefault(STATES.IDLE);
+  const conditions: Array<condition> = [
+    { Name: 'RunStopToTurn', ConditionFunc: RunStopToTurn },
+  ];
+
+  stopRunTranslations._setConditions(conditions);
+
+  stopRunTranslations._setDefault(defaultIdle);
 
   return stopRunTranslations;
 }
@@ -524,7 +658,7 @@ function InitStopRunTranslations(): ActionStateMappings {
 function InitJumpSquatTranslations(): ActionStateMappings {
   const jumpSquatTranslations = new ActionStateMappings();
 
-  jumpSquatTranslations._setDefault(STATES.JUMP);
+  jumpSquatTranslations._setDefault(defaultJump);
 
   return jumpSquatTranslations;
 }
@@ -533,7 +667,7 @@ function InitJumpTranslations(): ActionStateMappings {
   const jumpTranslations = new ActionStateMappings();
   jumpTranslations._setMappings([{ geId: GameEvents.jump, sId: STATES.JUMP }]);
 
-  jumpTranslations._setDefault(STATES.N_FALL);
+  jumpTranslations._setDefault(defaultNFall);
 
   return jumpTranslations;
 }
@@ -552,21 +686,28 @@ function InitNFallTranslations(): ActionStateMappings {
 
 function InitFastFallTranslations(): ActionStateMappings {
   const ffTranslations = new ActionStateMappings();
-  ffTranslations._setMappings([{ geId: GameEvents.jump, sId: STATES.JUMP }]);
+  ffTranslations._setMappings([
+    { geId: GameEvents.jump, sId: STATES.JUMP },
+    { geId: GameEvents.land, sId: STATES.LAND },
+    { geId: GameEvents.softLand, sId: STATES.SOFT_LAND },
+  ]);
 
   return ffTranslations;
 }
 
 function InitLandTranslations(): ActionStateMappings {
   const landTranslations = new ActionStateMappings();
-  landTranslations._setDefault(STATES.IDLE);
+  // Add a transition state called LandEnd, if we are trying to run in land end has it transition to walk.
+
+  landTranslations._setDefault(LandToIdleOrWalk);
 
   return landTranslations;
 }
 
 function InitSoftLandTranslations(): ActionStateMappings {
   const softLandTranslations = new ActionStateMappings();
-  softLandTranslations._setDefault(STATES.IDLE);
+
+  softLandTranslations._setDefault(LandToIdleOrWalk);
 
   return softLandTranslations;
 }

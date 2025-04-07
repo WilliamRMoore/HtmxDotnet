@@ -1,4 +1,4 @@
-import { Jazz } from '../engine/jazz';
+import { IJazz, Jazz, JazzDebugger } from '../engine/jazz';
 import { STATES } from '../FSM/FiniteState';
 import { NewMessageFromLocalInput } from '../network/protocol';
 import { DebugRenderer, RenderData, resolution } from '../render/debug-2d';
@@ -21,10 +21,8 @@ function INPUT_LOOP(gamePadIndex: number) {
 }
 
 function LOGIC_LOOP() {
-  const engine = new Jazz((newRdDto: RenderData) => {
-    renderData = newRdDto;
-  });
-
+  //const engine = new Jazz(renderData);
+  const engine = new JazzDebugger(renderData);
   engine.Init();
   engine.World?.Player?.SetPlayerInitialPosition(610, 100);
   engine.World?.StateMachine?.SetInitialState(STATES.N_FALL);
@@ -46,9 +44,9 @@ function RENDER_LOOP() {
 //   return 0;
 // }
 
-function logicStep(engine: Jazz) {
+function logicStep(engine: IJazz) {
   const input = GetInput();
   //const message = NewMessageFromLocalInput(input, localFrame);
   engine.UpdateLocalInputForCurrentFrame(input, 0);
-  engine.tick();
+  engine.Tick();
 }

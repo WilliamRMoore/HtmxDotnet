@@ -18,8 +18,10 @@ export class DebugRenderer {
 
   render(renderDataDTO: RenderData) {
     const ctx = this.ctx;
-    ctx.clearRect(0, 0, this.xRes, this.yRes);
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = 'grey';
+    ctx.fillRect(0, 0, this.xRes, this.yRes); // Fill the entire canvas with grey
+
+    //ctx.fillStyle = 'white';
     drawStage(ctx, renderDataDTO);
     drawPlayer(ctx, renderDataDTO);
     ctx.fillText(`Frame: ${renderDataDTO.frame}`, 10, 30);
@@ -117,12 +119,12 @@ function drawPlayer(ctx: CanvasRenderingContext2D, renderData: RenderData) {
   //const ccHull = player.ccHull;
   const facingRight = player.facingRight;
 
-  const ecbColor = 'organge';
-  const ecpOutlineColor = 'white';
-  const prevEcbOutlineColor = 'black';
+  const ecbColor = 'orange';
+  // const ecpOutlineColor = 'white';
+  // const prevEcbOutlineColor = 'black';
 
-  ctx.fillStyle = ecbColor;
-  ctx.lineWidth = 2;
+  ctx.fillStyle = 'red';
+  ctx.lineWidth = 3;
 
   // draw hull
   // ctx.beginPath();
@@ -134,7 +136,7 @@ function drawPlayer(ctx: CanvasRenderingContext2D, renderData: RenderData) {
   // ctx.fill();
 
   // draw previous ECB
-  ctx.strokeStyle = prevEcbOutlineColor;
+  ctx.strokeStyle = 'black';
   ctx.beginPath();
   ctx.moveTo(player.prevLeftX, player.prevLeftY);
   ctx.lineTo(player.prevTopX, player.prevTopY);
@@ -144,8 +146,9 @@ function drawPlayer(ctx: CanvasRenderingContext2D, renderData: RenderData) {
   ctx.stroke();
   ctx.fill();
 
-  // draw ECB
-  ctx.strokeStyle = ecpOutlineColor;
+  //draw ECB
+  ctx.fillStyle = ecbColor;
+  ctx.strokeStyle = 'purple';
   ctx.beginPath();
   ctx.moveTo(player.currentLeftX, player.currenltLeftY);
   ctx.lineTo(player.currentTopX, player.currentTopY);
@@ -175,7 +178,7 @@ function drawPlayer(ctx: CanvasRenderingContext2D, renderData: RenderData) {
   ctx.closePath();
 
   // draw direction marker
-  ctx.strokeStyle = 'wite';
+  ctx.strokeStyle = 'white';
   if (facingRight) {
     ctx.beginPath();
     ctx.moveTo(player.currentRightX, player.currentRightY);
@@ -185,7 +188,7 @@ function drawPlayer(ctx: CanvasRenderingContext2D, renderData: RenderData) {
   } else {
     ctx.beginPath();
     ctx.moveTo(player.currentLeftX, player.currenltLeftY);
-    ctx.moveTo(player.currentLeftX - 10, player.currenltLeftY);
+    ctx.lineTo(player.currentLeftX - 10, player.currenltLeftY);
     ctx.stroke();
     ctx.closePath();
   }

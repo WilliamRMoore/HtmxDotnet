@@ -1,5 +1,5 @@
 import { Player } from '../engine/player/playerOrchestrator';
-import { stateId, STATES } from '../FSM/FiniteState';
+import { STATES } from '../FSM/FiniteState';
 import { FSMState } from '../FSM/FiniteStateMachine';
 import { InputAction } from '../loops/Input';
 
@@ -63,12 +63,15 @@ export const Turn: FSMState = {
 export const Dash: FSMState = {
   StateName: 'DASH',
   StateId: STATES.DASH,
-  FrameLength: 7,
+  FrameLength: 20,
   OnEnter: (p: Player) => {
     console.log('Dash');
   },
   OnUpdate: (p: Player, ia?: InputAction) => {
-    p.AddDashImpulse();
+    //p.AddDashImpulse();
+    const dashSpeedMultiplier = p._Speeds.DashMultiplier;
+    const impulse = (ia?.LXAxsis ?? 0) * dashSpeedMultiplier;
+    p.AddClampedXImpulse(p._Speeds.MaxDashSpeed, impulse!);
   },
   OnExit: (p: Player) => {
     console.log('Exit Dash');
@@ -81,6 +84,7 @@ export const DashTurn: FSMState = {
   FrameLength: 1,
   OnEnter: (p: Player) => {
     console.log('Dash Turn');
+    p.SetXVelocity(0);
     p.ChangeDirections();
   },
   OnUpdate() {
@@ -161,13 +165,20 @@ export const JumpSquat: FSMState = {
 export const Jump: FSMState = {
   StateName: 'JUMP',
   StateId: STATES.JUMP,
-  FrameLength: 5,
+  FrameLength: 15,
   OnEnter: (p: Player) => {
     if (p.HasJumps()) {
       p.AddToPlayerYPosition(-0.5);
       p.Velocity.y = -p.JumpVelocity;
       console.log('Jump');
+      //p.JumpComponent.IncrementJumps();
     }
+  },
+  OnUpdate: (p: Player, inputAction?: InputAction) => {
+    p.AddClampedXImpulse(
+      p._Speeds.AerialSpeedInpulseLimit,
+      inputAction?.LXAxsis ?? 0
+    );
   },
   OnExit: (p: Player) => {
     console.log('Exit Jump');
@@ -177,6 +188,12 @@ export const Jump: FSMState = {
 export const NeutralFall: FSMState = {
   StateName: 'NFALL',
   StateId: STATES.N_FALL,
+  OnUpdate: (p: Player, ia?: InputAction) => {
+    p.AddClampedXImpulse(
+      p._Speeds.AerialSpeedInpulseLimit,
+      (ia?.LXAxsis ?? 0) * 2
+    );
+  },
 };
 
 export const FastFall: FSMState = {
@@ -196,10 +213,16 @@ export const Land: FSMState = {
   StateId: STATES.LAND,
   OnEnter: (p: Player) => {
     p.ResetJumpCount();
+    p.SetYVelocity(0);
   },
 };
 
 export const SoftLand: FSMState = {
   StateName: 'SoftLand',
   StateId: STATES.SOFT_LAND,
+  FrameLength: 1,
+  OnEnter: (p: Player) => {
+    p.ResetJumpCount();
+    p.SetYVelocity(0);
+  },
 };

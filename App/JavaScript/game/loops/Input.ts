@@ -6,6 +6,8 @@ export type InputAction = {
   LYAxsis: number;
   RXAxis: number;
   RYAxsis: number;
+  Start: boolean;
+  Select: boolean;
 };
 
 export class GamePadInput {
@@ -27,6 +29,9 @@ export class GamePadInput {
   dpRight: boolean = false;
   dpLeft: boolean = false;
 
+  start: boolean = false;
+  select: boolean = false;
+
   Clear() {
     this.LXAxis = 0;
     this.LYAxis = 0;
@@ -45,6 +50,9 @@ export class GamePadInput {
     this.dpDown = false;
     this.dpLeft = false;
     this.dpRight = false;
+
+    this.start = false;
+    this.select = false;
   }
 }
 
@@ -99,6 +107,9 @@ function readInput(gamePad: Gamepad) {
   currentInput.dpDown = gamePad.buttons[13].pressed;
   currentInput.dpLeft = gamePad.buttons[14].pressed;
   currentInput.dpRight = gamePad.buttons[15].pressed;
+
+  currentInput.start = gamePad.buttons[9].pressed;
+  currentInput.select = gamePad.buttons[8].pressed;
 }
 
 function CopyCurrentInputToPrevious() {
@@ -119,6 +130,9 @@ function CopyCurrentInputToPrevious() {
   previousInput.dpDown = currentInput.dpDown;
   previousInput.dpLeft = currentInput.dpLeft;
   previousInput.dpRight = currentInput.dpRight;
+
+  previousInput.start = currentInput.start;
+  previousInput.select = currentInput.select;
 }
 
 export function GetInput(): InputAction {
@@ -137,6 +151,8 @@ function transcribeInput(input: GamePadInput) {
   inputAction.LYAxsis = LYAxis;
   inputAction.RXAxis = RXAxis;
   inputAction.RYAxsis = RYAxis;
+  inputAction.Start = input.start;
+  inputAction.Select = input.select;
 
   // special was pressed
   if (input.special) {

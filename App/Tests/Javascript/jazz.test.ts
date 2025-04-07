@@ -4,8 +4,8 @@ import { InputAction } from '../../JavaScript/game/loops/Input';
 import { RenderData } from '../../JavaScript/game/render/debug-2d';
 
 test('test', () => {
-  const renderFunc = (rd: RenderData) => {};
-  const engine = new Jazz(renderFunc);
+  const renderData = new RenderData();
+  const engine = new Jazz(renderData);
   engine.Init(); // Stage is at 600, 450
   engine.World?.Player?.SetPlayerInitialPosition(610, 200);
   engine.World?.StateMachine?.SetInitialState(STATES.N_FALL);
@@ -18,24 +18,24 @@ test('test', () => {
     RYAxsis: 0,
   };
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
 
   expect(engine.World?.Player?.IsGrounded(engine.World.Stage!)).toBeFalsy();
 });
 
 test('test fast fall to ground', () => {
-  const renderFunc = (rd: RenderData) => {};
-  const engine = new Jazz(renderFunc);
+  const renderData = new RenderData();
+  const engine = new Jazz(renderData);
   engine.Init(); // Stage is at 600, 450
   engine.World?.Player?.SetPlayerInitialPosition(610, 430);
   engine.World?.StateMachine?.SetInitialState(STATES.N_FALL);
@@ -48,26 +48,26 @@ test('test fast fall to ground', () => {
     RYAxsis: 0,
   };
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
 
   ia.Action = GameEvents.down;
 
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
-  engine.tick();
+  engine.Tick();
 
   expect(engine.World?.Player?.IsGrounded(engine.World.Stage!)).toBeTruthy();
 });

@@ -13,17 +13,37 @@ export const NO_COLLISION: number = 5;
 export function StageCollisionDetection(world: World): number {
   const p = world.Player!;
   const sm = world.StateMachine!;
-
-  const playerVelY = p.Velocity.y;
+  const s = world.Stage!;
 
   var collision = _stageCollision(world);
 
-  if (collision === NO_COLLISION) {
+  const grnd = p.IsGrounded(s);
+  const prevGround = p.IsPrevGrounded(s);
+
+  if (grnd == false && prevGround == true) {
+    const CurrentPlayerStateId = p.GetCurrentFSMStateId();
+
+    if (
+      CurrentPlayerStateId === STATES.WALK ||
+      CurrentPlayerStateId === STATES.START_WALK ||
+      CurrentPlayerStateId === STATES.IDLE ||
+      CurrentPlayerStateId === STATES.STOP_DASH ||
+      CurrentPlayerStateId === STATES.STOP_RUN
+    ) {
+      const prevPos = p.ECBComponent.PreviousPosition;
+      p.SetPlayerPostion(prevPos.x, prevPos.y);
+      return collision;
+    }
+  }
+
+  if (collision === NO_COLLISION || grnd === false) {
+    sm.UpdateFromWorld(GameEvents.fall);
     return NO_COLLISION;
   }
 
-  if (collision === GROUND_COLLISION) {
-    const landState = playerVelY > 2 ? GameEvents.land : GameEvents.softLand;
+  if (collision !== NO_COLLISION && grnd === true) {
+    //const landState = playerVelY > 2 ? GameEvents.land : GameEvents.softLand;
+    const landState = GameEvents.land;
     sm.UpdateFromWorld(landState);
     return collision;
   }
@@ -99,7 +119,7 @@ function _stageCollision(world: World): number {
 
     // corner case, literally
     if (Math.abs(normalX) > 0 && Math.abs(normalY) > 0) {
-      move.AddToX(move.X <= 0 ? move.Y : -move.Y); // add the y valie into x
+      //move.AddToX(move.X <= 0 ? move.Y : -move.Y); // add the y valie into x
       move._setY(0);
       playerPosDTO.Add(move);
       p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
@@ -153,7 +173,7 @@ export function ApplyVelocty(world: World) {
     if (pvx < 0) {
       playerVelocity.x += groundedVelocityDecay;
     }
-    if (Math.abs(pvx) < 3) {
+    if (Math.abs(pvx) < 1) {
       playerVelocity.x = 0;
     }
     return;
@@ -175,7 +195,7 @@ export function ApplyVelocty(world: World) {
     playerVelocity.y += aerialVelocityDecay;
   }
 
-  if (Math.abs(pvx) < 3) {
+  if (Math.abs(pvx) < 1.5) {
     playerVelocity.x = 0;
   }
 }
@@ -189,23 +209,32 @@ export function OutOfBoundsCheck(world: World) {
 
   if (pPos.y < deathBoundry.topBoundry) {
     // kill player if in hit stun.
+    KillPlayer(world);
+    return;
   }
 
   if (pPos.y > deathBoundry.bottomBoundry) {
     // kill player?
+    KillPlayer(world);
   }
 
   if (pPos.x < deathBoundry.leftBoundry) {
     // kill Player?
+    KillPlayer(world);
   }
 
   if (pPos.x > deathBoundry.rightBoundry) {
     // kill player?
+    KillPlayer(world);
   }
 }
 
 function KillPlayer(w: World) {
-  //reset player stats
-  //reduce stock count by one
-  //respawn player in correct spawn point
+  // reset player to spawn point
+  w.Player?.SetPlayerInitialPosition(610, 300);
+  // reset any stats
+  w.Player?.SetXVelocity(0);
+  w.Player?.SetYVelocity(0);
+  w.StateMachine?.ForceState(STATES.N_FALL);
+  // reduce stock count
 }

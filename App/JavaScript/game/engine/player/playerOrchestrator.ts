@@ -29,7 +29,7 @@ export class Player {
   private readonly _Position: PositionComponent;
   private readonly _Velocity: VelocityComponent;
   private readonly _Flags: PlayerFlagsComponent;
-  private readonly _Speeds: SpeedsComponent;
+  public readonly _Speeds: SpeedsComponent;
   private readonly _ECB: ECBComponent;
   private readonly _Jump: JumpComponent;
   private readonly _FSMInfo: FSMInfo;
@@ -78,20 +78,20 @@ export class Player {
     );
   }
 
-  public AddDashImpulse(): void {
-    if (this.IsFacingRight()) {
-      this._Velocity.AddClampedXImpulse(
-        this._Speeds.MaxDashSpeed,
-        this._Speeds.DashImpulse
-      );
-      return;
-    }
+  // public AddDashImpulse(): void {
+  //   if (this.IsFacingRight()) {
+  //     this._Velocity.AddClampedXImpulse(
+  //       this._Speeds.MaxDashSpeed,
+  //       this._Speeds.DashImpulse
+  //     );
+  //     return;
+  //   }
 
-    this._Velocity.AddClampedXImpulse(
-      this._Speeds.MaxDashSpeed,
-      -this._Speeds.DashImpulse
-    );
-  }
+  //   this._Velocity.AddClampedXImpulse(
+  //     this._Speeds.MaxDashSpeed,
+  //     -this._Speeds.DashImpulse
+  //   );
+  // }
 
   // public AddJumpImpulse(): void {
   //   if (this._Jump.HasJumps()) {
@@ -161,6 +161,25 @@ export class Player {
     return false;
   }
 
+  public IsPrevGrounded(s: Stage): boolean {
+    //const grnd = this._world?.Stage?.StageVerticies?.GetGround() ?? undefined;
+    const grnd = s.StageVerticies.GetGround();
+    if (grnd == undefined) {
+      return false;
+    }
+
+    const grndLength = grnd.length - 1;
+    for (let i = 0; i < grndLength; i++) {
+      const va = grnd[i];
+      const vb = grnd[i + 1];
+      if (this._ECB.DetectPreviousGroundCollision(va, vb)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   public GetECBVerts(): FlatVec[] {
     return this._ECB.GetVerts();
   }
@@ -175,14 +194,6 @@ export class Player {
 
   public HasJumps(): boolean {
     return this._Jump.HasJumps();
-  }
-
-  public get Postion(): FlatVec {
-    return this._Position.Pos;
-  }
-
-  public get Velocity(): FlatVec {
-    return this._Velocity.Vel;
   }
 
   public get FallSpeed(): number {
@@ -213,36 +224,64 @@ export class Player {
     return this._Jump.JumpVelocity;
   }
 
-  public get ECBLeft(): FlatVec {
-    return this._ECB.Left();
+  // public get ECBLeft(): FlatVec {
+  //   return this._ECB.Left();
+  // }
+
+  // public get PrevECBLeft(): FlatVec {
+  //   return this._ECB.PrevLeft();
+  // }
+
+  // public get ECBRight(): FlatVec {
+  //   return this._ECB.Right();
+  // }
+
+  // public get PrevECBRight(): FlatVec {
+  //   return this._ECB.PrevRight();
+  // }
+
+  // public get ECBTop(): FlatVec {
+  //   return this._ECB.Top();
+  // }
+
+  // public get PrevECBTop(): FlatVec {
+  //   return this._ECB.PrevTop();
+  // }
+
+  // public get ECBBottom(): FlatVec {
+  //   return this._ECB.Bottom();
+  // }
+
+  // public get PrevECBBottom(): FlatVec {
+  //   return this._ECB.PrevBottom();
+  // }
+
+  public get ECBComponent(): ECBComponent {
+    return this._ECB;
   }
 
-  public get PrevECBLeft(): FlatVec {
-    return this._ECB.PrevLeft();
+  public get FlagsComponent(): PlayerFlagsComponent {
+    return this._Flags;
   }
 
-  public get ECBRight(): FlatVec {
-    return this._ECB.Right();
+  public get JumpComponent(): JumpComponent {
+    return this._Jump;
   }
 
-  public get PrevECBRight(): FlatVec {
-    return this._ECB.PrevRight();
+  public get PostionComponent(): PositionComponent {
+    return this._Position;
   }
 
-  public get ECBTop(): FlatVec {
-    return this._ECB.Top();
+  public get VelocityComponent(): VelocityComponent {
+    return this._Velocity;
   }
 
-  public get PrevECBTop(): FlatVec {
-    return this._ECB.PrevTop();
+  public get Postion(): FlatVec {
+    return this._Position.Pos;
   }
 
-  public get ECBBottom(): FlatVec {
-    return this._ECB.Bottom();
-  }
-
-  public get PrevECBBottom(): FlatVec {
-    return this._ECB.PrevBottom();
+  public get Velocity(): FlatVec {
+    return this._Velocity.Vel;
   }
 
   public FastFallOn(): void {

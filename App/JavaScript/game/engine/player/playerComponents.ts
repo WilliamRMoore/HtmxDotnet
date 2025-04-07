@@ -68,7 +68,7 @@ export class SpeedsComponent {
   public readonly FastFallSpeed: number;
   public readonly FallSpeed: number;
   public readonly Gravity: number;
-  public readonly DashImpulse: number;
+  public readonly DashMultiplier: number;
   public readonly MaxDashSpeed: number;
   // Might need a general Aerial speed limit for each character
 
@@ -95,7 +95,7 @@ export class SpeedsComponent {
     this.RunSpeedMultiplier = runSpeedMultiplier;
     this.FastFallSpeed = fastFallSpeed;
     this.FallSpeed = fallSpeed;
-    this.DashImpulse = dashImpulse;
+    this.DashMultiplier = dashImpulse;
     this.MaxDashSpeed = maxDashSpeed;
     this.Gravity = gravity;
   }
@@ -135,9 +135,9 @@ export class PlayerFlagsComponent {
 }
 
 export class ECBComponent {
-  private SesnsorDepth: number = 0.02;
+  private SesnsorDepth: number = 0.2;
   private Position: FlatVec = new FlatVec(0, 0);
-  private PreviousPosition: FlatVec = new FlatVec(0, 0);
+  public readonly PreviousPosition: FlatVec = new FlatVec(0, 0);
   private Height: number;
   private Width: number;
   private YOffset: number;
@@ -181,15 +181,16 @@ export class ECBComponent {
     this.PreviousPosition.x = this.Position.x;
     this.PreviousPosition.y = this.Position.y;
 
-    let preVert: FlatVec;
-    let curVert: FlatVec;
-
-    for (let i = 0; i < 4; i++) {
-      preVert = this.PrevVerts[i];
-      curVert = this.CurVerts[i];
-      preVert.x = curVert.x;
-      preVert.y = curVert.y;
-    }
+    const prevVert = this.PrevVerts;
+    const curVert = this.CurVerts;
+    prevVert[0].x = curVert[0].x;
+    prevVert[0].y = curVert[0].y;
+    prevVert[1].x = curVert[1].x;
+    prevVert[1].y = curVert[1].y;
+    prevVert[2].x = curVert[2].x;
+    prevVert[2].y = curVert[2].y;
+    prevVert[3].x = curVert[3].x;
+    prevVert[3].y = curVert[3].y;
   }
 
   public SetInitialPosition(x: number, y: number) {
@@ -236,11 +237,31 @@ export class ECBComponent {
     this.CurVerts[3].y = rightY;
   }
 
+  public DetectPreviousGroundCollision(
+    groundStart: FlatVec,
+    groundEnd: FlatVec
+  ): boolean {
+    const bottom = this.PrevBottom;
+    const bx = bottom.x;
+    const by = bottom.y;
+
+    return LineSegmentIntersection(
+      groundStart.x,
+      groundStart.y,
+      groundEnd.x,
+      groundEnd.y,
+      bx,
+      by,
+      bx,
+      by + -this.SesnsorDepth
+    );
+  }
+
   public DetectGroundCollision(
     groundStart: FlatVec,
     groundEnd: FlatVec
   ): boolean {
-    const bottom = this.Bottom();
+    const bottom = this.Bottom;
     const bx = bottom.x;
     const by = bottom.y;
 
@@ -260,7 +281,7 @@ export class ECBComponent {
     leftWallStart: FlatVec,
     leftWallEnd: FlatVec
   ): boolean {
-    const left = this.Left();
+    const left = this.Left;
     const lx = left.x;
     const ly = left.y;
 
@@ -280,7 +301,7 @@ export class ECBComponent {
     ceilingStart: FlatVec,
     ceilingEnd: FlatVec
   ): boolean {
-    const top = this.Top();
+    const top = this.Top;
     const tx = top.x;
     const ty = top.y;
 
@@ -300,7 +321,7 @@ export class ECBComponent {
     rightWallStart: FlatVec,
     rightWallEnd: FlatVec
   ): boolean {
-    const right = this.Right();
+    const right = this.Right;
     const rx = right.x;
     const ry = right.y;
 
@@ -316,35 +337,35 @@ export class ECBComponent {
     );
   }
 
-  public Bottom(): FlatVec {
+  public get Bottom(): FlatVec {
     return this.CurVerts[0];
   }
 
-  public PrevBottom(): FlatVec {
+  public get PrevBottom(): FlatVec {
     return this.PrevVerts[0];
   }
 
-  public Left(): FlatVec {
+  public get Left(): FlatVec {
     return this.CurVerts[1];
   }
 
-  public PrevLeft(): FlatVec {
+  public get PrevLeft(): FlatVec {
     return this.PrevVerts[1];
   }
 
-  public Top(): FlatVec {
+  public get Top(): FlatVec {
     return this.CurVerts[2];
   }
 
-  public PrevTop(): FlatVec {
+  public get PrevTop(): FlatVec {
     return this.PrevVerts[2];
   }
 
-  public Right(): FlatVec {
+  public get Right(): FlatVec {
     return this.CurVerts[3];
   }
 
-  public PrevRight(): FlatVec {
+  public get PrevRight(): FlatVec {
     return this.PrevVerts[3];
   }
 

@@ -1,4 +1,4 @@
-const FPS = 60;
+const FPS = 60; // 60; // 59.94 is the standard for film and video, but 60 is used in some games and applications
 let now = {} as number;
 let then = Date.now();
 const interval = 1000 / FPS;
