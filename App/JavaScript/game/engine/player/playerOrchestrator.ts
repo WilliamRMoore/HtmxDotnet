@@ -17,19 +17,19 @@ type speedBuilderOptions = (scb: SpeedsComponentBuilder) => void;
 const defaultSpeedsBuilderOptions: speedBuilderOptions = (
   scb: SpeedsComponentBuilder
 ) => {
-  scb.SetWalkSpeeds(12, 2);
-  scb.SetRunSpeeds(20, 2.5);
+  scb.SetWalkSpeeds(10, 2);
+  scb.SetRunSpeeds(15, 2.2);
   scb.SetFallSpeeds(21, 15, 0.5);
   scb.SetAerialSpeeds(0.8, 18);
-  scb.SetDashSpeeds(5, 25);
-  scb.SetGroundedVelocityDecay(0.8);
+  scb.SetDashSpeeds(3, 20);
+  scb.SetGroundedVelocityDecay(1);
 };
 
 export class Player {
   private readonly _Position: PositionComponent;
   private readonly _Velocity: VelocityComponent;
   private readonly _Flags: PlayerFlagsComponent;
-  public readonly _Speeds: SpeedsComponent;
+  private readonly _Speeds: SpeedsComponent;
   private readonly _ECB: ECBComponent;
   private readonly _Jump: JumpComponent;
   private readonly _FSMInfo: FSMInfo;
@@ -224,38 +224,6 @@ export class Player {
     return this._Jump.JumpVelocity;
   }
 
-  // public get ECBLeft(): FlatVec {
-  //   return this._ECB.Left();
-  // }
-
-  // public get PrevECBLeft(): FlatVec {
-  //   return this._ECB.PrevLeft();
-  // }
-
-  // public get ECBRight(): FlatVec {
-  //   return this._ECB.Right();
-  // }
-
-  // public get PrevECBRight(): FlatVec {
-  //   return this._ECB.PrevRight();
-  // }
-
-  // public get ECBTop(): FlatVec {
-  //   return this._ECB.Top();
-  // }
-
-  // public get PrevECBTop(): FlatVec {
-  //   return this._ECB.PrevTop();
-  // }
-
-  // public get ECBBottom(): FlatVec {
-  //   return this._ECB.Bottom();
-  // }
-
-  // public get PrevECBBottom(): FlatVec {
-  //   return this._ECB.PrevBottom();
-  // }
-
   public get ECBComponent(): ECBComponent {
     return this._ECB;
   }
@@ -274,6 +242,10 @@ export class Player {
 
   public get VelocityComponent(): VelocityComponent {
     return this._Velocity;
+  }
+
+  public get SpeedsComponent(): SpeedsComponent {
+    return this._Speeds;
   }
 
   public get Postion(): FlatVec {

@@ -10,7 +10,7 @@ export const CEILING_COLLISION: number = 3;
 export const CORNER_COLLISION: number = 4;
 export const NO_COLLISION: number = 5;
 
-export function StageCollisionDetection(world: World): number {
+export function StageCollisionDetection(world: World): void {
   const p = world.Player!;
   const sm = world.StateMachine!;
   const s = world.Stage!;
@@ -20,6 +20,7 @@ export function StageCollisionDetection(world: World): number {
   const grnd = p.IsGrounded(s);
   const prevGround = p.IsPrevGrounded(s);
 
+  // Did we walk off the ledge?
   if (grnd == false && prevGround == true) {
     const CurrentPlayerStateId = p.GetCurrentFSMStateId();
 
@@ -27,28 +28,45 @@ export function StageCollisionDetection(world: World): number {
       CurrentPlayerStateId === STATES.WALK ||
       CurrentPlayerStateId === STATES.START_WALK ||
       CurrentPlayerStateId === STATES.IDLE ||
-      CurrentPlayerStateId === STATES.STOP_DASH ||
+      CurrentPlayerStateId === STATES.RUN_TURN ||
+      //CurrentPlayerStateId === STATES.STOP_DASH ||
       CurrentPlayerStateId === STATES.STOP_RUN
     ) {
-      const prevPos = p.ECBComponent.PreviousPosition;
-      p.SetPlayerPostion(prevPos.x, prevPos.y);
-      return collision;
+      const leftStagePoint = s.StageVerticies.GetGround()[0];
+      const rightStagePoint = s.StageVerticies.GetGround()[1];
+
+      if (leftStagePoint.x > p.Postion.x && p.IsFacingLeft()) {
+        p.SetPlayerPostion(leftStagePoint.x + 0.1, leftStagePoint.y);
+        sm.UpdateFromWorld(GameEvents.land);
+      }
+
+      if (rightStagePoint.x < p.Postion.x && p.IsFacingRight()) {
+        p.SetPlayerPostion(rightStagePoint.x - 0.1, rightStagePoint.y);
+        sm.UpdateFromWorld(GameEvents.land);
+      }
+      return;
     }
+  }
+
+  if (collision === NO_COLLISION && grnd == true) {
+    sm.UpdateFromWorld(GameEvents.land);
+    return;
   }
 
   if (collision === NO_COLLISION || grnd === false) {
     sm.UpdateFromWorld(GameEvents.fall);
-    return NO_COLLISION;
+    return;
   }
 
   if (collision !== NO_COLLISION && grnd === true) {
-    //const landState = playerVelY > 2 ? GameEvents.land : GameEvents.softLand;
-    const landState = GameEvents.land;
+    const playerVelY = p.VelocityComponent.Vel.y;
+    const landState = playerVelY > 2 ? GameEvents.land : GameEvents.softLand;
+    //const landState = GameEvents.land;
     sm.UpdateFromWorld(landState);
-    return collision;
+    return;
   }
 
-  return collision;
+  return;
 }
 
 function _stageCollision(world: World): number {
@@ -119,8 +137,8 @@ function _stageCollision(world: World): number {
 
     // corner case, literally
     if (Math.abs(normalX) > 0 && Math.abs(normalY) > 0) {
-      //move.AddToX(move.X <= 0 ? move.Y : -move.Y); // add the y valie into x
-      move._setY(0);
+      move.AddToX(move.X <= 0 ? move.Y : -move.Y); // add the y value into x
+      //move._setY(0);
       playerPosDTO.Add(move);
       p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
 

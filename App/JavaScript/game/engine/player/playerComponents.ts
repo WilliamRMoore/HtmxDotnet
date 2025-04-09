@@ -82,7 +82,7 @@ export class SpeedsComponent {
     runSpeedMultiplier: number,
     fastFallSpeed: number,
     fallSpeed: number,
-    dashImpulse: number,
+    dashMultiplier: number,
     maxDashSpeed: number,
     gravity: number
   ) {
@@ -95,7 +95,7 @@ export class SpeedsComponent {
     this.RunSpeedMultiplier = runSpeedMultiplier;
     this.FastFallSpeed = fastFallSpeed;
     this.FallSpeed = fallSpeed;
-    this.DashMultiplier = dashImpulse;
+    this.DashMultiplier = dashMultiplier;
     this.MaxDashSpeed = maxDashSpeed;
     this.Gravity = gravity;
   }
@@ -417,7 +417,7 @@ export class SpeedsComponentBuilder {
   private AerialSpeedInpulseLimit: number = 0;
   private MaxWalkSpeed: number = 0;
   private MaxRunSpeed: number = 0;
-  private DashImpulse: number = 0;
+  private DashMutiplier: number = 0;
   private MaxDashSpeed: number = 0;
   private WalkSpeedMulitplier: number = 0;
   private RunSpeedMultiplier: number = 0;
@@ -449,8 +449,8 @@ export class SpeedsComponentBuilder {
     this.MaxRunSpeed = maxRunSpeed;
   }
 
-  SetDashSpeeds(dashImpulse: number, maxDashSpeed: number) {
-    this.DashImpulse = dashImpulse;
+  SetDashSpeeds(dashMultiplier: number, maxDashSpeed: number) {
+    this.DashMutiplier = dashMultiplier;
     this.MaxDashSpeed = maxDashSpeed;
   }
 
@@ -469,7 +469,7 @@ export class SpeedsComponentBuilder {
       this.RunSpeedMultiplier,
       this.FastFallSpeed,
       this.FallSpeed,
-      this.DashImpulse,
+      this.DashMutiplier,
       this.MaxDashSpeed,
       this.Gravity
     );

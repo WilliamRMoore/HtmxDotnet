@@ -20,10 +20,9 @@ class _GameEvents {
   public readonly guard = 13;
   public readonly down = 14;
   public readonly turn = 15;
-  public readonly dashTurn = 16;
-  public readonly land = 17;
-  public readonly softLand = 18;
-  public readonly fall = 19;
+  public readonly land = 16;
+  public readonly softLand = 17;
+  public readonly fall = 18;
 }
 
 export const GameEvents = new _GameEvents();
@@ -34,17 +33,16 @@ class _STATES {
   public readonly WALK = 3 as stateId;
   public readonly DASH = 4 as stateId;
   public readonly DASH_TURN = 5 as stateId;
-  public readonly STOP_DASH = 6 as stateId;
-  public readonly STOP_RUN = 7 as stateId;
-  public readonly RUN_TURN = 8 as stateId;
-  public readonly STOP_RUN_TURN = 9 as stateId;
-  public readonly RUN = 10 as stateId;
-  public readonly JUMP_SQUAT = 11 as stateId;
-  public readonly JUMP = 12 as stateId;
-  public readonly N_FALL = 13 as stateId;
-  public readonly F_FALL = 14 as stateId;
-  public readonly LAND = 15 as stateId;
-  public readonly SOFT_LAND = 16 as stateId;
+  public readonly STOP_RUN = 6 as stateId;
+  public readonly RUN_TURN = 7 as stateId;
+  public readonly STOP_RUN_TURN = 8 as stateId;
+  public readonly RUN = 9 as stateId;
+  public readonly JUMP_SQUAT = 10 as stateId;
+  public readonly JUMP = 11 as stateId;
+  public readonly N_FALL = 12 as stateId;
+  public readonly F_FALL = 13 as stateId;
+  public readonly LAND = 14 as stateId;
+  public readonly SOFT_LAND = 15 as stateId;
 }
 
 export const STATES = new _STATES();
@@ -55,6 +53,19 @@ type condition = {
 };
 
 type conditionFunc = (world: World) => stateId | undefined;
+
+const IdleToTurnDash: conditionFunc = (w: World) => {
+  const p = w.Player;
+  const input = w.GetInputManager(0).GetInputForFrame(w.localFrame);
+  if (p?.FlagsComponent.IsFacingRight() && input.LXAxsis < -0.5) {
+    return STATES.DASH_TURN;
+  }
+  if (p?.FlagsComponent.IsFacingLeft() && input.LXAxsis > 0.5) {
+    return STATES.DASH_TURN;
+  }
+
+  return undefined;
+};
 
 const IdleToTurn: conditionFunc = (world: World) => {
   const p = world.Player!;
@@ -134,7 +145,7 @@ const DashToTurn: conditionFunc = (world: World) => {
   const prevLax = prevIa.LXAxsis; // Previous left stick X-axis
   const curLax = ia.LXAxsis; // Current left stick X-axis
   const laxDifference = curLax - prevLax; // Difference between current and previous X-axis
-  const threshold = 0.6; // Threshold for detecting significant variation
+  const threshold = 0.5; // Threshold for detecting significant variation
 
   // Check if the variation exceeds the threshold and is in the opposite direction of the player's facing direction
   if (p.IsFacingRight() && laxDifference < -threshold) {
@@ -151,12 +162,21 @@ const DashToTurn: conditionFunc = (world: World) => {
     }
   }
 
-  // When do I register turn???
-  //return STATES.DASH_TURN;
+  return undefined;
+};
 
-  // if (curLax === 0) {
-  //   return STATES.STOP_DASH;
-  // }
+const toJump: conditionFunc = (w: World) => {
+  const player = w.Player;
+  const currentInput = w.GetInputManager(0).GetInputForFrame(w.localFrame);
+  const prevInput = w.GetPlayerPreviousInput(0);
+
+  if (
+    currentInput.Action === GameEvents.jump &&
+    prevInput?.Action !== GameEvents.jump &&
+    player?.JumpComponent.HasJumps()
+  ) {
+    return STATES.JUMP;
+  }
 
   return undefined;
 };
@@ -174,7 +194,7 @@ const DashDefaultRunOrIdle: conditionFunc = (world: World) => {
   if (p.IsFacingLeft() && ia.LXAxsis < 0) {
     return STATES.RUN;
   }
-  return STATES.STOP_DASH;
+  return STATES.IDLE;
 };
 
 const DashRunOrIdleCondition: condition = {
@@ -365,7 +385,6 @@ export const TURN_RELATIONS = InitTurnWalkRelations();
 export const WALK_RELATIONS = InitWalkRelations();
 export const DASH_RELATIONS = InitDashRelations();
 export const DASH_TURN_RELATIONS = InitDashTurnRelations();
-export const STOP_DASH_RELATIONS = InitStopDashRelations();
 export const RUN_RELATIONS = InitRunRelations();
 export const RUN_TURN_RELATIONS = InitRunTurnRelations();
 export const STOP_RUN_RELATIONS = InitStopRunRelations();
@@ -417,15 +436,6 @@ function InitDashTurnRelations(): StateRelation {
   );
 
   return dashTurnRelations;
-}
-
-function InitStopDashRelations(): StateRelation {
-  const stopDashRelations = new StateRelation(
-    STATES.STOP_DASH,
-    InitStopDashTranslations()
-  );
-
-  return stopDashRelations;
 }
 
 function InitRunRelations(): StateRelation {
@@ -505,13 +515,14 @@ function InitIdleTranslations() {
   const idleTranslations = new ActionStateMappings();
   idleTranslations._setMappings([
     { geId: GameEvents.move, sId: STATES.START_WALK },
-    { geId: GameEvents.moveFast, sId: STATES.DASH },
+    { geId: GameEvents.moveFast, sId: STATES.START_WALK },
     { geId: GameEvents.turn, sId: STATES.TURN },
     { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
     { geId: GameEvents.fall, sId: STATES.N_FALL },
   ]);
 
   const condtions: Array<condition> = [
+    { Name: 'IdleToTurnDash', ConditionFunc: IdleToTurnDash },
     { Name: 'IdleToTurn', ConditionFunc: IdleToTurn },
   ];
 
@@ -665,8 +676,11 @@ function InitJumpSquatTranslations(): ActionStateMappings {
 
 function InitJumpTranslations(): ActionStateMappings {
   const jumpTranslations = new ActionStateMappings();
-  jumpTranslations._setMappings([{ geId: GameEvents.jump, sId: STATES.JUMP }]);
+  const condtions: Array<condition> = [
+    { Name: 'ToJump', ConditionFunc: toJump },
+  ];
 
+  jumpTranslations._setConditions(condtions);
   jumpTranslations._setDefault(defaultNFall);
 
   return jumpTranslations;
@@ -675,11 +689,17 @@ function InitJumpTranslations(): ActionStateMappings {
 function InitNFallTranslations(): ActionStateMappings {
   const nFallTranslations = new ActionStateMappings();
   nFallTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMP },
+    //{ geId: GameEvents.jump, sId: STATES.JUMP },
     { geId: GameEvents.down, sId: STATES.F_FALL },
     { geId: GameEvents.land, sId: STATES.LAND },
     { geId: GameEvents.softLand, sId: STATES.SOFT_LAND },
   ]);
+
+  const condtions: Array<condition> = [
+    { Name: 'ToJump', ConditionFunc: toJump },
+  ];
+
+  nFallTranslations._setConditions(condtions);
 
   return nFallTranslations;
 }

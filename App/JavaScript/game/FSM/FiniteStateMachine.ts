@@ -12,7 +12,7 @@ import {
   RunTurn,
   SoftLand,
   StartWalk,
-  StopDash,
+  // StopDash,
   Turn,
   Walk,
 } from '../CharacterStates/TestCharacterStates';
@@ -35,7 +35,7 @@ import {
   SOFT_LAND_RELATIONS,
   START_WALK_RELATIONS,
   stateId,
-  STOP_DASH_RELATIONS,
+  //STOP_DASH_RELATIONS,
   STOP_RUN_RELATIONS,
   TURN_RELATIONS,
   WALK_RELATIONS,
@@ -80,10 +80,6 @@ export class StateMachine {
       DASH_TURN_RELATIONS.stateId,
       DASH_TURN_RELATIONS.mappings
     );
-    this._stateMappings.set(
-      STOP_DASH_RELATIONS.stateId,
-      STOP_DASH_RELATIONS.mappings
-    );
     this._stateMappings.set(RUN_RELATIONS.stateId, RUN_RELATIONS.mappings);
     this._stateMappings.set(
       RUN_TURN_RELATIONS.stateId,
@@ -115,7 +111,6 @@ export class StateMachine {
     this._states.set(RunStop.StateId, RunStop);
     this._states.set(Dash.StateId, Dash);
     this._states.set(DashTurn.StateId, DashTurn);
-    this._states.set(StopDash.StateId, StopDash);
     this._states.set(JumpSquat.StateId, JumpSquat);
     this._states.set(Jump.StateId, Jump);
     this._states.set(NeutralFall.StateId, NeutralFall);

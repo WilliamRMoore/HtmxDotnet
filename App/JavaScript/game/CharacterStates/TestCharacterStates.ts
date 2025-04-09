@@ -66,12 +66,17 @@ export const Dash: FSMState = {
   FrameLength: 20,
   OnEnter: (p: Player) => {
     console.log('Dash');
+    const MaxDashSpeed = p.SpeedsComponent.MaxDashSpeed;
+    const impulse = p.IsFacingRight()
+      ? Math.floor(MaxDashSpeed / 0.33)
+      : -Math.floor(MaxDashSpeed / 0.33);
+
+    p.VelocityComponent.AddClampedXImpulse(MaxDashSpeed, impulse);
   },
   OnUpdate: (p: Player, ia?: InputAction) => {
-    //p.AddDashImpulse();
-    const dashSpeedMultiplier = p._Speeds.DashMultiplier;
+    const dashSpeedMultiplier = p.SpeedsComponent.DashMultiplier;
     const impulse = (ia?.LXAxsis ?? 0) * dashSpeedMultiplier;
-    p.AddClampedXImpulse(p._Speeds.MaxDashSpeed, impulse!);
+    p.AddClampedXImpulse(p.SpeedsComponent.MaxDashSpeed, impulse!);
   },
   OnExit: (p: Player) => {
     console.log('Exit Dash');
@@ -92,19 +97,6 @@ export const DashTurn: FSMState = {
   },
   OnExit: (p: Player) => {
     console.log('Exit Dash Turn');
-  },
-};
-
-export const StopDash: FSMState = {
-  StateName: 'STOP_DASH',
-  StateId: STATES.STOP_DASH,
-  FrameLength: 10,
-
-  OnEnter: (p: Player) => {
-    console.log('Stop Dash');
-  },
-  OnExit: (p: Player) => {
-    console.log('Exit Stop Dash');
   },
 };
 
@@ -171,12 +163,12 @@ export const Jump: FSMState = {
       p.AddToPlayerYPosition(-0.5);
       p.Velocity.y = -p.JumpVelocity;
       console.log('Jump');
-      //p.JumpComponent.IncrementJumps();
+      p.JumpComponent.IncrementJumps();
     }
   },
   OnUpdate: (p: Player, inputAction?: InputAction) => {
     p.AddClampedXImpulse(
-      p._Speeds.AerialSpeedInpulseLimit,
+      p.SpeedsComponent.AerialSpeedInpulseLimit,
       inputAction?.LXAxsis ?? 0
     );
   },
@@ -190,7 +182,7 @@ export const NeutralFall: FSMState = {
   StateId: STATES.N_FALL,
   OnUpdate: (p: Player, ia?: InputAction) => {
     p.AddClampedXImpulse(
-      p._Speeds.AerialSpeedInpulseLimit,
+      p.SpeedsComponent.AerialSpeedInpulseLimit,
       (ia?.LXAxsis ?? 0) * 2
     );
   },
