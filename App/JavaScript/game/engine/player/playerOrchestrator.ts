@@ -152,8 +152,8 @@ export class PlayerHelpers {
   }
 
   public static SetPlayerPosition(p: Player, x: number, y: number) {
-    p.PostionComponent.x = x;
-    p.PostionComponent.y = y;
+    p.PostionComponent.X = x;
+    p.PostionComponent.Y = y;
     p.ECBComponent.MoveToPosition(x, y);
   }
 
@@ -162,21 +162,21 @@ export class PlayerHelpers {
     x: number,
     y: number
   ): void {
-    p.PostionComponent.x = x;
-    p.PostionComponent.y = y;
+    p.PostionComponent.X = x;
+    p.PostionComponent.Y = y;
     p.ECBComponent.SetInitialPosition(x, y);
   }
 
   public static AddToPlayerYPosition(p: Player, y: number): void {
     const position = p.PostionComponent;
-    position.y += y;
-    p.ECBComponent.MoveToPosition(position.x, position.y);
+    position.Y += y;
+    p.ECBComponent.MoveToPosition(position.X, position.Y);
   }
 
   public static AddToPlayerPosition(p: Player, x: number, y: number): void {
     const pos = p.PostionComponent;
-    pos.x += x;
-    pos.y += y;
-    p.ECBComponent.MoveToPosition(pos.x, pos.y);
+    pos.X += x;
+    pos.Y += y;
+    p.ECBComponent.MoveToPosition(pos.X, pos.Y);
   }
 }

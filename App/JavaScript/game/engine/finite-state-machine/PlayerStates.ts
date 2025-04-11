@@ -870,7 +870,7 @@ export const DashTurn: FSMState = {
   FrameLength: 1,
   OnEnter: (p: Player) => {
     console.log('Dash Turn');
-    p.VelocityComponent.x = 0;
+    p.VelocityComponent.X = 0;
     p.FlagsComponent.ChangeDirections();
   },
   OnUpdate() {
@@ -943,7 +943,7 @@ export const Jump: FSMState = {
     if (p.JumpComponent.HasJumps()) {
       //p.AddToPlayerYPosition(-0.5);
       PlayerHelpers.AddToPlayerYPosition(p, -0.5);
-      p.VelocityComponent.y = -p.JumpComponent.JumpVelocity;
+      p.VelocityComponent.Y = -p.JumpComponent.JumpVelocity;
       console.log('Jump');
       p.JumpComponent.IncrementJumps();
     }
@@ -987,7 +987,7 @@ export const Land: FSMState = {
   StateId: STATES.LAND,
   OnEnter: (p: Player) => {
     p.JumpComponent.ResetJumps();
-    p.VelocityComponent.y = 0;
+    p.VelocityComponent.Y = 0;
   },
 };
 
@@ -997,6 +997,6 @@ export const SoftLand: FSMState = {
   FrameLength: 1,
   OnEnter: (p: Player) => {
     p.JumpComponent.ResetJumps();
-    p.VelocityComponent.y = 0;
+    p.VelocityComponent.Y = 0;
   },
 };

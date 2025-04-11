@@ -99,8 +99,8 @@ export class Jazz implements IJazz {
       const playerRenderData = this.renderDataDto.players[playerIndex];
       playerRenderData.playerState = sm?.CurrentStateName ?? 'N/A';
 
-      playerRenderData.postionx = worldPlayer?.PostionComponent.x ?? 0;
-      playerRenderData.postiony = worldPlayer?.PostionComponent.y ?? 0;
+      playerRenderData.postionx = worldPlayer?.PostionComponent.X ?? 0;
+      playerRenderData.postiony = worldPlayer?.PostionComponent.Y ?? 0;
       playerRenderData.facingRight =
         worldPlayer?.FlagsComponent.IsFacingRight() ?? true;
 
