@@ -23,11 +23,24 @@ export class DebugRenderer {
 
     //ctx.fillStyle = 'white';
     drawStage(ctx, renderDataDTO);
-    drawPlayer(ctx, renderDataDTO);
+    const playerCount = renderDataDTO.players.length;
+
+    for (let i = 0; i < playerCount; i++) {
+      drawPlayer(ctx, renderDataDTO.players[i]);
+    }
+
     ctx.fillText(`Frame: ${renderDataDTO.frame}`, 10, 30);
     ctx.fillText(`FrameTime: ${renderDataDTO.frameTime}`, 10, 60);
-    ctx.fillText(`PlayerState: ${renderDataDTO.player.playerState}`, 10, 90);
-    ctx.fillText(`PlayerState: ${renderDataDTO.player.facingRight}`, 10, 120);
+    ctx.fillText(
+      `PlayerState: ${renderDataDTO.players[0].playerState}`,
+      10,
+      90
+    );
+    ctx.fillText(
+      `PlayerState: ${renderDataDTO.players[0].facingRight}`,
+      10,
+      120
+    );
   }
 }
 
@@ -39,8 +52,14 @@ export type resolution = {
 export class RenderData {
   frame: number = 0;
   frameTime: number = 0;
-  player: PlayerRenderData = new PlayerRenderData();
+  players: Array<PlayerRenderData> = [];
   stage?: Stage;
+
+  constructor(playerCount: number) {
+    for (let i = 0; i < playerCount; i++) {
+      this.players[i] = new PlayerRenderData();
+    }
+  }
 }
 
 class StageRenderData {
@@ -112,8 +131,11 @@ function drawStage(ctx: CanvasRenderingContext2D, renderData: RenderData) {
   ctx.fill();
 }
 
-function drawPlayer(ctx: CanvasRenderingContext2D, renderData: RenderData) {
-  const player = renderData.player;
+function drawPlayer(
+  ctx: CanvasRenderingContext2D,
+  renderData: PlayerRenderData
+) {
+  const player = renderData;
   const playerPosX = player.postionx;
   const playerPosY = player.postiony;
   //const ccHull = player.ccHull;

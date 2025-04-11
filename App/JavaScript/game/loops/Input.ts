@@ -1,4 +1,4 @@
-import { GameEvents } from '../FSM/FiniteState';
+import { GameEvents } from '../engine/finite-state-machine/PlayerStates';
 
 export type InputAction = {
   Action: number;
@@ -56,7 +56,6 @@ export class GamePadInput {
   }
 }
 
-const previousInput = new GamePadInput();
 const currentInput = new GamePadInput();
 
 export function listenForGamePadInput(index: number = 0) {
@@ -71,7 +70,6 @@ function pollInput(index: number) {
 }
 
 function readInput(gamePad: Gamepad) {
-  CopyCurrentInputToPrevious();
   currentInput.Clear();
   let lx = setDeadzone(gamePad.axes[0]);
   let ly = setDeadzone(gamePad.axes[1]);
@@ -110,29 +108,6 @@ function readInput(gamePad: Gamepad) {
 
   currentInput.start = gamePad.buttons[9].pressed;
   currentInput.select = gamePad.buttons[8].pressed;
-}
-
-function CopyCurrentInputToPrevious() {
-  previousInput.LXAxis = currentInput.LXAxis;
-  previousInput.LYAxis = currentInput.LYAxis;
-  previousInput.RXAxis = currentInput.RXAxis;
-  previousInput.RYAxis = currentInput.RYAxis;
-
-  previousInput.action = currentInput.action;
-  previousInput.special = currentInput.special;
-  previousInput.jump = currentInput.jump;
-  previousInput.lb = currentInput.lb;
-  previousInput.rb = currentInput.rb;
-  previousInput.lt = currentInput.lt;
-  previousInput.rt = currentInput.rt;
-
-  previousInput.dpUp = currentInput.dpUp;
-  previousInput.dpDown = currentInput.dpDown;
-  previousInput.dpLeft = currentInput.dpLeft;
-  previousInput.dpRight = currentInput.dpRight;
-
-  previousInput.start = currentInput.start;
-  previousInput.select = currentInput.select;
 }
 
 export function GetInput(): InputAction {

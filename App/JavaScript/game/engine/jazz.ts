@@ -1,5 +1,3 @@
-import { GameEvents } from '../FSM/FiniteState';
-import { StateMachine } from '../FSM/FiniteStateMachine';
 import { InputAction } from '../loops/Input';
 import { RenderData } from '../render/debug-2d';
 import { Player } from './player/playerOrchestrator';
@@ -15,29 +13,31 @@ import { World } from './world/world';
 
 export interface IJazz {
   get World(): World | undefined;
-  Init(): void;
+  Init(numberOfPlayers: number): void;
   Tick(): void;
   UpdateLocalInputForCurrentFrame(ia: InputAction, pIndex: number): void;
 }
 
 export class Jazz implements IJazz {
   private readonly renderDataDto: RenderData;
-  private readonly _world: World;
+  private readonly world: World;
 
   constructor(rd: RenderData) {
     this.renderDataDto = rd;
-    this._world = new World();
+    this.world = new World();
   }
 
   public get World(): World | undefined {
-    return this._world;
+    return this.world;
   }
 
-  public Init(): void {
-    const p = new Player(0);
+  public Init(numberOfPlayers: number): void {
+    for (let i = 0; i < numberOfPlayers; i++) {
+      const p = new Player(i);
+      this.world.SetPlayer(p);
+    }
     const s = defaultStage();
-    this._world.SetPlayer(p);
-    this._world.SetStage(s);
+    this.world.SetStage(s);
   }
 
   public Tick() {
@@ -47,7 +47,7 @@ export class Jazz implements IJazz {
 
     let frameTimeDelta = performance.now() - frameTimeStart;
 
-    this.renderDataCallBackExec(frameTimeDelta);
+    this.renderDataCopy(frameTimeDelta);
   }
 
   public UpdateLocalInputForCurrentFrame(ia: InputAction, pIndex: number) {
@@ -59,53 +59,20 @@ export class Jazz implements IJazz {
     inputAction: InputAction,
     frameNumber: number
   ) {
-    this._world
+    this.world
       .GetInputManager(pIndex)
       .StoreInputForFrame(frameNumber, inputAction);
   }
 
-  private renderDataCallBackExec(frameTime: number = 0) {
-    const worldPlayer = this._world.Player;
-    const worldStage = this._world.Stage;
-    const playerRenderData = this.renderDataDto.player;
-    this.renderDataDto.frameTime = frameTime;
-    this.renderDataDto.frame = this.localFrame;
-
-    playerRenderData.playerState =
-      this._world.StateMachine?.CurrentStateName ?? 'n/a';
-
-    playerRenderData.postionx = worldPlayer?.Postion.x ?? 0;
-    playerRenderData.postiony = worldPlayer?.Postion.y ?? 0;
-    playerRenderData.facingRight = worldPlayer?.IsFacingRight() ?? true;
-
-    const ecb = worldPlayer?.ECBComponent;
-
-    playerRenderData.currentLeftX = ecb?.Left?.x ?? 0;
-    playerRenderData.currenltLeftY = ecb?.Left?.y ?? 0;
-    playerRenderData.currentRightX = ecb?.Right?.x ?? 0;
-    playerRenderData.currentRightY = ecb?.Right?.y ?? 0;
-    playerRenderData.currentTopX = ecb?.Top?.x ?? 0;
-    playerRenderData.currentTopY = ecb?.Top?.y ?? 0;
-    playerRenderData.currentBottomX = ecb?.Bottom?.x ?? 0;
-    playerRenderData.currentBottomY = ecb?.Bottom?.y ?? 0;
-
-    playerRenderData.prevLeftX = ecb?.PrevLeft.x ?? 0;
-    playerRenderData.prevLeftY = ecb?.PrevLeft.y ?? 0;
-    playerRenderData.prevRightX = ecb?.PrevRight.x ?? 0;
-    playerRenderData.prevRightY = ecb?.PrevRight.y ?? 0;
-    playerRenderData.prevTopX = ecb?.PrevTop.x ?? 0;
-    playerRenderData.prevTopY = ecb?.PrevTop.y ?? 0;
-    playerRenderData.prevBottomX = ecb?.PrevBottom.x ?? 0;
-    playerRenderData.prevBottomY = ecb?.PrevBottom.y ?? 0;
-
-    this.renderDataDto.stage = worldStage;
-  }
-
   private _tick() {
-    const world = this._world;
+    const world = this.world;
 
-    const player = world.Player;
-    player?.PostTickTask();
+    const playerCount = world.PlayerCount;
+
+    for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
+      const player = world.GetPlayer(playerIndex);
+      player?.ECBComponent.UpdatePreviousECB();
+    }
 
     PlayerInput(world);
     Gravity(world);
@@ -120,25 +87,63 @@ export class Jazz implements IJazz {
     world.localFrame++;
   }
 
+  private renderDataCopy(frameTime: number = 0) {
+    this.renderDataDto.frameTime = frameTime;
+    this.renderDataDto.frame = this.localFrame;
+
+    const worldStage = this.world.Stage;
+    const playerCount = this.world.PlayerCount;
+    for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
+      const worldPlayer = this.world.GetPlayer(playerIndex);
+      const sm = this.world.GetStateMachine(playerIndex);
+      const playerRenderData = this.renderDataDto.players[playerIndex];
+      playerRenderData.playerState = sm?.CurrentStateName ?? 'N/A';
+
+      playerRenderData.postionx = worldPlayer?.PostionComponent.x ?? 0;
+      playerRenderData.postiony = worldPlayer?.PostionComponent.y ?? 0;
+      playerRenderData.facingRight =
+        worldPlayer?.FlagsComponent.IsFacingRight() ?? true;
+
+      const ecb = worldPlayer?.ECBComponent;
+
+      playerRenderData.currentLeftX = ecb?.Left?.x ?? 0;
+      playerRenderData.currenltLeftY = ecb?.Left?.y ?? 0;
+      playerRenderData.currentRightX = ecb?.Right?.x ?? 0;
+      playerRenderData.currentRightY = ecb?.Right?.y ?? 0;
+      playerRenderData.currentTopX = ecb?.Top?.x ?? 0;
+      playerRenderData.currentTopY = ecb?.Top?.y ?? 0;
+      playerRenderData.currentBottomX = ecb?.Bottom?.x ?? 0;
+      playerRenderData.currentBottomY = ecb?.Bottom?.y ?? 0;
+
+      playerRenderData.prevLeftX = ecb?.PrevLeft.x ?? 0;
+      playerRenderData.prevLeftY = ecb?.PrevLeft.y ?? 0;
+      playerRenderData.prevRightX = ecb?.PrevRight.x ?? 0;
+      playerRenderData.prevRightY = ecb?.PrevRight.y ?? 0;
+      playerRenderData.prevTopX = ecb?.PrevTop.x ?? 0;
+      playerRenderData.prevTopY = ecb?.PrevTop.y ?? 0;
+      playerRenderData.prevBottomX = ecb?.PrevBottom.x ?? 0;
+      playerRenderData.prevBottomY = ecb?.PrevBottom.y ?? 0;
+    }
+    this.renderDataDto.stage = worldStage;
+  }
+
   private get localFrame() {
-    return this._world.localFrame;
+    return this.world.localFrame;
   }
 
   private set localFrame(frame: number) {
-    this._world.localFrame = frame;
+    this.world.localFrame = frame;
   }
 }
 
 export class JazzDebugger implements IJazz {
   private _jazz: Jazz;
-  private _renderData: RenderData | undefined;
   private paused: boolean = false;
   private previousInput: InputAction | undefined = undefined;
   private advanceFrame: boolean = false;
 
   constructor(renderData: RenderData) {
     this._jazz = new Jazz(renderData);
-    this._renderData = renderData;
   }
 
   UpdateLocalInputForCurrentFrame(ia: InputAction, pIndex: number): void {
@@ -157,8 +162,8 @@ export class JazzDebugger implements IJazz {
     this.previousInput = ia;
   }
 
-  public Init(): void {
-    this._jazz.Init();
+  public Init(numberOfPlayers: number): void {
+    this._jazz.Init(numberOfPlayers);
   }
 
   public Tick(): void {

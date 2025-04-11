@@ -1,6 +1,8 @@
 import { IntersectsPolygons } from '../physics/collisions';
-import { GameEvents, STATES } from '../../FSM/FiniteState';
+import { GameEvents, STATES } from '../finite-state-machine/PlayerStates';
 import { World } from '../world/world';
+import { StateMachine } from '../finite-state-machine/PlayerStateMachine';
+import { Player, PlayerHelpers } from '../player/playerOrchestrator';
 
 const correctionDepth: number = 0.01;
 export const GROUND_COLLISION: number = 0;
@@ -11,73 +13,85 @@ export const CORNER_COLLISION: number = 4;
 export const NO_COLLISION: number = 5;
 
 export function StageCollisionDetection(world: World): void {
-  const p = world.Player!;
-  const sm = world.StateMachine!;
-  const s = world.Stage!;
+  const playerCount = world.PlayerCount;
 
-  var collision = _stageCollision(world);
+  for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
+    const p = world.GetPlayer(playerIndex)!;
+    const sm = world.GetStateMachine(playerIndex)!;
+    const s = world.Stage!;
 
-  const grnd = p.IsGrounded(s);
-  const prevGround = p.IsPrevGrounded(s);
+    var collision = _stageCollision(world, playerIndex);
 
-  // Did we walk off the ledge?
-  if (grnd == false && prevGround == true) {
-    const CurrentPlayerStateId = p.GetCurrentFSMStateId();
+    const grnd = PlayerHelpers.IsPlayerGroundedOnStage(p, s);
+    const prevGround = PlayerHelpers.IsPlayerPreviouslyGroundedOnStage(p, s);
 
-    if (
-      CurrentPlayerStateId === STATES.WALK ||
-      CurrentPlayerStateId === STATES.START_WALK ||
-      CurrentPlayerStateId === STATES.IDLE ||
-      CurrentPlayerStateId === STATES.RUN_TURN ||
-      //CurrentPlayerStateId === STATES.STOP_DASH ||
-      CurrentPlayerStateId === STATES.STOP_RUN
-    ) {
-      const leftStagePoint = s.StageVerticies.GetGround()[0];
-      const rightStagePoint = s.StageVerticies.GetGround()[1];
+    // Did we walk off the ledge?
+    if (grnd == false && prevGround == true) {
+      const CurrentPlayerStateId = p.FSMInfoComponent.CurrentState.StateId;
 
-      if (leftStagePoint.x > p.Postion.x && p.IsFacingLeft()) {
-        p.SetPlayerPostion(leftStagePoint.x + 0.1, leftStagePoint.y);
-        sm.UpdateFromWorld(GameEvents.land);
+      if (
+        CurrentPlayerStateId === STATES.WALK ||
+        CurrentPlayerStateId === STATES.START_WALK ||
+        CurrentPlayerStateId === STATES.IDLE ||
+        CurrentPlayerStateId === STATES.RUN_TURN ||
+        CurrentPlayerStateId === STATES.STOP_RUN
+      ) {
+        const leftStagePoint = s.StageVerticies.GetGround()[0];
+        const rightStagePoint = s.StageVerticies.GetGround()[1];
+        const flags = p.FlagsComponent;
+        const position = p.PostionComponent;
+
+        if (leftStagePoint.x > position.x && flags.IsFacingLeft()) {
+          PlayerHelpers.SetPlayerPosition(
+            p,
+            leftStagePoint.x + 0.1,
+            leftStagePoint.y
+          );
+          sm.UpdateFromWorld(GameEvents.land);
+        }
+
+        if (rightStagePoint.x < position.x && flags.IsFacingRight()) {
+          PlayerHelpers.SetPlayerPosition(
+            p,
+            rightStagePoint.x - 0.1,
+            rightStagePoint.y
+          );
+          sm.UpdateFromWorld(GameEvents.land);
+        }
+        continue;
       }
-
-      if (rightStagePoint.x < p.Postion.x && p.IsFacingRight()) {
-        p.SetPlayerPostion(rightStagePoint.x - 0.1, rightStagePoint.y);
-        sm.UpdateFromWorld(GameEvents.land);
-      }
-      return;
     }
-  }
 
-  if (collision === NO_COLLISION && grnd == true) {
-    sm.UpdateFromWorld(GameEvents.land);
-    return;
-  }
+    if (collision === NO_COLLISION && grnd == true) {
+      sm.UpdateFromWorld(GameEvents.land);
+      continue;
+    }
 
-  if (collision === NO_COLLISION || grnd === false) {
-    sm.UpdateFromWorld(GameEvents.fall);
-    return;
-  }
+    if (collision === NO_COLLISION || grnd === false) {
+      sm.UpdateFromWorld(GameEvents.fall);
+      continue;
+    }
 
-  if (collision !== NO_COLLISION && grnd === true) {
-    const playerVelY = p.VelocityComponent.Vel.y;
-    const landState = playerVelY > 2 ? GameEvents.land : GameEvents.softLand;
-    //const landState = GameEvents.land;
-    sm.UpdateFromWorld(landState);
-    return;
+    if (collision !== NO_COLLISION && grnd === true) {
+      const playerVelY = p.VelocityComponent.y;
+      const landState = playerVelY > 2 ? GameEvents.land : GameEvents.softLand;
+      sm.UpdateFromWorld(landState);
+      continue;
+    }
   }
 
   return;
 }
 
-function _stageCollision(world: World): number {
+function _stageCollision(world: World, playerIndex: number): number {
   const s = world.Stage!;
-  const p = world.Player!;
+  const p = world.GetPlayer(playerIndex)!;
   const vecPool = world.VecPool;
   const colResPool = world.ColResPool;
   const projResPool = world.ProjResPool;
 
   const stageVerts = s.StageVerticies.GetVerts();
-  const playerVerts = p.GetCCHull();
+  const playerVerts = p.ECBComponent.GetHull();
 
   // detect the collision
   const collisionResult = IntersectsPolygons(
@@ -91,7 +105,9 @@ function _stageCollision(world: World): number {
   if (collisionResult.collision) {
     const normalX = collisionResult.normX;
     const normalY = collisionResult.normY;
-    const playerPosDTO = vecPool.Rent().SetFromFlatVec(p.Postion);
+    const playerPosDTO = vecPool
+      .Rent()
+      .SetFromFlatVec(p.PostionComponent.GetAsFlatVec());
     const move = vecPool
       .Rent()
       ._setXY(normalX, normalY)
@@ -103,7 +119,7 @@ function _stageCollision(world: World): number {
       //add the correction depth
       move.AddToY(correctionDepth);
       playerPosDTO.Add(move);
-      p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
+      PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
 
       return GROUND_COLLISION;
     }
@@ -112,7 +128,7 @@ function _stageCollision(world: World): number {
     if (normalX > 0 && normalY == 0) {
       move.AddToX(correctionDepth);
       playerPosDTO.Add(move);
-      p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
+      PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
 
       return RIGHT_WALL_COLLISION;
     }
@@ -121,7 +137,7 @@ function _stageCollision(world: World): number {
     if (normalX < 0 && normalY == 0) {
       move.AddToX(-correctionDepth);
       playerPosDTO.Add(move);
-      p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
+      PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
 
       return LEFT_WALL_COLLISION;
     }
@@ -130,7 +146,7 @@ function _stageCollision(world: World): number {
     if (normalX == 0 && normalY < 0) {
       move.AddToY(-correctionDepth);
       playerPosDTO.Add(move);
-      p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
+      PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
 
       return CEILING_COLLISION;
     }
@@ -140,7 +156,7 @@ function _stageCollision(world: World): number {
       move.AddToX(move.X <= 0 ? move.Y : -move.Y); // add the y value into x
       //move._setY(0);
       playerPosDTO.Add(move);
-      p.SetPlayerPostion(playerPosDTO.X, playerPosDTO.Y);
+      PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
 
       return CORNER_COLLISION;
     }
@@ -152,107 +168,127 @@ function _stageCollision(world: World): number {
 }
 
 export function Gravity(world: World) {
-  const p = world.Player!;
-  const s = world.Stage!;
-  if (!p.IsGrounded(s)) {
-    const grav = p.Gravity;
-    const fallSpeed = p.IsFastFalling() ? p.FastFallSpeed : p.FallSpeed;
-    const GravMutliplier = p.IsFastFalling() ? 1.4 : 1;
-    p.AddGravityImpulse(grav * GravMutliplier, fallSpeed);
+  const playerCount = world.PlayerCount;
+  const stage = world.Stage!;
+  for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
+    const p = world.GetPlayer(playerIndex)!;
+    PlayerHelpers.AddGravityToPlayer(p, stage);
   }
 }
 
 export function PlayerInput(world: World) {
-  const p1Input = world
-    .GetInputManager(world!.Player!.ID)
-    .GetInputForFrame(world.localFrame);
-
-  world?.StateMachine?.UpdateFromInput(p1Input, world);
+  const playerCount = world.PlayerCount;
+  for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
+    world
+      .GetStateMachine(playerIndex)
+      ?.UpdateFromInput(world.GetPlayerCurrentInput(playerIndex)!, world);
+  }
 }
 
 export function ApplyVelocty(world: World) {
-  const p = world.Player!;
-  const s = world.Stage!;
+  const playerCount = world.PlayerCount;
+  for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
+    const p = world.GetPlayer(playerIndex)!;
+    const flags = p.FlagsComponent;
+    const speeds = p.SpeedsComponent;
+    const s = world.Stage!;
 
-  const grounded = p.IsGrounded(s);
-  const playerVelocity = p.Velocity;
-  const pvx = playerVelocity.x;
-  const pvy = playerVelocity.y;
-  const fallSpeed = p.IsFastFalling() ? p.FastFallSpeed : p.FallSpeed;
-  const groundedVelocityDecay = p.GroundedVelocityDecay;
-  const aerialVelocityDecay = p.AerialVelocityDecay;
+    const grounded = PlayerHelpers.IsPlayerGroundedOnStage(p, s);
+    const playerVelocity = p.VelocityComponent;
+    const pvx = playerVelocity.x;
+    const pvy = playerVelocity.y;
+    const fallSpeed = flags.IsFastFalling()
+      ? speeds.FastFallSpeed
+      : speeds.FallSpeed;
+    const groundedVelocityDecay = speeds.GroundedVelocityDecay;
+    const aerialVelocityDecay = speeds.AerialVelocityDecay;
 
-  p.AddToPlayerPosition(pvx, pvy);
+    PlayerHelpers.AddToPlayerPosition(p, pvx, pvy);
 
-  if (grounded) {
+    if (grounded) {
+      if (pvx > 0) {
+        playerVelocity.x -= groundedVelocityDecay;
+      }
+      if (pvx < 0) {
+        playerVelocity.x += groundedVelocityDecay;
+      }
+      if (Math.abs(pvx) < 1) {
+        playerVelocity.x = 0;
+      }
+      continue;
+    }
+
     if (pvx > 0) {
-      playerVelocity.x -= groundedVelocityDecay;
+      playerVelocity.x -= aerialVelocityDecay;
     }
+
     if (pvx < 0) {
-      playerVelocity.x += groundedVelocityDecay;
+      playerVelocity.x += aerialVelocityDecay;
     }
-    if (Math.abs(pvx) < 1) {
+
+    if (pvy > fallSpeed) {
+      playerVelocity.y -= aerialVelocityDecay;
+    }
+
+    if (pvy < 0) {
+      playerVelocity.y += aerialVelocityDecay;
+    }
+
+    if (Math.abs(pvx) < 1.5) {
       playerVelocity.x = 0;
     }
-    return;
-  }
-
-  if (pvx > 0) {
-    playerVelocity.x -= aerialVelocityDecay;
-  }
-
-  if (pvx < 0) {
-    playerVelocity.x += aerialVelocityDecay;
-  }
-
-  if (pvy > fallSpeed) {
-    playerVelocity.y -= aerialVelocityDecay;
-  }
-
-  if (pvy < 0) {
-    playerVelocity.y += aerialVelocityDecay;
-  }
-
-  if (Math.abs(pvx) < 1.5) {
-    playerVelocity.x = 0;
   }
 }
 
 export function OutOfBoundsCheck(world: World) {
-  const p = world.Player!;
-  const s = world.Stage!;
+  const playerCount = world.PlayerCount;
+  for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
+    const p = world.GetPlayer(playerIndex)!;
+    const sm = world.GetStateMachine(playerIndex)!;
+    const s = world.Stage!;
 
-  const pPos = p.Postion;
-  const deathBoundry = s.DeathBoundry!;
+    const pPos = p.PostionComponent;
+    const deathBoundry = s.DeathBoundry!;
 
-  if (pPos.y < deathBoundry.topBoundry) {
-    // kill player if in hit stun.
-    KillPlayer(world);
-    return;
-  }
+    if (pPos.y < deathBoundry.topBoundry) {
+      // kill player if in hit stun.
+      KillPlayer(p, sm);
+      return;
+    }
 
-  if (pPos.y > deathBoundry.bottomBoundry) {
-    // kill player?
-    KillPlayer(world);
-  }
+    if (pPos.y > deathBoundry.bottomBoundry) {
+      // kill player?
+      KillPlayer(p, sm);
+    }
 
-  if (pPos.x < deathBoundry.leftBoundry) {
-    // kill Player?
-    KillPlayer(world);
-  }
+    if (pPos.x < deathBoundry.leftBoundry) {
+      // kill Player?
+      KillPlayer(p, sm);
+    }
 
-  if (pPos.x > deathBoundry.rightBoundry) {
-    // kill player?
-    KillPlayer(world);
+    if (pPos.x > deathBoundry.rightBoundry) {
+      // kill player?
+      KillPlayer(p, sm);
+    }
   }
 }
 
-function KillPlayer(w: World) {
+function KillPlayer(p: Player, sm: StateMachine) {
   // reset player to spawn point
-  w.Player?.SetPlayerInitialPosition(610, 300);
+  PlayerHelpers.SetPlayerInitialPosition(p, 610, 300);
   // reset any stats
-  w.Player?.SetXVelocity(0);
-  w.Player?.SetYVelocity(0);
-  w.StateMachine?.ForceState(STATES.N_FALL);
+  p.VelocityComponent.x = 0;
+  p.VelocityComponent.y = 0;
+  sm.ForceState(STATES.N_FALL);
   // reduce stock count
+}
+
+export function RecordHistory(w: World) {
+  const playerCount = w.PlayerCount;
+  for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
+    const localFrame = w.localFrame;
+    const p = w.GetPlayer(playerIndex);
+    const history = w.GetComponentHistory(playerIndex);
+    history?.RecordPlayer(p!, localFrame);
+  }
 }

@@ -9,9 +9,9 @@ import {
   Stage,
 } from '../../JavaScript/game/engine/stage/stageComponents';
 import { World } from '../../JavaScript/game/engine/world/world';
-import { GameEvents } from '../../JavaScript/game/FSM/FiniteState';
-import { STATES } from '../../JavaScript/game/FSM/FiniteState';
-import { StateMachine } from '../../JavaScript/game/FSM/FiniteStateMachine';
+import { GameEvents } from '../../JavaScript/game/engine/finite-state-machine/PlayerStates';
+import { STATES } from '../../JavaScript/game/engine/finite-state-machine/PlayerStates';
+import { StateMachine } from '../../JavaScript/game/engine/finite-state-machine/PlayerStateMachine';
 import { InputAction } from '../../JavaScript/game/loops/Input';
 
 test('StateMachineShould', () => {

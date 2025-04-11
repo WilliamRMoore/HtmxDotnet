@@ -1,4 +1,4 @@
-import { GameEvents } from '../../JavaScript/game/FSM/FiniteState';
+import { GameEvents } from '../../JavaScript/game/engine/finite-state-machine/PlayerStates';
 import {
   DASH_RELATIONS,
   DASH_TURN_RELATIONS,
@@ -15,7 +15,7 @@ import {
   JUMP_RELATIONS,
   NFALL_RELATIONS,
   FFALL_RELATIONS,
-} from '../../JavaScript/game/FSM/FiniteState';
+} from '../../JavaScript/game/engine/finite-state-machine/PlayerStates';
 
 // Idle tests
 test('IDLE ', () => {
@@ -40,14 +40,14 @@ test('START_WALK ', () => {
   expect(START_WALK_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
     STATES.JUMP_SQUAT
   );
-  expect(START_WALK_RELATIONS.mappings.getDefault()).toBe(STATES.WALK);
+  expect(START_WALK_RELATIONS.mappings.getDefaults()).toBe(STATES.WALK);
 });
 
 test('TURN', () => {
   expect(TURN_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
     STATES.JUMP_SQUAT
   );
-  expect(TURN_RELATIONS.mappings.getDefault()).toBe(STATES.IDLE);
+  expect(TURN_RELATIONS.mappings.getDefaults()).toBe(STATES.IDLE);
 });
 
 test('WALK', () => {
@@ -73,14 +73,14 @@ test('DASH', () => {
   expect(DASH_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
     STATES.JUMP_SQUAT
   );
-  expect(DASH_RELATIONS.mappings.getDefault()).toBe(STATES.RUN);
+  expect(DASH_RELATIONS.mappings.getDefaults()).toBe(STATES.RUN);
 });
 
 test('DASH_TURN', () => {
   expect(DASH_TURN_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
     STATES.JUMP_SQUAT
   );
-  expect(DASH_TURN_RELATIONS.mappings.getDefault()).toBe(STATES.DASH);
+  expect(DASH_TURN_RELATIONS.mappings.getDefaults()).toBe(STATES.DASH);
 });
 
 test('STOP_DASH', () => {
@@ -109,7 +109,7 @@ test('RUN_TURN', () => {
   expect(RUN_TURN_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
     STATES.JUMP_SQUAT
   );
-  expect(RUN_TURN_RELATIONS.mappings.getDefault()).toBe(STATES.RUN);
+  expect(RUN_TURN_RELATIONS.mappings.getDefaults()).toBe(STATES.RUN);
 });
 
 test('RUN_STOP', () => {
@@ -119,7 +119,7 @@ test('RUN_STOP', () => {
   expect(STOP_RUN_RELATIONS.mappings.getMapping(GameEvents.moveFast)).toBe(
     STATES.DASH
   );
-  expect(STOP_RUN_RELATIONS.mappings.getDefault()).toBe(STATES.IDLE);
+  expect(STOP_RUN_RELATIONS.mappings.getDefaults()).toBe(STATES.IDLE);
 });
 
 test('STOP_RUN_TURN', () => {
@@ -129,15 +129,15 @@ test('STOP_RUN_TURN', () => {
   expect(STOP_RUN_RELATIONS.mappings.getMapping(GameEvents.moveFast)).toBe(
     STATES.DASH
   );
-  expect(STOP_RUN_RELATIONS.mappings.getDefault()).toBe(STATES.IDLE);
+  expect(STOP_RUN_RELATIONS.mappings.getDefaults()).toBe(STATES.IDLE);
 });
 
 test('JUMPSQUAT', () => {
-  expect(JUMP_SQUAT_RELATIONS.mappings.getDefault()).toBe(STATES.JUMP);
+  expect(JUMP_SQUAT_RELATIONS.mappings.getDefaults()).toBe(STATES.JUMP);
 });
 
 test('JUMP', () => {
-  expect(JUMP_RELATIONS.mappings.getDefault()).toBe(STATES.N_FALL);
+  expect(JUMP_RELATIONS.mappings.getDefaults()).toBe(STATES.N_FALL);
 });
 
 test('NFALL', () => {

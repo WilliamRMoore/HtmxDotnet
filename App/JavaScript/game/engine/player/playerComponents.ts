@@ -1,30 +1,131 @@
-import { stateId, STATES } from '../../FSM/FiniteState';
+import { Idle } from '../finite-state-machine/PlayerStates';
+import { FSMState } from '../finite-state-machine/PlayerStateMachine';
 import {
   createConvexHull,
   FlatVec,
   LineSegmentIntersection,
 } from '../physics/vector';
 import { FillArrayWithFlatVec } from '../utils';
+import { Player } from './playerOrchestrator';
 
-// Player Components
-export class PositionComponent {
-  public readonly Pos: FlatVec;
+export class ComponentHistory {
+  readonly PositionHistory: Array<FlatVec> = [];
+  readonly FSMInfoHistory: Array<FSMInfoSnapShot> = [];
+  readonly VelocityHistory: Array<FlatVec> = [];
+  readonly FlagsHistory: Array<FlagsSnapShot> = [];
+  readonly ECBHistory: Array<ECBSnapShot> = [];
+  readonly JumpHistroy: Array<number> = [];
 
-  constructor(flatVec: FlatVec | undefined = undefined) {
-    if (flatVec == undefined) {
-      this.Pos = new FlatVec(0, 0);
-      return;
-    }
-    this.Pos = flatVec;
+  public RecordPlayer(p: Player, frameNumber: number) {
+    this.PositionHistory[frameNumber] = p.PostionComponent.SnapShot();
+    this.FSMInfoHistory[frameNumber] = p.FSMInfoComponent.SnapShot();
+    this.VelocityHistory[frameNumber] = p.VelocityComponent.SnapShot();
+    this.FlagsHistory[frameNumber] = p.FlagsComponent.SnapShot();
+    this.ECBHistory[frameNumber] = p.ECBComponent.SnapShot();
+    this.JumpHistroy[frameNumber] = p.JumpComponent.SnapShot();
+  }
+
+  public SetPlayerToFrame(p: Player, frameNumber: number) {
+    p.PostionComponent.SetFromSnapShot(this.PositionHistory[frameNumber]);
+    p.FSMInfoComponent.SetFromSnapShot(this.FSMInfoHistory[frameNumber]);
+    p.VelocityComponent.SetFromSnapShot(this.VelocityHistory[frameNumber]);
+    p.FlagsComponent.SetFromSnapShot(this.FlagsHistory[frameNumber]);
+    p.ECBComponent.SetFromSnapShot(this.ECBHistory[frameNumber]);
+    p.JumpComponent.SetFromSnapShot(this.JumpHistroy[frameNumber]);
   }
 }
 
-export class FSMInfo {
-  public StateId: number = STATES.IDLE;
+interface IHistoryEnabled<T> {
+  SnapShot(): T;
+  SetFromSnapShot(snapShot: T): void;
 }
 
-export class VelocityComponent {
-  public readonly Vel: FlatVec;
+// Player Components
+export class PositionComponent implements IHistoryEnabled<FlatVec> {
+  private readonly pos: FlatVec;
+
+  constructor(flatVec: FlatVec | undefined = undefined) {
+    if (flatVec == undefined) {
+      this.pos = new FlatVec(0, 0);
+      return;
+    }
+    this.pos = flatVec;
+  }
+
+  public GetAsFlatVec(): FlatVec {
+    return this.pos;
+  }
+
+  public get x() {
+    return this.pos.x;
+  }
+
+  public get y() {
+    return this.pos.y;
+  }
+
+  public set x(val: number) {
+    this.pos.x = val;
+  }
+
+  public set y(val: number) {
+    this.pos.y = val;
+  }
+
+  public SnapShot(): FlatVec {
+    return new FlatVec(this.pos.x, this.pos.y);
+  }
+
+  public SetFromSnapShot(snapShot: FlatVec): void {
+    this.pos.x = snapShot.x;
+    this.pos.y = snapShot.y;
+  }
+}
+
+export type FSMInfoSnapShot = {
+  State: FSMState;
+  StateFrame: number;
+};
+
+export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
+  private currentState: FSMState = Idle;
+  private currentStateFrame: number = 0;
+
+  public get CurrentStateFrame() {
+    return this.currentStateFrame;
+  }
+
+  public get CurrentState(): FSMState {
+    return this.currentState;
+  }
+
+  public SetCurrentState(s: FSMState) {
+    this.currentState = s;
+  }
+
+  public IncrementStateFrame(): void {
+    this.currentStateFrame++;
+  }
+
+  public SetStateFrameToZero(): void {
+    this.currentStateFrame = 0;
+  }
+
+  public SnapShot(): FSMInfoSnapShot {
+    return {
+      State: this.currentState,
+      StateFrame: this.currentStateFrame,
+    } as FSMInfoSnapShot;
+  }
+
+  public SetFromSnapShot(snapShot: FSMInfoSnapShot): void {
+    this.currentState = snapShot.State;
+    this.currentStateFrame = snapShot.StateFrame;
+  }
+}
+
+export class VelocityComponent implements IHistoryEnabled<FlatVec> {
+  private readonly Vel: FlatVec;
 
   constructor() {
     this.Vel = new FlatVec(0, 0);
@@ -50,6 +151,35 @@ export class VelocityComponent {
     }
 
     this.Vel.y = Clamp(vel + y, upperBound);
+  }
+
+  public SnapShot(): FlatVec {
+    return new FlatVec(this.Vel.x, this.Vel.y);
+  }
+
+  public SetFromSnapShot(snapShot: FlatVec): void {
+    this.Vel.x = snapShot.x;
+    this.Vel.y = snapShot.y;
+  }
+
+  public GetAsFlatVec() {
+    return this.Vel;
+  }
+
+  public get x() {
+    return this.Vel.x;
+  }
+
+  public get y() {
+    return this.Vel.y;
+  }
+
+  public set x(val: number) {
+    this.Vel.x = val;
+  }
+
+  public set y(val: number) {
+    this.Vel.y = val;
   }
 }
 
@@ -101,51 +231,101 @@ export class SpeedsComponent {
   }
 }
 
-export class PlayerFlagsComponent {
+export type FlagsSnapShot = {
+  FacingRight: boolean;
+  FastFalling: boolean;
+};
+
+export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
   private FacingRight: boolean = false;
   private FastFalling: boolean = false;
 
-  FaceRight(): void {
+  public FaceRight(): void {
     this.FacingRight = true;
   }
 
-  FaceLeft(): void {
+  public FaceLeft(): void {
     this.FacingRight = false;
   }
 
-  IsFacingRight(): boolean {
+  public IsFacingRight(): boolean {
     return this.FacingRight;
   }
 
-  IsFacingLeft(): boolean {
+  public IsFacingLeft(): boolean {
     return !this.IsFacingRight();
   }
 
-  FastFallOn(): void {
+  public FastFallOn(): void {
     this.FastFalling = true;
   }
 
-  FastFallOff(): void {
+  public FastFallOff(): void {
     this.FastFalling = false;
   }
 
-  IsFastFalling(): boolean {
+  public IsFastFalling(): boolean {
     return this.FastFalling;
+  }
+
+  public ChangeDirections() {
+    if (this.IsFacingRight()) {
+      this.FaceLeft();
+      return;
+    }
+    this.FaceRight();
+  }
+
+  public SnapShot(): FlagsSnapShot {
+    return {
+      FacingRight: this.FacingRight,
+      FastFalling: this.FastFalling,
+    } as FlagsSnapShot;
+  }
+
+  public SetFromSnapShot(snapShot: FlagsSnapShot): void {
+    this.FastFalling = snapShot.FastFalling;
+    this.FacingRight = snapShot.FacingRight;
   }
 }
 
-export class ECBComponent {
-  private SesnsorDepth: number = 0.2;
-  private Position: FlatVec = new FlatVec(0, 0);
-  public readonly PreviousPosition: FlatVec = new FlatVec(0, 0);
+export type ECBSnapShot = {
+  posX: number;
+  posY: number;
+  prevPosX: number;
+  prevPosY: number;
+  topX: number;
+  topY: number;
+  rightX: number;
+  rightY: number;
+  bottomX: number;
+  bottomY: number;
+  leftX: number;
+  leftY: number;
+  prevTopX: number;
+  prevTopY: number;
+  prevRightX: number;
+  prevRightY: number;
+  prevBottomX: number;
+  prevBottomY: number;
+  prevLeftX: number;
+  preLeftY: number;
+  YOffset: number;
+  Height: number;
+  Width: number;
+};
+export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
+  private readonly SesnsorDepth: number = 0.2;
+  private readonly Position: FlatVec = new FlatVec(0, 0);
+  private readonly PreviousPosition: FlatVec = new FlatVec(0, 0);
+  private readonly CurVerts = new Array<FlatVec>(4);
+  private readonly PrevVerts = new Array<FlatVec>(4);
+  private readonly AllVerts = new Array<FlatVec>(8);
+
+  private Color: string;
   private Height: number;
   private Width: number;
   private YOffset: number;
-  private CurVerts = new Array<FlatVec>(4);
-  private PrevVerts = new Array<FlatVec>(4);
-  private Color: string;
-  private AllVerts = new Array<FlatVec>(8);
-  private ccHull?: Array<FlatVec>;
 
   constructor(height: number = 100, width: number = 100, yOffset: number = 0) {
     this.Color = 'orange';
@@ -157,15 +337,12 @@ export class ECBComponent {
     this.Update();
   }
 
-  public GetHull() {
-    if (this.ccHull != undefined) {
-      return this.ccHull;
-    }
+  public GetHull(): FlatVec[] {
     this.LoadAllVerts();
     return createConvexHull(this.AllVerts);
   }
 
-  private LoadAllVerts() {
+  private LoadAllVerts(): void {
     this.AllVerts.length = 0;
 
     for (let i = 0; i < 4; i++) {
@@ -177,7 +354,7 @@ export class ECBComponent {
     }
   }
 
-  public UpdatePreviousPosition() {
+  public UpdatePreviousECB(): void {
     this.PreviousPosition.x = this.Position.x;
     this.PreviousPosition.y = this.Position.y;
 
@@ -193,19 +370,18 @@ export class ECBComponent {
     prevVert[3].y = curVert[3].y;
   }
 
-  public SetInitialPosition(x: number, y: number) {
+  public SetInitialPosition(x: number, y: number): void {
     this.MoveToPosition(x, y);
-    this.UpdatePreviousPosition();
+    this.UpdatePreviousECB();
   }
 
-  public MoveToPosition(x: number, y: number) {
+  public MoveToPosition(x: number, y: number): void {
     this.Position.x = x;
     this.Position.y = y;
     this.Update();
-    this.ccHull = undefined;
   }
 
-  Update(): void {
+  public Update(): void {
     const px = this.Position.x;
     const py = this.Position.y;
     const height = this.Height;
@@ -384,9 +560,62 @@ export class ECBComponent {
   public SetColor(color: string): void {
     this.Color = color;
   }
-}
 
-export class JumpComponent {
+  public SnapShot(): ECBSnapShot {
+    return {
+      posX: this.Position.x,
+      posY: this.Position.y,
+      prevPosX: this.PreviousPosition.x,
+      prevPosY: this.PreviousPosition.y,
+      topX: this.Top.x,
+      topY: this.Top.y,
+      rightX: this.Right.x,
+      rightY: this.Right.y,
+      bottomX: this.Bottom.x,
+      bottomY: this.Bottom.y,
+      leftX: this.Left.x,
+      leftY: this.Left.y,
+      prevTopX: this.PrevTop.x,
+      prevTopY: this.PrevTop.y,
+      prevRightX: this.PrevRight.x,
+      prevRightY: this.PrevRight.y,
+      prevBottomX: this.PrevBottom.x,
+      prevBottomY: this.PrevBottom.y,
+      prevLeftX: this.PrevLeft.x,
+      preLeftY: this.PrevLeft.y,
+      YOffset: this.YOffset,
+      Height: this.Height,
+      Width: this.Width,
+    } as ECBSnapShot;
+  }
+
+  public SetFromSnapShot(snapShot: ECBSnapShot): void {
+    this.Position.x = snapShot.posX;
+    this.Position.y = snapShot.posY;
+    this.PreviousPosition.x = snapShot.prevPosX;
+    this.PreviousPosition.y = snapShot.prevPosY;
+    this.Top.x = snapShot.topX;
+    this.Top.y = snapShot.topY;
+    this.Right.x = snapShot.rightX;
+    this.Right.y = snapShot.rightY;
+    this.Bottom.x = snapShot.bottomX;
+    this.Bottom.y = snapShot.bottomY;
+    this.Left.x = snapShot.leftX;
+    this.Left.y = snapShot.leftY;
+    this.PrevTop.x = snapShot.prevTopX;
+    this.PrevTop.y = snapShot.prevTopY;
+    this.PrevRight.x = snapShot.prevRightX;
+    this.PrevRight.y = snapShot.prevRightY;
+    this.PrevBottom.x = snapShot.prevBottomX;
+    this.PrevBottom.y = snapShot.prevBottomY;
+    this.PrevLeft.x = snapShot.prevLeftX;
+    this.PrevLeft.y = snapShot.preLeftY;
+    this.YOffset = snapShot.YOffset;
+    this.Height = snapShot.Height;
+    this.Width = snapShot.Width;
+  }
+}
+export class JumpComponent implements IHistoryEnabled<number> {
   public readonly JumpVelocity: number;
   private readonly NumberOfJumps: number = 2;
   private JumpCount: number = 0;
@@ -396,16 +625,24 @@ export class JumpComponent {
     this.NumberOfJumps = numberOfJumps;
   }
 
-  HasJumps() {
+  public HasJumps() {
     return this.JumpCount < this.NumberOfJumps;
   }
 
-  IncrementJumps() {
+  public IncrementJumps() {
     this.JumpCount++;
   }
 
-  ResetJumps() {
+  public ResetJumps() {
     this.JumpCount = 0;
+  }
+
+  public SnapShot(): number {
+    return this.JumpCount;
+  }
+
+  public SetFromSnapShot(snapShot: number): void {
+    this.JumpCount = snapShot;
   }
 }
 

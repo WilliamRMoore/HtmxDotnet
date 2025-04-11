@@ -1,46 +1,51 @@
-import { StateMachine } from '../../FSM/FiniteStateMachine';
+import { StateMachine } from '../finite-state-machine/PlayerStateMachine';
 import { InputAction } from '../../loops/Input';
 import { CollisionResultPool } from '../../pools/CollisionResultPool';
 import { ProjectionResultPool } from '../../pools/ProjectResultPool';
 import { VecPool } from '../../pools/VecResultPool';
 import { InputStorageManagerLocal } from '../engine-state-management/Managers';
+import { ComponentHistory } from '../player/playerComponents';
 import { Player } from '../player/playerOrchestrator';
 import { Stage } from '../stage/stageComponents';
 
 export class World {
-  private player?: Player;
+  private players: Array<Player> = [];
   private stage?: Stage;
-  private stateMachine?: StateMachine;
+  private stateMachines: Array<StateMachine> = [];
   public readonly VecPool: VecPool;
   public readonly ColResPool: CollisionResultPool;
   public readonly ProjResPool: ProjectionResultPool;
   public localFrame = 0;
   private readonly InputStorage: Array<InputStorageManagerLocal<InputAction>> =
-    new Array<InputStorageManagerLocal<InputAction>>();
+    [];
+  private readonly PlayerComponentHistories: Array<ComponentHistory> = [];
 
   constructor() {
     this.VecPool = new VecPool(500);
     this.ColResPool = new CollisionResultPool(200);
     this.ProjResPool = new ProjectionResultPool(500);
-    this.InputStorage[0] = new InputStorageManagerLocal<InputAction>();
-    this.InputStorage[1] = new InputStorageManagerLocal<InputAction>();
   }
 
   public SetPlayer(p: Player): void {
-    this.player = p;
-    this.stateMachine = new StateMachine(p);
+    this.players?.push(p);
+    this.stateMachines.push(new StateMachine(p));
+    this.InputStorage.push(new InputStorageManagerLocal<InputAction>());
   }
 
   public SetStage(s: Stage) {
     this.stage = s;
   }
 
-  public get Player(): Player | undefined {
-    return this.player;
+  public GetPlayer(index: number): Player | undefined {
+    return this.players[index];
   }
 
-  public get StateMachine(): StateMachine | undefined {
-    return this.stateMachine;
+  public GetStateMachine(index: number): StateMachine | undefined {
+    return this.stateMachines[index];
+  }
+
+  public GetComponentHistory(index: number): ComponentHistory | undefined {
+    return this.PlayerComponentHistories[index];
   }
 
   public get Stage(): Stage | undefined {
@@ -51,9 +56,17 @@ export class World {
     return this.InputStorage[playerId].GetInputForFrame(this.localFrame - 1);
   }
 
+  public GetPlayerCurrentInput(playerId: number): InputAction | undefined {
+    return this.InputStorage[playerId].GetInputForFrame(this.localFrame);
+  }
+
   public GetInputManager(
     playerIndex: number
   ): InputStorageManagerLocal<InputAction> {
     return this.InputStorage[playerIndex];
+  }
+
+  public get PlayerCount(): number {
+    return this.players.length;
   }
 }
