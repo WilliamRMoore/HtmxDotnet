@@ -1,29 +1,36 @@
 import { StateMachine } from '../finite-state-machine/PlayerStateMachine';
 import { InputAction } from '../../loops/Input';
-import { CollisionResultPool } from '../../pools/CollisionResultPool';
-import { ProjectionResultPool } from '../../pools/ProjectResultPool';
-import { VecPool } from '../../pools/VecResultPool';
 import { InputStorageManagerLocal } from '../engine-state-management/Managers';
 import { ComponentHistory } from '../player/playerComponents';
 import { Player } from '../player/playerOrchestrator';
 import { Stage } from '../stage/stageComponents';
+import { PooledVector } from '../../pools/VecResult';
+import { Pool } from '../../pools/Pool';
+import { CollisionResult } from '../../pools/CollisionResult';
+import { ProjectionResult } from '../../pools/ProjectResult';
 
 export class World {
   private players: Array<Player> = [];
   private stage?: Stage;
   private stateMachines: Array<StateMachine> = [];
-  public readonly VecPool: VecPool;
-  public readonly ColResPool: CollisionResultPool;
-  public readonly ProjResPool: ProjectionResultPool;
+  public readonly VecPool: Pool<PooledVector>;
+  public readonly ColResPool: Pool<CollisionResult>;
+  public readonly ProjResPool: Pool<ProjectionResult>;
   public localFrame = 0;
   private readonly InputStorage: Array<InputStorageManagerLocal<InputAction>> =
     [];
   private readonly PlayerComponentHistories: Array<ComponentHistory> = [];
 
   constructor() {
-    this.VecPool = new VecPool(500);
-    this.ColResPool = new CollisionResultPool(200);
-    this.ProjResPool = new ProjectionResultPool(500);
+    this.VecPool = new Pool<PooledVector>(500, () => new PooledVector());
+    this.ColResPool = new Pool<CollisionResult>(
+      200,
+      () => new CollisionResult()
+    );
+    this.ProjResPool = new Pool<ProjectionResult>(
+      500,
+      () => new ProjectionResult()
+    );
   }
 
   public SetPlayer(p: Player): void {

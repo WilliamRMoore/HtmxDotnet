@@ -3,6 +3,7 @@ import {
   ECBComponent,
   FSMInfoComponent,
   JumpComponent,
+  LedgeDetectorComponent,
   PlayerFlagsComponent,
   PositionComponent,
   SpeedsComponent,
@@ -31,6 +32,7 @@ export class Player {
   private readonly ecb: ECBComponent;
   private readonly jump: JumpComponent;
   private readonly fsmInfo: FSMInfoComponent;
+  private readonly ledgeDetector: LedgeDetectorComponent;
   public readonly ID: number = 0;
 
   constructor(
@@ -48,6 +50,12 @@ export class Player {
     this.ecb = new ECBComponent();
     this.jump = new JumpComponent(20, 2);
     this.fsmInfo = new FSMInfoComponent();
+    this.ledgeDetector = new LedgeDetectorComponent(
+      this.position.X,
+      this.position.Y,
+      70,
+      30
+    );
   }
 
   public get ECBComponent(): ECBComponent {
@@ -76,6 +84,10 @@ export class Player {
 
   public get FSMInfoComponent(): FSMInfoComponent {
     return this.fsmInfo;
+  }
+
+  public get LedgeDetectorComponent(): LedgeDetectorComponent {
+    return this.ledgeDetector;
   }
 }
 
@@ -155,6 +167,7 @@ export class PlayerHelpers {
     p.PostionComponent.X = x;
     p.PostionComponent.Y = y;
     p.ECBComponent.MoveToPosition(x, y);
+    p.LedgeDetectorComponent.MoveTo(x, y);
   }
 
   public static SetPlayerInitialPosition(
@@ -165,12 +178,14 @@ export class PlayerHelpers {
     p.PostionComponent.X = x;
     p.PostionComponent.Y = y;
     p.ECBComponent.SetInitialPosition(x, y);
+    p.LedgeDetectorComponent.MoveTo(x, y);
   }
 
   public static AddToPlayerYPosition(p: Player, y: number): void {
     const position = p.PostionComponent;
     position.Y += y;
     p.ECBComponent.MoveToPosition(position.X, position.Y);
+    p.LedgeDetectorComponent.MoveTo(position.X, position.Y);
   }
 
   public static AddToPlayerPosition(p: Player, x: number, y: number): void {
@@ -178,5 +193,6 @@ export class PlayerHelpers {
     pos.X += x;
     pos.Y += y;
     p.ECBComponent.MoveToPosition(pos.X, pos.Y);
+    p.LedgeDetectorComponent.MoveTo(pos.X, pos.Y);
   }
 }

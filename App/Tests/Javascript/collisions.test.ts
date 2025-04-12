@@ -1,8 +1,9 @@
 import { IntersectsPolygons } from '../../JavaScript/game/engine/physics/collisions';
 import { FlatVec } from '../../JavaScript/game/engine/physics/vector';
-import { CollisionResultPool } from '../../JavaScript/game/pools/CollisionResultPool';
-import { ProjectionResultPool } from '../../JavaScript/game/pools/ProjectResultPool';
-import { VecPool } from '../../JavaScript/game/pools/VecResultPool';
+import { CollisionResult } from '../../JavaScript/game/pools/CollisionResult';
+import { Pool } from '../../JavaScript/game/pools/Pool';
+import { ProjectionResult } from '../../JavaScript/game/pools/ProjectResult';
+import { PooledVector } from '../../JavaScript/game/pools/VecResult';
 
 let poly1: Array<FlatVec>;
 let poly2: Array<FlatVec>;
@@ -23,7 +24,7 @@ beforeEach(() => {
 });
 
 test('Test Move', () => {
-  let vecPool = new VecPool(100);
+  let vecPool = new Pool<PooledVector>(200, () => new PooledVector()); //new VecPool(100);
   let p1 = Move(poly1, new FlatVec(100, 0), vecPool);
 
   expect(p1[0].x).toBe(100);
@@ -31,30 +32,36 @@ test('Test Move', () => {
 });
 
 test('IntersectsPolygons returns false', () => {
-  let vecPool = new VecPool(100);
-  let colResPool = new CollisionResultPool(100);
-  let projResPool = new ProjectionResultPool(100);
+  let vecPool = new Pool<PooledVector>(200, () => new PooledVector());
+  let colResPool = new Pool<CollisionResult>(100, () => new CollisionResult());
+  let projResPool = new Pool<ProjectionResult>(
+    100,
+    () => new ProjectionResult()
+  );
   let p1 = Move(poly1, new FlatVec(100, 100), vecPool);
   let p2 = Move(poly2, new FlatVec(300, 300), vecPool);
 
   let res = IntersectsPolygons(p1, p2, vecPool, colResPool, projResPool);
 
-  expect(res.collision).toBeFalsy();
+  expect(res.Collision).toBeFalsy();
 });
 
 test('IntersectsPolygons returns true', () => {
-  let vecPool = new VecPool(100);
-  let colResPool = new CollisionResultPool(100);
-  let projResPool = new ProjectionResultPool(100);
+  let vecPool = new Pool<PooledVector>(200, () => new PooledVector());
+  let colResPool = new Pool<CollisionResult>(100, () => new CollisionResult());
+  let projResPool = new Pool<ProjectionResult>(
+    100,
+    () => new ProjectionResult()
+  );
   let p1 = Move(poly1, new FlatVec(100, 100), vecPool);
   let p2 = Move(poly2, new FlatVec(110, 100), vecPool);
 
   let res = IntersectsPolygons(p1, p2, vecPool, colResPool, projResPool);
 
-  expect(res.collision).toBeTruthy();
+  expect(res.Collision).toBeTruthy();
 });
 
-function Move(poly: Array<FlatVec>, pos: FlatVec, vecPool: VecPool) {
+function Move(poly: Array<FlatVec>, pos: FlatVec, vecPool: Pool<PooledVector>) {
   poly[0] = pos;
   // let posDto = VectorResultAllocator(pos.x, pos.y);
   // var dto = VectorResultAllocator();

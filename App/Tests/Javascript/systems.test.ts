@@ -1,4 +1,7 @@
-import { Player } from '../../JavaScript/game/engine/player/playerOrchestrator';
+import {
+  Player,
+  PlayerHelpers,
+} from '../../JavaScript/game/engine/player/playerOrchestrator';
 import { defaultStage } from '../../JavaScript/game/engine/stage/stageComponents';
 import {
   GROUND_COLLISION,
@@ -6,7 +9,6 @@ import {
   StageCollisionDetection,
 } from '../../JavaScript/game/engine/systems/systems';
 import { World } from '../../JavaScript/game/engine/world/world';
-import { VecPool } from '../../JavaScript/game/pools/VecResultPool';
 
 test('stage collision ground', () => {
   const stage = defaultStage();
@@ -14,13 +16,13 @@ test('stage collision ground', () => {
   const world = new World();
   world.SetPlayer(p);
   world.SetStage(stage);
-  p.SetPlayerInitialPosition(700, 455.0);
+  PlayerHelpers.SetPlayerInitialPosition(p, 700, 455.0);
 
   const collided = StageCollisionDetection(world);
 
   expect(collided).toBe(GROUND_COLLISION);
 
-  expect(p.IsGrounded(world.Stage!)).toBeTruthy();
+  expect(PlayerHelpers.IsPlayerGroundedOnStage(p, world.Stage!)).toBeTruthy();
 });
 
 test('stage collision ground from air', () => {
@@ -29,23 +31,21 @@ test('stage collision ground from air', () => {
   const world = new World();
   world.SetPlayer(p);
   world.SetStage(stage);
-  p.SetPlayerInitialPosition(680, 430.0);
+  PlayerHelpers.SetPlayerInitialPosition(p, 680, 430.0);
 
   const collided = StageCollisionDetection(world);
 
   expect(collided).toBe(NO_COLLISION);
 
-  expect(p.IsGrounded(world.Stage!)).toBeFalsy();
+  expect(PlayerHelpers.IsPlayerGroundedOnStage(p, world.Stage!)).toBeFalsy();
 
-  p.SetPlayerPostion(700, 455.0);
+  PlayerHelpers.SetPlayerPosition(p, 700, 455.0);
 
   const collided2 = StageCollisionDetection(world);
 
   expect(collided2).toBe(GROUND_COLLISION);
 
-  expect(p.IsGrounded(world.Stage!)).toBeTruthy();
-
-  p.PostTickTask();
+  expect(PlayerHelpers.IsPlayerGroundedOnStage(p, world.Stage!)).toBeTruthy();
 });
 
 test('stage collision right wall', () => {
@@ -54,7 +54,7 @@ test('stage collision right wall', () => {
   const world = new World();
   world.SetPlayer(p);
   world.SetStage(stage);
-  p.SetPlayerInitialPosition(555, 525);
+  PlayerHelpers.SetPlayerInitialPosition(p, 555, 525);
 
   const collided = StageCollisionDetection(world);
   expect(collided).toBeTruthy();
@@ -66,7 +66,7 @@ test('stage collision corner case', () => {
   const world = new World();
   world.SetPlayer(p);
   world.SetStage(stage);
-  p.SetPlayerInitialPosition(595, 460);
+  PlayerHelpers.SetPlayerInitialPosition(p, 595, 460);
   const colided = StageCollisionDetection(world);
   expect(colided).toBeTruthy();
 });

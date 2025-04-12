@@ -8,7 +8,6 @@ import {
   STOP_RUN_RELATIONS,
   START_WALK_RELATIONS,
   STATES,
-  STOP_DASH_RELATIONS,
   TURN_RELATIONS,
   WALK_RELATIONS,
   JUMP_SQUAT_RELATIONS,
@@ -64,9 +63,6 @@ test('WALK', () => {
 });
 
 test('DASH', () => {
-  expect(DASH_RELATIONS.mappings.getMapping(GameEvents.idle)).toBe(
-    STATES.STOP_DASH
-  );
   expect(DASH_RELATIONS.mappings.getMapping(GameEvents.turn)).toBe(
     STATES.DASH_TURN
   );
@@ -81,13 +77,6 @@ test('DASH_TURN', () => {
     STATES.JUMP_SQUAT
   );
   expect(DASH_TURN_RELATIONS.mappings.getDefaults()).toBe(STATES.DASH);
-});
-
-test('STOP_DASH', () => {
-  expect(STOP_DASH_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
-    STATES.JUMP_SQUAT
-  );
-  expect(STOP_DASH_RELATIONS.mappings.getDefault()).toBe(STATES.IDLE);
 });
 
 test('RUN', () => {

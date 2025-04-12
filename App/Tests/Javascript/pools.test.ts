@@ -1,4 +1,4 @@
-import { VecPool } from '../../JavaScript/game/pools/VecResultPool';
+import { VecPool } from '../../JavaScript/game/pools/VecResult.ts';
 
 test('VecResultPool Test', () => {
   const SUT = new VecPool(1000);

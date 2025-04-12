@@ -93,6 +93,7 @@ export class Jazz implements IJazz {
 
     const worldStage = this.world.Stage;
     const playerCount = this.world.PlayerCount;
+
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
       const worldPlayer = this.world.GetPlayer(playerIndex);
       const sm = this.world.GetStateMachine(playerIndex);
@@ -123,7 +124,32 @@ export class Jazz implements IJazz {
       playerRenderData.prevTopY = ecb?.PrevTop.y ?? 0;
       playerRenderData.prevBottomX = ecb?.PrevBottom.x ?? 0;
       playerRenderData.prevBottomY = ecb?.PrevBottom.y ?? 0;
+
+      const playerLedgeDetectorComponent = worldPlayer?.LedgeDetectorComponent!;
+
+      const leftLedgeDetectorLength =
+        playerLedgeDetectorComponent.LeftSide.length;
+
+      for (let index = 0; index < leftLedgeDetectorLength; index++) {
+        const renderData = playerRenderData.leftLedgeDetector[index];
+        const playerData = playerLedgeDetectorComponent.LeftSide[index];
+
+        renderData.x = playerData.x;
+        renderData.y = playerData.y;
+      }
+
+      const rightLedgeDetectorLength =
+        playerLedgeDetectorComponent.LeftSide.length;
+
+      for (let index = 0; index < rightLedgeDetectorLength; index++) {
+        const renderData = playerRenderData.rightLedgeDetector[index];
+        const playerData = playerLedgeDetectorComponent.RightSide[index];
+
+        renderData.x = playerData.x;
+        renderData.y = playerData.y;
+      }
     }
+
     this.renderDataDto.stage = worldStage;
   }
 
@@ -172,7 +198,10 @@ export class JazzDebugger implements IJazz {
       this._jazz.Tick();
       return;
     }
-    this._jazz.Tick();
+
+    if (!this.paused) {
+      this._jazz.Tick();
+    }
   }
 
   public get World(): World | undefined {

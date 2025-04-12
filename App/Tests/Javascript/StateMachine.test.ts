@@ -1,9 +1,7 @@
 import {
-  Dash,
-  StartWalk,
-  Turn,
-} from '../../JavaScript/game/CharacterStates/TestCharacterStates';
-import { Player } from '../../JavaScript/game/engine/player/playerOrchestrator';
+  Player,
+  PlayerHelpers,
+} from '../../JavaScript/game/engine/player/playerOrchestrator';
 import {
   defaultStage,
   Stage,
@@ -21,7 +19,8 @@ test('StateMachineShould', () => {
   world.SetPlayer(p);
   world.SetStage(s);
 
-  p.SetPlayerInitialPosition(
+  PlayerHelpers.SetPlayerInitialPosition(
+    p,
     s.StageVerticies.GetGround()[0].x + 10,
     s.StageVerticies.GetGround()[0].y + 0.001
   );
@@ -34,6 +33,8 @@ test('StateMachineShould', () => {
     RXAxis: 0,
     LYAxsis: 0,
     RYAxsis: 0,
+    Select: false,
+    Start: false,
   };
 
   world.localFrame = 0;
@@ -44,7 +45,7 @@ test('StateMachineShould', () => {
 
   sm.UpdateFromInput(ia, world);
 
-  expect(p.GetCurrentFSMStateId()).toBe(STATES.TURN);
+  expect(p.FSMInfoComponent.CurrentState.StateId).toBe(STATES.TURN);
 });
 
 test('StateMachineShould2', () => {
@@ -54,12 +55,13 @@ test('StateMachineShould2', () => {
   world.SetPlayer(p);
   world.SetStage(s);
 
-  p.SetPlayerPostion(
+  PlayerHelpers.SetPlayerPosition(
+    p,
     s.StageVerticies.GetGround()[0].x + 10,
     s.StageVerticies.GetGround()[0].y + 0.001
   );
 
-  p.FaceLeft();
+  p.FlagsComponent.FaceLeft();
 
   const sm: StateMachine = new StateMachine(p);
 
@@ -69,11 +71,13 @@ test('StateMachineShould2', () => {
     RXAxis: 0,
     LYAxsis: 0,
     RYAxsis: 0,
+    Start: false,
+    Select: false,
   };
 
   sm.UpdateFromInput(ia, world);
 
-  expect(p.GetCurrentFSMStateId()).toBe(STATES.TURN);
+  expect(p.FSMInfoComponent.CurrentState.StateId).toBe(STATES.TURN);
 });
 
 function UpdateNTimes(w: World, sm: StateMachine, ia: InputAction, n: number) {

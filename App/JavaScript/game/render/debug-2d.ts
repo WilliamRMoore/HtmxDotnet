@@ -1,5 +1,6 @@
 import { FlatVec } from '../engine/physics/vector';
 import { Stage } from '../engine/stage/stageComponents';
+import { FillArrayWithFlatVec } from '../engine/utils';
 
 export class DebugRenderer {
   private canvas: HTMLCanvasElement;
@@ -54,6 +55,9 @@ export class RenderData {
   frameTime: number = 0;
   players: Array<PlayerRenderData> = [];
   stage?: Stage;
+  PooledVectors: number = 0;
+  PooledCollisionResults: number = 0;
+  PooledProjectionResults: number = 0;
 
   constructor(playerCount: number) {
     for (let i = 0; i < playerCount; i++) {
@@ -89,6 +93,13 @@ class PlayerRenderData {
   prevTopY: number = 0;
   prevBottomX: number = 0;
   prevBottomY: number = 0;
+  leftLedgeDetector: FlatVec[] = new Array<FlatVec>(4);
+  rightLedgeDetector: FlatVec[] = new Array<FlatVec>(4);
+
+  constructor() {
+    FillArrayWithFlatVec(this.leftLedgeDetector);
+    FillArrayWithFlatVec(this.rightLedgeDetector);
+  }
   // ccHull: FlatVec[] = new Array<FlatVec>(8);
 }
 
@@ -214,4 +225,37 @@ function drawPlayer(
     ctx.stroke();
     ctx.closePath();
   }
+
+  const leftDetector = player.leftLedgeDetector;
+  const rightDetector = player.rightLedgeDetector;
+
+  // Draw left detector
+  ctx.strokeStyle = 'blue';
+
+  if (!facingRight) {
+    ctx.strokeStyle = 'red';
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(leftDetector[0].x, leftDetector[0].y);
+  for (let index = 0; index < leftDetector.length; index++) {
+    ctx.lineTo(leftDetector[index].x, leftDetector[index].y);
+  }
+  ctx.closePath();
+  ctx.stroke();
+
+  // Draw right detector
+  ctx.strokeStyle = 'red';
+
+  if (!facingRight) {
+    ctx.strokeStyle = 'blue';
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(rightDetector[0].x, rightDetector[0].y);
+  for (let index = 0; index < rightDetector.length; index++) {
+    ctx.lineTo(rightDetector[index].x, rightDetector[index].y);
+  }
+  ctx.closePath();
+  ctx.stroke();
 }

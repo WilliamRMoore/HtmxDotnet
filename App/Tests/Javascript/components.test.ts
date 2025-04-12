@@ -226,48 +226,48 @@ test('VelocityComponent Should Clamp Impulses', () => {
 
   // Test X impulse
   SUT.AddClampedXImpulse(10, 5);
-  expect(SUT.Vel.x).toBe(5);
+  expect(SUT.X).toBe(5);
 
   // Test Y impulse
   SUT.AddClampedYImpulse(10, 5);
-  expect(SUT.Vel.y).toBe(5);
+  expect(SUT.Y).toBe(5);
 
   // Add more to reach clamp
   SUT.AddClampedXImpulse(10, 7);
   SUT.AddClampedYImpulse(10, 7);
 
   // Should be clamped at 10
-  expect(SUT.Vel.x).toBe(10);
-  expect(SUT.Vel.y).toBe(10);
+  expect(SUT.X).toBe(10);
+  expect(SUT.Y).toBe(10);
 
-  SUT.Vel.x = 100;
-  SUT.Vel.y = 100;
+  SUT.X = 100;
+  SUT.Y = 100;
 
-  expect(SUT.Vel.x).toBe(100);
+  expect(SUT.X).toBe(100);
 
   //Max of ten, add 5
   SUT.AddClampedXImpulse(10, 5);
 
   // we were over the clamp, so it should add 0
-  expect(SUT.Vel.x).toBe(100);
+  expect(SUT.X).toBe(100);
 
-  SUT.Vel.y = 0;
-  SUT.Vel.x = 0;
+  SUT.Y = 0;
+  SUT.X = 0;
 
   SUT.AddClampedYImpulse(10, -5);
 
-  expect(SUT.Vel.y).toBe(-5);
+  expect(SUT.Y).toBe(-5);
 
   SUT.AddClampedXImpulse(10, -2);
 
-  expect(SUT.Vel.x).toBe(-2);
+  expect(SUT.X).toBe(-2);
 
-  SUT.Vel.x = 0;
-  SUT.Vel.y = 0;
+  SUT.X = 0;
+  SUT.Y = 0;
 
   SUT.AddClampedXImpulse(10, 20);
 
-  expect(SUT.Vel.x).toBe(10);
+  expect(SUT.X).toBe(10);
 });
 
 //END VelocityComponent tests =============================================

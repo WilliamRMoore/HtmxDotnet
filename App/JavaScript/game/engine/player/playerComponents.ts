@@ -294,22 +294,22 @@ export type ECBSnapShot = {
   posY: number;
   prevPosX: number;
   prevPosY: number;
-  topX: number;
-  topY: number;
-  rightX: number;
-  rightY: number;
-  bottomX: number;
-  bottomY: number;
-  leftX: number;
-  leftY: number;
-  prevTopX: number;
-  prevTopY: number;
-  prevRightX: number;
-  prevRightY: number;
-  prevBottomX: number;
-  prevBottomY: number;
-  prevLeftX: number;
-  preLeftY: number;
+  // topX: number;
+  // topY: number;
+  // rightX: number;
+  // rightY: number;
+  // bottomX: number;
+  // bottomY: number;
+  // leftX: number;
+  // leftY: number;
+  // prevTopX: number;
+  // prevTopY: number;
+  // prevRightX: number;
+  // prevRightY: number;
+  // prevBottomX: number;
+  // prevBottomY: number;
+  // prevLeftX: number;
+  // preLeftY: number;
   YOffset: number;
   Height: number;
   Width: number;
@@ -334,7 +334,7 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     this.yOffset = yOffset;
     FillArrayWithFlatVec(this.curVerts);
     FillArrayWithFlatVec(this.prevVerts);
-    this.Update();
+    this.update();
   }
 
   public GetHull(): FlatVec[] {
@@ -378,10 +378,10 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   public MoveToPosition(x: number, y: number): void {
     this.position.x = x;
     this.position.y = y;
-    this.Update();
+    this.update();
   }
 
-  public Update(): void {
+  private update(): void {
     const px = this.position.x;
     const py = this.position.y;
     const height = this.height;
@@ -559,22 +559,6 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
       posY: this.position.y,
       prevPosX: this.previousPosition.x,
       prevPosY: this.previousPosition.y,
-      topX: this.Top.x,
-      topY: this.Top.y,
-      rightX: this.Right.x,
-      rightY: this.Right.y,
-      bottomX: this.Bottom.x,
-      bottomY: this.Bottom.y,
-      leftX: this.Left.x,
-      leftY: this.Left.y,
-      prevTopX: this.PrevTop.x,
-      prevTopY: this.PrevTop.y,
-      prevRightX: this.PrevRight.x,
-      prevRightY: this.PrevRight.y,
-      prevBottomX: this.PrevBottom.x,
-      prevBottomY: this.PrevBottom.y,
-      prevLeftX: this.PrevLeft.x,
-      preLeftY: this.PrevLeft.y,
       YOffset: this.yOffset,
       Height: this.height,
       Width: this.width,
@@ -586,27 +570,130 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     this.position.y = snapShot.posY;
     this.previousPosition.x = snapShot.prevPosX;
     this.previousPosition.y = snapShot.prevPosY;
-    this.Top.x = snapShot.topX;
-    this.Top.y = snapShot.topY;
-    this.Right.x = snapShot.rightX;
-    this.Right.y = snapShot.rightY;
-    this.Bottom.x = snapShot.bottomX;
-    this.Bottom.y = snapShot.bottomY;
-    this.Left.x = snapShot.leftX;
-    this.Left.y = snapShot.leftY;
-    this.PrevTop.x = snapShot.prevTopX;
-    this.PrevTop.y = snapShot.prevTopY;
-    this.PrevRight.x = snapShot.prevRightX;
-    this.PrevRight.y = snapShot.prevRightY;
-    this.PrevBottom.x = snapShot.prevBottomX;
-    this.PrevBottom.y = snapShot.prevBottomY;
-    this.PrevLeft.x = snapShot.prevLeftX;
-    this.PrevLeft.y = snapShot.preLeftY;
     this.yOffset = snapShot.YOffset;
     this.height = snapShot.Height;
     this.width = snapShot.Width;
+
+    this.update();
+
+    // Update prevVerts
+
+    const px = this.previousPosition.x;
+    const py = this.previousPosition.y;
+    const height = this.height;
+    const width = this.width;
+    const yOffset = this.yOffset;
+
+    const bottomX = px;
+    const bottomY = py + yOffset;
+
+    const topX = px;
+    const topY = bottomY - height;
+
+    const leftX = bottomX - width / 2;
+    const leftY = bottomY - height / 2;
+
+    const rightX = bottomX + width / 2;
+    const rightY = leftY;
+
+    this.prevVerts[0].x = bottomX;
+    this.prevVerts[0].y = bottomY;
+
+    this.prevVerts[1].x = leftX;
+    this.prevVerts[1].y = leftY;
+
+    this.prevVerts[2].x = topX;
+    this.prevVerts[2].y = topY;
+
+    this.prevVerts[3].x = rightX;
+    this.prevVerts[3].y = rightY;
   }
 }
+
+export class LedgeDetectorComponent implements IHistoryEnabled<FlatVec> {
+  private yOffset: number;
+  private x: number = 0;
+  private y: number = 0;
+  private width: number;
+  private height: number;
+  private rightSide: Array<FlatVec> = new Array<FlatVec>(4);
+  private leftSide: Array<FlatVec> = new Array<FlatVec>(4);
+
+  constructor(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    yOffset = -130
+  ) {
+    this.height = height;
+    this.width = width;
+    this.yOffset = yOffset;
+    FillArrayWithFlatVec(this.rightSide);
+    FillArrayWithFlatVec(this.leftSide);
+    this.MoveTo(x, y);
+  }
+
+  public MoveTo(x: number, y: number): void {
+    this.x = x;
+    this.y = y + this.yOffset;
+    this.update();
+  }
+
+  public get LeftSide(): Array<FlatVec> {
+    return this.leftSide;
+  }
+
+  public get RightSide(): Array<FlatVec> {
+    return this.rightSide;
+  }
+
+  private update(): void {
+    const rightBottomLeft = this.rightSide[0];
+    const rightTopLeft = this.rightSide[1];
+    const rightTopRight = this.rightSide[2];
+    const rightBottomRight = this.rightSide[3];
+
+    const leftBottomLeft = this.leftSide[0];
+    const leftTopLeft = this.leftSide[1];
+    const leftTopRight = this.leftSide[2];
+    const leftBottomRight = this.leftSide[3];
+
+    //bottm left
+    rightBottomLeft.x = this.x;
+    rightBottomLeft.y = this.y;
+    //top left
+    rightTopLeft.x = this.x;
+    rightTopLeft.y = this.y + this.height;
+    // top right
+    rightTopRight.x = this.x + this.width;
+    rightTopRight.y = this.y + this.height;
+    // bottom right
+    rightBottomRight.x = this.x + this.width;
+    rightBottomRight.y = this.y;
+
+    //bottom left
+    leftBottomLeft.x = this.x - this.width;
+    leftBottomLeft.y = this.y;
+    // top left
+    leftTopLeft.x = this.x - this.width;
+    leftTopLeft.y = this.y + this.height;
+    // top right
+    leftTopRight.x = this.x;
+    leftTopRight.y = this.y + this.height;
+    // bottom right
+    leftBottomRight.x = this.x;
+    leftBottomRight.y = this.y;
+  }
+
+  public SnapShot(): FlatVec {
+    return new FlatVec(this.x, this.y);
+  }
+  public SetFromSnapShot(snapShot: FlatVec): void {
+    this.MoveTo(snapShot.x, snapShot.y);
+  }
+}
+
 export class JumpComponent implements IHistoryEnabled<number> {
   private readonly numberOfJumps: number = 2;
   private jumpCount: number = 0;

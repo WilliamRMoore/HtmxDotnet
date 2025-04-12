@@ -4,6 +4,7 @@ import { InputAction } from '../../loops/Input';
 import { FSMState } from './PlayerStateMachine';
 
 // Aliases =====================================
+
 export type gameEventId = number;
 export type stateId = number;
 

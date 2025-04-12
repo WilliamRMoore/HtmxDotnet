@@ -49,14 +49,9 @@ export type FSMState = {
 };
 
 export class StateMachine {
-  // private _stateFrameCount: number = 0;
   private player: Player;
-  // private _currentState: FSMState;
-  private stateMappings: Map<stateId, ActionStateMappings> = new Map<
-    stateId,
-    ActionStateMappings
-  >();
-  private states: Map<stateId, FSMState> = new Map<stateId, FSMState>();
+  private stateMappings: Map<stateId, ActionStateMappings> = new Map();
+  private states: Map<stateId, FSMState> = new Map();
 
   constructor(p: Player) {
     this.player = p;
@@ -205,6 +200,7 @@ export class StateMachine {
     const mappings = this.stateMappings.get(
       this.player.FSMInfoComponent.CurrentState.StateId
     );
+
     const conditions = mappings?.GetConditions();
 
     // We have no conditionals, return

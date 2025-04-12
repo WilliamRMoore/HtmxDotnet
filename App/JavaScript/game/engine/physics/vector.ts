@@ -1,6 +1,5 @@
-import { IPooledVector, VecPool } from '../../pools/VecResultPool';
-
-//let vrp = new VecResultPool(1000);
+import { Pool } from '../../pools/Pool';
+import { IPooledVector, PooledVector } from '../../pools/VecResult';
 
 export class FlatVec {
   x: number;
@@ -49,7 +48,7 @@ function AlternateLineSegmentIntersection(
   y3: number,
   x4: number,
   y4: number,
-  vecPool: VecPool
+  vecPool: Pool<PooledVector>
 ): LineSegmentIntersectionResult {
   const denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
   const numeA = (x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3);

@@ -102,9 +102,9 @@ function _stageCollision(world: World, playerIndex: number): number {
     projResPool
   );
 
-  if (collisionResult.collision) {
-    const normalX = collisionResult.normX;
-    const normalY = collisionResult.normY;
+  if (collisionResult.Collision) {
+    const normalX = collisionResult.NormX;
+    const normalY = collisionResult.NormY;
     const playerPosDTO = vecPool
       .Rent()
       .SetFromFlatVec(p.PostionComponent.GetAsFlatVec());
@@ -112,7 +112,7 @@ function _stageCollision(world: World, playerIndex: number): number {
       .Rent()
       ._setXY(normalX, normalY)
       .Negate()
-      .Multiply(collisionResult.depth);
+      .Multiply(collisionResult.Depth);
 
     //Ground correction
     if (normalX == 0 && normalY > 0) {
@@ -277,6 +277,8 @@ function KillPlayer(p: Player, sm: StateMachine) {
   // reset player to spawn point
   PlayerHelpers.SetPlayerInitialPosition(p, 610, 300);
   // reset any stats
+  p.JumpComponent.ResetJumps();
+  p.JumpComponent.IncrementJumps();
   p.VelocityComponent.X = 0;
   p.VelocityComponent.Y = 0;
   sm.ForceState(STATES.N_FALL);

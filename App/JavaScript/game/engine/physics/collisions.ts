@@ -1,20 +1,15 @@
-import {
-  CollisionResultPool,
-  ICollisionResult,
-} from '../../pools/CollisionResultPool';
-import {
-  IProjectionResult,
-  ProjectionResultPool,
-} from '../../pools/ProjectResultPool';
-import { IPooledVector, VecPool } from '../../pools/VecResultPool';
+import { CollisionResult, ICollisionResult } from '../../pools/CollisionResult';
+import { Pool } from '../../pools/Pool';
+import { IProjectionResult, ProjectionResult } from '../../pools/ProjectResult';
+import { PooledVector } from '../../pools/VecResult';
 import { FlatVec } from './vector';
 
 export function IntersectsPolygons(
   verticiesA: Array<FlatVec>,
   verticiesB: Array<FlatVec>,
-  vecPool: VecPool,
-  colResPool: CollisionResultPool,
-  projResPool: ProjectionResultPool
+  vecPool: Pool<PooledVector>,
+  colResPool: Pool<CollisionResult>,
+  projResPool: Pool<ProjectionResult>
 ): ICollisionResult {
   let normal = vecPool.Rent();
   let depth = Number.MAX_SAFE_INTEGER;
@@ -36,7 +31,7 @@ export function IntersectsPolygons(
     const vaProj = ProjectVerticies(verticiesA, axis, vecPool, projResPool);
     const vbProj = ProjectVerticies(verticiesB, axis, vecPool, projResPool);
 
-    if (vaProj.min >= vbProj.max || vbProj.min >= vaProj.max) {
+    if (vaProj.Min >= vbProj.Max || vbProj.Min >= vaProj.Max) {
       //return { collision: false, normal: null, depth: null } as collisionResult;
       const res = colResPool.Rent();
       res._setCollisionFalse();
@@ -44,8 +39,8 @@ export function IntersectsPolygons(
     }
 
     const axisDepth = Math.min(
-      vbProj.max - vaProj.min,
-      vaProj.max - vbProj.min
+      vbProj.Max - vaProj.Min,
+      vaProj.Max - vbProj.Min
     );
 
     if (axisDepth < depth) {
@@ -70,15 +65,15 @@ export function IntersectsPolygons(
     const vaProj = ProjectVerticies(verticiesA, axis, vecPool, projResPool);
     const vbProj = ProjectVerticies(verticiesB, axis, vecPool, projResPool);
 
-    if (vaProj.min >= vbProj.max || vbProj.min >= vaProj.max) {
+    if (vaProj.Min >= vbProj.Max || vbProj.Min >= vaProj.Max) {
       const res = colResPool.Rent();
       res._setCollisionFalse();
       return res;
       //return { collision: false, normal: null, depth: null } as collisionResult;
     }
     const axisDepth = Math.min(
-      vbProj.max - vaProj.min,
-      vaProj.max - vbProj.min
+      vbProj.Max - vaProj.Min,
+      vaProj.Max - vbProj.Min
     );
     if (axisDepth < depth) {
       depth = axisDepth;
@@ -105,8 +100,8 @@ export function IntersectsPolygons(
 
 function FindArithemticMean(
   verticies: Array<FlatVec>,
-  pooledVec: IPooledVector
-): IPooledVector {
+  pooledVec: PooledVector
+): PooledVector {
   let sumX = 0;
   let sumY = 0;
   const vertLength = verticies.length;
@@ -122,9 +117,9 @@ function FindArithemticMean(
 
 function ProjectVerticies(
   verticies: Array<FlatVec>,
-  axis: IPooledVector,
-  vecPool: VecPool,
-  projResPool: ProjectionResultPool
+  axis: PooledVector,
+  vecPool: Pool<PooledVector>,
+  projResPool: Pool<ProjectionResult>
 ): IProjectionResult {
   let min = Number.MAX_SAFE_INTEGER;
   let max = Number.MIN_SAFE_INTEGER;
