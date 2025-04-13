@@ -21,11 +21,11 @@ export function IntersectsPolygons(
     // Go through verticies in clockwise order.
     const va = verticiesA[i];
     const vb = verticiesA[(i + 1) % verticiesA.length];
-    verticiesAVec._setXY(va.x, va.y);
-    verticiesBVec._setXY(vb.x, vb.y);
+    verticiesAVec.SetXY(va.X, va.Y);
+    verticiesBVec.SetXY(vb.X, vb.Y);
     let axis = verticiesBVec
       .Subtract(verticiesAVec)
-      ._setY(-verticiesBVec.Y)
+      .SetY(-verticiesBVec.Y)
       .Normalize();
     // Project verticies for both polygons.
     const vaProj = ProjectVerticies(verticiesA, axis, vecPool, projResPool);
@@ -45,21 +45,21 @@ export function IntersectsPolygons(
 
     if (axisDepth < depth) {
       depth = axisDepth;
-      normal._setX(axis.X)._setY(axis.Y);
+      normal.SetX(axis.X).SetY(axis.Y);
     }
   }
 
-  verticiesAVec._setXY(0, 0);
-  verticiesBVec._setXY(0, 0);
+  verticiesAVec.SetXY(0, 0);
+  verticiesBVec.SetXY(0, 0);
 
   for (let i = 0; i < verticiesB.length; i++) {
     const va = verticiesB[i];
     const vb = verticiesB[(i + 1) % verticiesB.length]; // Go through verticies in clockwise order.
-    verticiesAVec._setXY(va.x, va.y);
-    verticiesBVec._setXY(vb.x, vb.y);
+    verticiesAVec.SetXY(va.X, va.Y);
+    verticiesBVec.SetXY(vb.X, vb.Y);
     const axis = verticiesBVec
       .Subtract(verticiesAVec)
-      ._setY(-verticiesBVec.Y)
+      .SetY(-verticiesBVec.Y)
       .Normalize();
     // Project verticies for both polygons.
     const vaProj = ProjectVerticies(verticiesA, axis, vecPool, projResPool);
@@ -77,7 +77,7 @@ export function IntersectsPolygons(
     );
     if (axisDepth < depth) {
       depth = axisDepth;
-      normal._setX(axis.X)._setY(axis.Y);
+      normal.SetX(axis.X).SetY(axis.Y);
     }
   }
 
@@ -108,11 +108,11 @@ function FindArithemticMean(
 
   for (let index = 0; index < vertLength; index++) {
     const v = verticies[index];
-    sumX += v.x;
-    sumY += v.y;
+    sumX += v.X;
+    sumY += v.Y;
   }
 
-  return pooledVec._setXY(sumX, sumY).Divide(vertLength);
+  return pooledVec.SetXY(sumX, sumY).Divide(vertLength);
 }
 
 function ProjectVerticies(
@@ -128,7 +128,7 @@ function ProjectVerticies(
 
   for (let i = 0; i < verticies.length; i++) {
     const v = verticies[i];
-    vRes._setXY(v.x, v.y);
+    vRes.SetXY(v.X, v.Y);
 
     // get the projection for the given axis
     const projection = vRes.DotProduct(axis);

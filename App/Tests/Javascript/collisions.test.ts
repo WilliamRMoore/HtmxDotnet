@@ -27,8 +27,8 @@ test('Test Move', () => {
   let vecPool = new Pool<PooledVector>(200, () => new PooledVector()); //new VecPool(100);
   let p1 = Move(poly1, new FlatVec(100, 0), vecPool);
 
-  expect(p1[0].x).toBe(100);
-  expect(p1[1].x).toBe(150);
+  expect(p1[0].X).toBe(100);
+  expect(p1[1].X).toBe(150);
 });
 
 test('IntersectsPolygons returns false', () => {
@@ -65,15 +65,15 @@ function Move(poly: Array<FlatVec>, pos: FlatVec, vecPool: Pool<PooledVector>) {
   poly[0] = pos;
   // let posDto = VectorResultAllocator(pos.x, pos.y);
   // var dto = VectorResultAllocator();
-  const posDto = vecPool.Rent()._setXY(pos.x, pos.y);
+  const posDto = vecPool.Rent().SetXY(pos.X, pos.Y);
   let dto = vecPool.Rent();
 
   for (let i = 1; i < poly.length; i++) {
     const vert = poly[i];
     dto.SetFromFlatVec(vert);
     let res = dto.Add(posDto);
-    vert.x = res.X;
-    vert.y = res.Y;
+    vert.X = res.X;
+    vert.Y = res.Y;
   }
 
   return poly;

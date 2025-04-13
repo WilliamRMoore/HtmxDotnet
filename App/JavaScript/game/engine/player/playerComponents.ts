@@ -57,28 +57,28 @@ export class PositionComponent implements IHistoryEnabled<FlatVec> {
   }
 
   public get X() {
-    return this.position.x;
+    return this.position.X;
   }
 
   public get Y() {
-    return this.position.y;
+    return this.position.Y;
   }
 
   public set X(val: number) {
-    this.position.x = val;
+    this.position.X = val;
   }
 
   public set Y(val: number) {
-    this.position.y = val;
+    this.position.Y = val;
   }
 
   public SnapShot(): FlatVec {
-    return new FlatVec(this.position.x, this.position.y);
+    return new FlatVec(this.position.X, this.position.Y);
   }
 
   public SetFromSnapShot(snapShot: FlatVec): void {
-    this.position.x = snapShot.x;
-    this.position.y = snapShot.y;
+    this.position.X = snapShot.X;
+    this.position.Y = snapShot.Y;
   }
 }
 
@@ -133,33 +133,33 @@ export class VelocityComponent implements IHistoryEnabled<FlatVec> {
 
   public AddClampedXImpulse(clamp: number, x: number): void {
     const upperBound = Math.abs(clamp);
-    const vel = this.velocity.x;
+    const vel = this.velocity.X;
 
     if (Math.abs(vel) > upperBound) {
       return;
     }
 
-    this.velocity.x = Clamp(vel + x, upperBound);
+    this.velocity.X = Clamp(vel + x, upperBound);
   }
 
   public AddClampedYImpulse(clamp: number, y: number): void {
     const upperBound = Math.abs(clamp);
-    const vel = this.velocity.y;
+    const vel = this.velocity.Y;
 
     if (Math.abs(vel) > clamp) {
       return;
     }
 
-    this.velocity.y = Clamp(vel + y, upperBound);
+    this.velocity.Y = Clamp(vel + y, upperBound);
   }
 
   public SnapShot(): FlatVec {
-    return new FlatVec(this.velocity.x, this.velocity.y);
+    return new FlatVec(this.velocity.X, this.velocity.Y);
   }
 
   public SetFromSnapShot(snapShot: FlatVec): void {
-    this.velocity.x = snapShot.x;
-    this.velocity.y = snapShot.y;
+    this.velocity.X = snapShot.X;
+    this.velocity.Y = snapShot.Y;
   }
 
   public GetAsFlatVec() {
@@ -167,19 +167,19 @@ export class VelocityComponent implements IHistoryEnabled<FlatVec> {
   }
 
   public get X(): number {
-    return this.velocity.x;
+    return this.velocity.X;
   }
 
   public get Y(): number {
-    return this.velocity.y;
+    return this.velocity.Y;
   }
 
   public set X(val: number) {
-    this.velocity.x = val;
+    this.velocity.X = val;
   }
 
   public set Y(val: number) {
-    this.velocity.y = val;
+    this.velocity.Y = val;
   }
 }
 
@@ -294,22 +294,6 @@ export type ECBSnapShot = {
   posY: number;
   prevPosX: number;
   prevPosY: number;
-  // topX: number;
-  // topY: number;
-  // rightX: number;
-  // rightY: number;
-  // bottomX: number;
-  // bottomY: number;
-  // leftX: number;
-  // leftY: number;
-  // prevTopX: number;
-  // prevTopY: number;
-  // prevRightX: number;
-  // prevRightY: number;
-  // prevBottomX: number;
-  // prevBottomY: number;
-  // prevLeftX: number;
-  // preLeftY: number;
   YOffset: number;
   Height: number;
   Width: number;
@@ -355,19 +339,19 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   }
 
   public UpdatePreviousECB(): void {
-    this.previousPosition.x = this.position.x;
-    this.previousPosition.y = this.position.y;
+    this.previousPosition.X = this.position.X;
+    this.previousPosition.Y = this.position.Y;
 
     const prevVert = this.prevVerts;
     const curVert = this.curVerts;
-    prevVert[0].x = curVert[0].x;
-    prevVert[0].y = curVert[0].y;
-    prevVert[1].x = curVert[1].x;
-    prevVert[1].y = curVert[1].y;
-    prevVert[2].x = curVert[2].x;
-    prevVert[2].y = curVert[2].y;
-    prevVert[3].x = curVert[3].x;
-    prevVert[3].y = curVert[3].y;
+    prevVert[0].X = curVert[0].X;
+    prevVert[0].Y = curVert[0].Y;
+    prevVert[1].X = curVert[1].X;
+    prevVert[1].Y = curVert[1].Y;
+    prevVert[2].X = curVert[2].X;
+    prevVert[2].Y = curVert[2].Y;
+    prevVert[3].X = curVert[3].X;
+    prevVert[3].Y = curVert[3].Y;
   }
 
   public SetInitialPosition(x: number, y: number): void {
@@ -376,14 +360,14 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   }
 
   public MoveToPosition(x: number, y: number): void {
-    this.position.x = x;
-    this.position.y = y;
+    this.position.X = x;
+    this.position.Y = y;
     this.update();
   }
 
   private update(): void {
-    const px = this.position.x;
-    const py = this.position.y;
+    const px = this.position.X;
+    const py = this.position.Y;
     const height = this.height;
     const width = this.width;
     const yOffset = this.yOffset;
@@ -400,17 +384,17 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     const rightX = bottomX + width / 2;
     const rightY = leftY;
 
-    this.curVerts[0].x = bottomX;
-    this.curVerts[0].y = bottomY;
+    this.curVerts[0].X = bottomX;
+    this.curVerts[0].Y = bottomY;
 
-    this.curVerts[1].x = leftX;
-    this.curVerts[1].y = leftY;
+    this.curVerts[1].X = leftX;
+    this.curVerts[1].Y = leftY;
 
-    this.curVerts[2].x = topX;
-    this.curVerts[2].y = topY;
+    this.curVerts[2].X = topX;
+    this.curVerts[2].Y = topY;
 
-    this.curVerts[3].x = rightX;
-    this.curVerts[3].y = rightY;
+    this.curVerts[3].X = rightX;
+    this.curVerts[3].Y = rightY;
   }
 
   public DetectPreviousGroundCollision(
@@ -418,14 +402,14 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     groundEnd: FlatVec
   ): boolean {
     const bottom = this.PrevBottom;
-    const bx = bottom.x;
-    const by = bottom.y;
+    const bx = bottom.X;
+    const by = bottom.Y;
 
     return LineSegmentIntersection(
-      groundStart.x,
-      groundStart.y,
-      groundEnd.x,
-      groundEnd.y,
+      groundStart.X,
+      groundStart.Y,
+      groundEnd.X,
+      groundEnd.Y,
       bx,
       by,
       bx,
@@ -438,14 +422,14 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     groundEnd: FlatVec
   ): boolean {
     const bottom = this.Bottom;
-    const bx = bottom.x;
-    const by = bottom.y;
+    const bx = bottom.X;
+    const by = bottom.Y;
 
     return LineSegmentIntersection(
-      groundStart.x,
-      groundStart.y,
-      groundEnd.x,
-      groundEnd.y,
+      groundStart.X,
+      groundStart.Y,
+      groundEnd.X,
+      groundEnd.Y,
       bx,
       by,
       bx,
@@ -458,14 +442,14 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     leftWallEnd: FlatVec
   ): boolean {
     const left = this.Left;
-    const lx = left.x;
-    const ly = left.y;
+    const lx = left.X;
+    const ly = left.Y;
 
     return LineSegmentIntersection(
-      leftWallStart.x,
-      leftWallStart.y,
-      leftWallEnd.x,
-      leftWallEnd.y,
+      leftWallStart.X,
+      leftWallStart.Y,
+      leftWallEnd.X,
+      leftWallEnd.Y,
       lx,
       ly,
       lx + this.sesnsorDepth,
@@ -478,14 +462,14 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     ceilingEnd: FlatVec
   ): boolean {
     const top = this.Top;
-    const tx = top.x;
-    const ty = top.y;
+    const tx = top.X;
+    const ty = top.Y;
 
     return LineSegmentIntersection(
-      ceilingStart.x,
-      ceilingStart.y,
-      ceilingEnd.x,
-      ceilingEnd.y,
+      ceilingStart.X,
+      ceilingStart.Y,
+      ceilingEnd.X,
+      ceilingEnd.Y,
       tx,
       ty,
       tx,
@@ -498,14 +482,14 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     rightWallEnd: FlatVec
   ): boolean {
     const right = this.Right;
-    const rx = right.x;
-    const ry = right.y;
+    const rx = right.X;
+    const ry = right.Y;
 
     return LineSegmentIntersection(
-      rightWallStart.x,
-      rightWallStart.y,
-      rightWallEnd.x,
-      rightWallEnd.y,
+      rightWallStart.X,
+      rightWallStart.Y,
+      rightWallEnd.X,
+      rightWallEnd.Y,
       rx,
       ry,
       rx - this.sesnsorDepth,
@@ -555,10 +539,10 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
 
   public SnapShot(): ECBSnapShot {
     return {
-      posX: this.position.x,
-      posY: this.position.y,
-      prevPosX: this.previousPosition.x,
-      prevPosY: this.previousPosition.y,
+      posX: this.position.X,
+      posY: this.position.Y,
+      prevPosX: this.previousPosition.X,
+      prevPosY: this.previousPosition.Y,
       YOffset: this.yOffset,
       Height: this.height,
       Width: this.width,
@@ -566,10 +550,10 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   }
 
   public SetFromSnapShot(snapShot: ECBSnapShot): void {
-    this.position.x = snapShot.posX;
-    this.position.y = snapShot.posY;
-    this.previousPosition.x = snapShot.prevPosX;
-    this.previousPosition.y = snapShot.prevPosY;
+    this.position.X = snapShot.posX;
+    this.position.Y = snapShot.posY;
+    this.previousPosition.X = snapShot.prevPosX;
+    this.previousPosition.Y = snapShot.prevPosY;
     this.yOffset = snapShot.YOffset;
     this.height = snapShot.Height;
     this.width = snapShot.Width;
@@ -578,8 +562,8 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
 
     // Update prevVerts
 
-    const px = this.previousPosition.x;
-    const py = this.previousPosition.y;
+    const px = this.previousPosition.X;
+    const py = this.previousPosition.Y;
     const height = this.height;
     const width = this.width;
     const yOffset = this.yOffset;
@@ -596,17 +580,17 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     const rightX = bottomX + width / 2;
     const rightY = leftY;
 
-    this.prevVerts[0].x = bottomX;
-    this.prevVerts[0].y = bottomY;
+    this.prevVerts[0].X = bottomX;
+    this.prevVerts[0].Y = bottomY;
 
-    this.prevVerts[1].x = leftX;
-    this.prevVerts[1].y = leftY;
+    this.prevVerts[1].X = leftX;
+    this.prevVerts[1].Y = leftY;
 
-    this.prevVerts[2].x = topX;
-    this.prevVerts[2].y = topY;
+    this.prevVerts[2].X = topX;
+    this.prevVerts[2].Y = topY;
 
-    this.prevVerts[3].x = rightX;
-    this.prevVerts[3].y = rightY;
+    this.prevVerts[3].X = rightX;
+    this.prevVerts[3].Y = rightY;
   }
 }
 
@@ -660,37 +644,37 @@ export class LedgeDetectorComponent implements IHistoryEnabled<FlatVec> {
     const leftBottomRight = this.leftSide[3];
 
     //bottm left
-    rightBottomLeft.x = this.x;
-    rightBottomLeft.y = this.y;
+    rightBottomLeft.X = this.x;
+    rightBottomLeft.Y = this.y;
     //top left
-    rightTopLeft.x = this.x;
-    rightTopLeft.y = this.y + this.height;
+    rightTopLeft.X = this.x;
+    rightTopLeft.Y = this.y + this.height;
     // top right
-    rightTopRight.x = this.x + this.width;
-    rightTopRight.y = this.y + this.height;
+    rightTopRight.X = this.x + this.width;
+    rightTopRight.Y = this.y + this.height;
     // bottom right
-    rightBottomRight.x = this.x + this.width;
-    rightBottomRight.y = this.y;
+    rightBottomRight.X = this.x + this.width;
+    rightBottomRight.Y = this.y;
 
     //bottom left
-    leftBottomLeft.x = this.x - this.width;
-    leftBottomLeft.y = this.y;
+    leftBottomLeft.X = this.x - this.width;
+    leftBottomLeft.Y = this.y;
     // top left
-    leftTopLeft.x = this.x - this.width;
-    leftTopLeft.y = this.y + this.height;
+    leftTopLeft.X = this.x - this.width;
+    leftTopLeft.Y = this.y + this.height;
     // top right
-    leftTopRight.x = this.x;
-    leftTopRight.y = this.y + this.height;
+    leftTopRight.X = this.x;
+    leftTopRight.Y = this.y + this.height;
     // bottom right
-    leftBottomRight.x = this.x;
-    leftBottomRight.y = this.y;
+    leftBottomRight.X = this.x;
+    leftBottomRight.Y = this.y;
   }
 
   public SnapShot(): FlatVec {
     return new FlatVec(this.x, this.y);
   }
   public SetFromSnapShot(snapShot: FlatVec): void {
-    this.MoveTo(snapShot.x, snapShot.y);
+    this.MoveTo(snapShot.X, snapShot.Y);
   }
 }
 

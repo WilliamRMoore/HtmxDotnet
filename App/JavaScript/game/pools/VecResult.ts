@@ -17,114 +17,114 @@ export interface IPooledVector {
   get Y(): number;
   AddToX(x: number): void;
   AddToY(y: number): void;
-  _setX(x: number): IPooledVector;
-  _setY(y: number): IPooledVector;
-  _setXY(x: number, y: number): IPooledVector;
+  SetX(x: number): IPooledVector;
+  SetY(y: number): IPooledVector;
+  SetXY(x: number, y: number): IPooledVector;
 }
 
 export class PooledVector implements IPooledVector, IPooledObject {
-  private _x: number;
-  private _y: number;
+  private x: number;
+  private y: number;
 
   constructor(x: number = 0, y: number = 0) {
-    this._x = x;
-    this._y = y;
+    this.x = x;
+    this.y = y;
   }
 
   public Add(vec: PooledVector): PooledVector {
-    this._x += vec.X;
-    this._y += vec.Y;
+    this.x += vec.X;
+    this.y += vec.Y;
     return this;
   }
 
   public Subtract(vec: PooledVector): PooledVector {
-    this._x -= vec.X;
-    this._y -= vec.Y;
+    this.x -= vec.X;
+    this.y -= vec.Y;
     return this;
   }
 
   public Multiply(s: number): PooledVector {
-    this._x *= s;
-    this._y *= s;
+    this.x *= s;
+    this.y *= s;
     return this;
   }
 
   public Negate(): PooledVector {
-    this._x = -this._x;
-    this._y = -this._y;
+    this.x = -this.x;
+    this.y = -this.y;
     return this;
   }
 
   public Divide(s: number): PooledVector {
-    this._x /= s;
-    this._y /= s;
+    this.x /= s;
+    this.y /= s;
     return this;
   }
 
   public Length(): number {
-    return Math.sqrt(this._x * this._x + this._y * this._y);
+    return Math.sqrt(this.x * this.x + this.y * this.y);
   }
 
   public Distance(vec: PooledVector): number {
-    const dx = this._x - vec.X;
-    const dy = this._y - vec.Y;
+    const dx = this.x - vec.X;
+    const dy = this.y - vec.Y;
     return Math.sqrt(dx * dx + dy * dy);
   }
 
   public Normalize(): PooledVector {
-    const length = Math.sqrt(this._x * this._x + this._y * this._y);
-    this._x /= length;
-    this._y /= length;
+    const length = Math.sqrt(this.x * this.x + this.y * this.y);
+    this.x /= length;
+    this.y /= length;
     return this;
   }
 
   public DotProduct(vec: PooledVector): number {
-    return this._x * vec.X + this._y * vec.Y;
+    return this.x * vec.X + this.y * vec.Y;
   }
 
   public CrossProduct(vec: PooledVector) {
-    return this._x * vec.Y - this._y * vec.X;
+    return this.x * vec.Y - this.y * vec.X;
   }
 
   public SetFromFlatVec(vec: FlatVec): PooledVector {
-    this._x = vec.x;
-    this._y = vec.y;
+    this.x = vec.X;
+    this.y = vec.Y;
     return this;
   }
 
   public AddToX(x: number): void {
-    this._x += x;
+    this.x += x;
   }
 
   public AddToY(y: number): void {
-    this._y += y;
+    this.y += y;
   }
 
   get X(): number {
-    return this._x;
+    return this.x;
   }
 
   get Y(): number {
-    return this._y;
+    return this.y;
   }
 
-  public _setX(x: number): PooledVector {
-    this._x = x;
+  public SetX(x: number): PooledVector {
+    this.x = x;
     return this;
   }
 
-  public _setY(y: number): PooledVector {
-    this._y = y;
+  public SetY(y: number): PooledVector {
+    this.y = y;
     return this;
   }
 
-  public _setXY(x: number, y: number): PooledVector {
-    this._x = x;
-    this._y = y;
+  public SetXY(x: number, y: number): PooledVector {
+    this.x = x;
+    this.y = y;
     return this;
   }
 
   public Zero(): void {
-    this._setXY(0, 0);
+    this.SetXY(0, 0);
   }
 }

@@ -41,20 +41,20 @@ export function StageCollisionDetection(world: World): void {
         const flags = p.FlagsComponent;
         const position = p.PostionComponent;
 
-        if (leftStagePoint.x > position.X && flags.IsFacingLeft()) {
+        if (leftStagePoint.X > position.X && flags.IsFacingLeft()) {
           PlayerHelpers.SetPlayerPosition(
             p,
-            leftStagePoint.x + 0.1,
-            leftStagePoint.y
+            leftStagePoint.X + 0.1,
+            leftStagePoint.Y
           );
           sm.UpdateFromWorld(GameEvents.land);
         }
 
-        if (rightStagePoint.x < position.X && flags.IsFacingRight()) {
+        if (rightStagePoint.X < position.X && flags.IsFacingRight()) {
           PlayerHelpers.SetPlayerPosition(
             p,
-            rightStagePoint.x - 0.1,
-            rightStagePoint.y
+            rightStagePoint.X - 0.1,
+            rightStagePoint.Y
           );
           sm.UpdateFromWorld(GameEvents.land);
         }
@@ -110,7 +110,7 @@ function _stageCollision(world: World, playerIndex: number): number {
       .SetFromFlatVec(p.PostionComponent.GetAsFlatVec());
     const move = vecPool
       .Rent()
-      ._setXY(normalX, normalY)
+      .SetXY(normalX, normalY)
       .Negate()
       .Multiply(collisionResult.Depth);
 

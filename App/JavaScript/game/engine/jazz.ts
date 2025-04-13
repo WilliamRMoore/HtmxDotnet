@@ -48,6 +48,11 @@ export class Jazz implements IJazz {
     let frameTimeDelta = performance.now() - frameTimeStart;
 
     this.renderDataCopy(frameTimeDelta);
+
+    const world = this.World;
+    world?.VecPool.Zero();
+    world?.ColResPool.Zero();
+    world?.ProjResPool.Zero();
   }
 
   public UpdateLocalInputForCurrentFrame(ia: InputAction, pIndex: number) {
@@ -80,10 +85,6 @@ export class Jazz implements IJazz {
     StageCollisionDetection(world);
     OutOfBoundsCheck(world);
 
-    world?.VecPool.Zero();
-    world?.ColResPool.Zero();
-    world?.ProjResPool.Zero();
-
     world.localFrame++;
   }
 
@@ -107,23 +108,23 @@ export class Jazz implements IJazz {
 
       const ecb = worldPlayer?.ECBComponent;
 
-      playerRenderData.currentLeftX = ecb?.Left?.x ?? 0;
-      playerRenderData.currenltLeftY = ecb?.Left?.y ?? 0;
-      playerRenderData.currentRightX = ecb?.Right?.x ?? 0;
-      playerRenderData.currentRightY = ecb?.Right?.y ?? 0;
-      playerRenderData.currentTopX = ecb?.Top?.x ?? 0;
-      playerRenderData.currentTopY = ecb?.Top?.y ?? 0;
-      playerRenderData.currentBottomX = ecb?.Bottom?.x ?? 0;
-      playerRenderData.currentBottomY = ecb?.Bottom?.y ?? 0;
+      playerRenderData.currentLeftX = ecb?.Left?.X ?? 0;
+      playerRenderData.currenltLeftY = ecb?.Left?.Y ?? 0;
+      playerRenderData.currentRightX = ecb?.Right?.X ?? 0;
+      playerRenderData.currentRightY = ecb?.Right?.Y ?? 0;
+      playerRenderData.currentTopX = ecb?.Top?.X ?? 0;
+      playerRenderData.currentTopY = ecb?.Top?.Y ?? 0;
+      playerRenderData.currentBottomX = ecb?.Bottom?.X ?? 0;
+      playerRenderData.currentBottomY = ecb?.Bottom?.Y ?? 0;
 
-      playerRenderData.prevLeftX = ecb?.PrevLeft.x ?? 0;
-      playerRenderData.prevLeftY = ecb?.PrevLeft.y ?? 0;
-      playerRenderData.prevRightX = ecb?.PrevRight.x ?? 0;
-      playerRenderData.prevRightY = ecb?.PrevRight.y ?? 0;
-      playerRenderData.prevTopX = ecb?.PrevTop.x ?? 0;
-      playerRenderData.prevTopY = ecb?.PrevTop.y ?? 0;
-      playerRenderData.prevBottomX = ecb?.PrevBottom.x ?? 0;
-      playerRenderData.prevBottomY = ecb?.PrevBottom.y ?? 0;
+      playerRenderData.prevLeftX = ecb?.PrevLeft.X ?? 0;
+      playerRenderData.prevLeftY = ecb?.PrevLeft.Y ?? 0;
+      playerRenderData.prevRightX = ecb?.PrevRight.X ?? 0;
+      playerRenderData.prevRightY = ecb?.PrevRight.Y ?? 0;
+      playerRenderData.prevTopX = ecb?.PrevTop.X ?? 0;
+      playerRenderData.prevTopY = ecb?.PrevTop.Y ?? 0;
+      playerRenderData.prevBottomX = ecb?.PrevBottom.X ?? 0;
+      playerRenderData.prevBottomY = ecb?.PrevBottom.Y ?? 0;
 
       const playerLedgeDetectorComponent = worldPlayer?.LedgeDetectorComponent!;
 
@@ -134,8 +135,8 @@ export class Jazz implements IJazz {
         const renderData = playerRenderData.leftLedgeDetector[index];
         const playerData = playerLedgeDetectorComponent.LeftSide[index];
 
-        renderData.x = playerData.x;
-        renderData.y = playerData.y;
+        renderData.X = playerData.X;
+        renderData.Y = playerData.Y;
       }
 
       const rightLedgeDetectorLength =
@@ -145,11 +146,15 @@ export class Jazz implements IJazz {
         const renderData = playerRenderData.rightLedgeDetector[index];
         const playerData = playerLedgeDetectorComponent.RightSide[index];
 
-        renderData.x = playerData.x;
-        renderData.y = playerData.y;
+        renderData.X = playerData.X;
+        renderData.Y = playerData.Y;
       }
     }
-
+    this.renderDataDto.PooledVectors = this.world.VecPool.ActiveCount;
+    this.renderDataDto.PooledProjectionResults =
+      this.world.ProjResPool.ActiveCount;
+    this.renderDataDto.PooledCollisionResults =
+      this.world.ColResPool.ActiveCount;
     this.renderDataDto.stage = worldStage;
   }
 

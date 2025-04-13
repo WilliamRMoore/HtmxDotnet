@@ -15,14 +15,14 @@ test('ECB Should Update Position', () => {
   const SUT = new ECBComponent();
   SUT.MoveToPosition(10, 0);
 
-  expect(SUT.Bottom.x).toBe(10);
-  expect(SUT.Bottom.y).toBe(0);
-  expect(SUT.Left.x).toBe(-40);
-  expect(SUT.Left.y).toBe(-50);
-  expect(SUT.Top.x).toBe(10);
-  expect(SUT.Top.y).toBe(-100);
-  expect(SUT.Right.x).toBe(60);
-  expect(SUT.Right.y).toBe(-50);
+  expect(SUT.Bottom.X).toBe(10);
+  expect(SUT.Bottom.Y).toBe(0);
+  expect(SUT.Left.X).toBe(-40);
+  expect(SUT.Left.Y).toBe(-50);
+  expect(SUT.Top.X).toBe(10);
+  expect(SUT.Top.Y).toBe(-100);
+  expect(SUT.Right.X).toBe(60);
+  expect(SUT.Right.Y).toBe(-50);
 });
 
 test('ECB Should Detect Ground Collision', () => {

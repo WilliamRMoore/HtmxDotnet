@@ -21,8 +21,8 @@ test('StateMachineShould', () => {
 
   PlayerHelpers.SetPlayerInitialPosition(
     p,
-    s.StageVerticies.GetGround()[0].x + 10,
-    s.StageVerticies.GetGround()[0].y + 0.001
+    s.StageVerticies.GetGround()[0].X + 10,
+    s.StageVerticies.GetGround()[0].Y + 0.001
   );
 
   const sm: StateMachine = new StateMachine(p);
@@ -57,8 +57,8 @@ test('StateMachineShould2', () => {
 
   PlayerHelpers.SetPlayerPosition(
     p,
-    s.StageVerticies.GetGround()[0].x + 10,
-    s.StageVerticies.GetGround()[0].y + 0.001
+    s.StageVerticies.GetGround()[0].X + 10,
+    s.StageVerticies.GetGround()[0].Y + 0.001
   );
 
   p.FlagsComponent.FaceLeft();

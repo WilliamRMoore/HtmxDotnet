@@ -42,6 +42,17 @@ export class DebugRenderer {
       10,
       120
     );
+    ctx.fillText(`VectorsRented: ${renderDataDTO.PooledVectors}`, 10, 150);
+    ctx.fillText(
+      `CollisionResultsRented: ${renderDataDTO.PooledCollisionResults}`,
+      10,
+      180
+    );
+    ctx.fillText(
+      `ProjectionReultsRented: ${renderDataDTO.PooledProjectionResults}`,
+      10,
+      210
+    );
   }
 }
 
@@ -113,9 +124,9 @@ function drawStage(ctx: CanvasRenderingContext2D, renderData: RenderData) {
   const stageVertsLength = stageVerts.length;
 
   ctx.beginPath();
-  ctx.moveTo(stageVerts[0].x, stageVerts[0].y);
+  ctx.moveTo(stageVerts[0].X, stageVerts[0].Y);
   for (let i = 0; i < stageVertsLength; i++) {
-    ctx.lineTo(stageVerts[i].x, stageVerts[i].y);
+    ctx.lineTo(stageVerts[i].X, stageVerts[i].Y);
   }
   ctx.closePath();
   ctx.fillStyle = color;
@@ -126,17 +137,17 @@ function drawStage(ctx: CanvasRenderingContext2D, renderData: RenderData) {
 
   ctx.fillStyle = 'yellow';
   ctx.beginPath();
-  ctx.moveTo(lLedge[0].x, lLedge[0].y);
+  ctx.moveTo(lLedge[0].X, lLedge[0].Y);
   for (let i = 0; i < lLedge.length; i++) {
-    ctx.lineTo(lLedge[i].x, lLedge[i].y);
+    ctx.lineTo(lLedge[i].X, lLedge[i].Y);
   }
   ctx.closePath();
   ctx.fill();
 
   ctx.beginPath();
-  ctx.moveTo(rLedge[0].x, rLedge[0].y);
+  ctx.moveTo(rLedge[0].X, rLedge[0].Y);
   for (let i = 0; i < rLedge.length; i++) {
-    ctx.lineTo(rLedge[i].x, rLedge[i].y);
+    ctx.lineTo(rLedge[i].X, rLedge[i].Y);
   }
   ctx.closePath();
   ctx.fill();
@@ -237,9 +248,9 @@ function drawPlayer(
   }
 
   ctx.beginPath();
-  ctx.moveTo(leftDetector[0].x, leftDetector[0].y);
+  ctx.moveTo(leftDetector[0].X, leftDetector[0].Y);
   for (let index = 0; index < leftDetector.length; index++) {
-    ctx.lineTo(leftDetector[index].x, leftDetector[index].y);
+    ctx.lineTo(leftDetector[index].X, leftDetector[index].Y);
   }
   ctx.closePath();
   ctx.stroke();
@@ -252,9 +263,9 @@ function drawPlayer(
   }
 
   ctx.beginPath();
-  ctx.moveTo(rightDetector[0].x, rightDetector[0].y);
+  ctx.moveTo(rightDetector[0].X, rightDetector[0].Y);
   for (let index = 0; index < rightDetector.length; index++) {
-    ctx.lineTo(rightDetector[index].x, rightDetector[index].y);
+    ctx.lineTo(rightDetector[index].X, rightDetector[index].Y);
   }
   ctx.closePath();
   ctx.stroke();

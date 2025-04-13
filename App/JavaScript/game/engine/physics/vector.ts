@@ -2,12 +2,12 @@ import { Pool } from '../../pools/Pool';
 import { IPooledVector, PooledVector } from '../../pools/VecResult';
 
 export class FlatVec {
-  x: number;
-  y: number;
+  public X: number;
+  public Y: number;
 
   constructor(x: number, y: number) {
-    this.x = x;
-    this.y = y;
+    this.X = x;
+    this.Y = y;
   }
 }
 
@@ -64,7 +64,7 @@ function AlternateLineSegmentIntersection(
   if (uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1) {
     //return true;
     return LineSegmentIntersectionResult.True(
-      vecPool.Rent()._setXY(x1 + uA * (x2 - x1), y1 + uA * (y2 - y1))
+      vecPool.Rent().SetXY(x1 + uA * (x2 - x1), y1 + uA * (y2 - y1))
     );
   }
 
@@ -94,10 +94,10 @@ class LineSegmentIntersectionResult {
 
 // Function to compute the cross product of two vectors
 function cross(o: FlatVec, a: FlatVec, b: FlatVec): number {
-  return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  return (a.X - o.X) * (b.Y - o.Y) - (a.Y - o.Y) * (b.X - o.X);
 }
 
-const srt = (a: FlatVec, b: FlatVec) => (a.x === b.x ? a.y - b.y : a.x - b.x);
+const srt = (a: FlatVec, b: FlatVec) => (a.X === b.X ? a.Y - b.Y : a.X - b.X);
 
 const lower: Array<FlatVec> = [];
 const upper: Array<FlatVec> = [];

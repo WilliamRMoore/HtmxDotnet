@@ -5,15 +5,15 @@ import { PooledVector } from '../../JavaScript/game/pools/VecResult';
 test('vec library pool test', () => {
   const vrp = new Pool<PooledVector>(10, () => new PooledVector());
 
-  const vt1 = vrp.Rent()._setXY(1, 2);
-  const vt2 = vrp.Rent()._setXY(3, 4);
+  const vt1 = vrp.Rent().SetXY(1, 2);
+  const vt2 = vrp.Rent().SetXY(3, 4);
 
   const update = new FlatVec(0, 0);
 
   const result = vt1.Add(vt2);
 
-  update.x = result.X;
-  update.y = result.Y;
+  update.X = result.X;
+  update.Y = result.Y;
 
   expect(result.X).toBe(4);
   expect(result.Y).toBe(6);
