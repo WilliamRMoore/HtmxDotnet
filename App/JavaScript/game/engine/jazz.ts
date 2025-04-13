@@ -168,52 +168,52 @@ export class Jazz implements IJazz {
 }
 
 export class JazzDebugger implements IJazz {
-  private _jazz: Jazz;
+  private jazz: Jazz;
   private paused: boolean = false;
   private previousInput: InputAction | undefined = undefined;
   private advanceFrame: boolean = false;
 
   constructor(renderData: RenderData) {
-    this._jazz = new Jazz(renderData);
+    this.jazz = new Jazz(renderData);
   }
 
   UpdateLocalInputForCurrentFrame(ia: InputAction, pIndex: number): void {
-    this.TogglePause(ia);
+    this.togglePause(ia);
 
     if (this.paused) {
-      if (this.AdvanceOneFrame(ia)) {
+      if (this.advanceOneFrame(ia)) {
         this.advanceFrame = true;
-        this._jazz.UpdateLocalInputForCurrentFrame(ia, pIndex);
+        this.jazz.UpdateLocalInputForCurrentFrame(ia, pIndex);
       }
       this.previousInput = ia;
       return;
     }
 
-    this._jazz.UpdateLocalInputForCurrentFrame(ia, pIndex);
+    this.jazz.UpdateLocalInputForCurrentFrame(ia, pIndex);
     this.previousInput = ia;
   }
 
   public Init(numberOfPlayers: number): void {
-    this._jazz.Init(numberOfPlayers);
+    this.jazz.Init(numberOfPlayers);
   }
 
   public Tick(): void {
     if (this.paused && this.advanceFrame) {
       this.advanceFrame = false;
-      this._jazz.Tick();
+      this.jazz.Tick();
       return;
     }
 
     if (!this.paused) {
-      this._jazz.Tick();
+      this.jazz.Tick();
     }
   }
 
   public get World(): World | undefined {
-    return this._jazz.World;
+    return this.jazz.World;
   }
 
-  private TogglePause(ia: InputAction): void {
+  private togglePause(ia: InputAction): void {
     const PausedPreviouisInput = this.previousInput?.Start ?? false;
     const PausedCurrentInput = ia.Start ?? false;
 
@@ -222,7 +222,7 @@ export class JazzDebugger implements IJazz {
     }
   }
 
-  private AdvanceOneFrame(ia: InputAction): boolean {
+  private advanceOneFrame(ia: InputAction): boolean {
     const selectPressed = ia.Select ?? false;
     const selectHeld = this.previousInput?.Select ?? false;
 

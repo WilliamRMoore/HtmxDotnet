@@ -3,7 +3,7 @@ import { FlatVec } from '../../JavaScript/game/engine/physics/vector';
 import { CollisionResult } from '../../JavaScript/game/pools/CollisionResult';
 import { Pool } from '../../JavaScript/game/pools/Pool';
 import { ProjectionResult } from '../../JavaScript/game/pools/ProjectResult';
-import { PooledVector } from '../../JavaScript/game/pools/VecResult';
+import { PooledVector } from '../../JavaScript/game/pools/PooledVector';
 
 let poly1: Array<FlatVec>;
 let poly2: Array<FlatVec>;

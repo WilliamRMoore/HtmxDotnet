@@ -1,6 +1,6 @@
 import { FlatVec } from '../../JavaScript/game/engine/physics/vector';
 import { Pool } from '../../JavaScript/game/pools/Pool';
-import { PooledVector } from '../../JavaScript/game/pools/VecResult';
+import { PooledVector } from '../../JavaScript/game/pools/PooledVector';
 
 test('vec library pool test', () => {
   const vrp = new Pool<PooledVector>(10, () => new PooledVector());

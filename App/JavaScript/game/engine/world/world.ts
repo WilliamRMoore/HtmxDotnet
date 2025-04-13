@@ -4,7 +4,7 @@ import { InputStorageManagerLocal } from '../engine-state-management/Managers';
 import { ComponentHistory } from '../player/playerComponents';
 import { Player } from '../player/playerOrchestrator';
 import { Stage } from '../stage/stageComponents';
-import { PooledVector } from '../../pools/VecResult';
+import { PooledVector } from '../../pools/PooledVector';
 import { Pool } from '../../pools/Pool';
 import { CollisionResult } from '../../pools/CollisionResult';
 import { ProjectionResult } from '../../pools/ProjectResult';

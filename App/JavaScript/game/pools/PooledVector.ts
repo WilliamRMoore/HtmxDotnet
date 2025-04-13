@@ -125,6 +125,7 @@ export class PooledVector implements IPooledVector, IPooledObject {
   }
 
   public Zero(): void {
-    this.SetXY(0, 0);
+    this.x = 0;
+    this.y = 0;
   }
 }

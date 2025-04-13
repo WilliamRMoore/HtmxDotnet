@@ -17,3 +17,7 @@ export function HashCode(obj: any): number {
   }
   return hash;
 }
+
+export function Clamp(val: number, clamp: number): number {
+  return Math.min(Math.max(val, -clamp), clamp);
+}

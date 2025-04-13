@@ -1,5 +1,5 @@
 import { Pool } from '../../pools/Pool';
-import { IPooledVector, PooledVector } from '../../pools/VecResult';
+import { IPooledVector, PooledVector } from '../../pools/PooledVector';
 
 export class FlatVec {
   public X: number;

@@ -1,13 +1,14 @@
-import { VecPool } from '../../JavaScript/game/pools/VecResult.ts';
+import { Pool } from '../../JavaScript/game/pools/Pool.js';
+import { PooledVector } from '../../JavaScript/game/pools/PooledVector.js';
 
 test('VecResultPool Test', () => {
-  const SUT = new VecPool(1000);
+  const SUT = new Pool<PooledVector>(1000, () => new PooledVector());
   const result = SUT.Rent();
 
   expect(result.X).toBe(0);
   expect(result.Y).toBe(0);
 
-  result._setXY(1, 2);
+  result.SetXY(1, 2);
 
   expect(result.X).toBe(1);
   expect(result.Y).toBe(2);

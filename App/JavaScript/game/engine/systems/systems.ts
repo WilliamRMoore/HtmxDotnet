@@ -20,7 +20,7 @@ export function StageCollisionDetection(world: World): void {
     const sm = world.GetStateMachine(playerIndex)!;
     const s = world.Stage!;
 
-    var collision = _stageCollision(world, playerIndex);
+    var collision = stageCollision(world, playerIndex);
 
     const grnd = PlayerHelpers.IsPlayerGroundedOnStage(p, s);
     const prevGround = PlayerHelpers.IsPlayerPreviouslyGroundedOnStage(p, s);
@@ -83,7 +83,7 @@ export function StageCollisionDetection(world: World): void {
   return;
 }
 
-function _stageCollision(world: World, playerIndex: number): number {
+function stageCollision(world: World, playerIndex: number): number {
   const s = world.Stage!;
   const p = world.GetPlayer(playerIndex)!;
   const vecPool = world.VecPool;

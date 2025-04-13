@@ -1,7 +1,7 @@
 import { CollisionResult, ICollisionResult } from '../../pools/CollisionResult';
 import { Pool } from '../../pools/Pool';
 import { IProjectionResult, ProjectionResult } from '../../pools/ProjectResult';
-import { PooledVector } from '../../pools/VecResult';
+import { PooledVector } from '../../pools/PooledVector';
 import { FlatVec } from './vector';
 
 export function IntersectsPolygons(
@@ -28,11 +28,10 @@ export function IntersectsPolygons(
       .SetY(-verticiesBVec.Y)
       .Normalize();
     // Project verticies for both polygons.
-    const vaProj = ProjectVerticies(verticiesA, axis, vecPool, projResPool);
-    const vbProj = ProjectVerticies(verticiesB, axis, vecPool, projResPool);
+    const vaProj = projectVerticies(verticiesA, axis, vecPool, projResPool);
+    const vbProj = projectVerticies(verticiesB, axis, vecPool, projResPool);
 
     if (vaProj.Min >= vbProj.Max || vbProj.Min >= vaProj.Max) {
-      //return { collision: false, normal: null, depth: null } as collisionResult;
       const res = colResPool.Rent();
       res._setCollisionFalse();
       return res;
@@ -49,8 +48,8 @@ export function IntersectsPolygons(
     }
   }
 
-  verticiesAVec.SetXY(0, 0);
-  verticiesBVec.SetXY(0, 0);
+  verticiesAVec.Zero(); //.SetXY(0, 0);
+  verticiesBVec.Zero();
 
   for (let i = 0; i < verticiesB.length; i++) {
     const va = verticiesB[i];
@@ -62,8 +61,8 @@ export function IntersectsPolygons(
       .SetY(-verticiesBVec.Y)
       .Normalize();
     // Project verticies for both polygons.
-    const vaProj = ProjectVerticies(verticiesA, axis, vecPool, projResPool);
-    const vbProj = ProjectVerticies(verticiesB, axis, vecPool, projResPool);
+    const vaProj = projectVerticies(verticiesA, axis, vecPool, projResPool);
+    const vbProj = projectVerticies(verticiesB, axis, vecPool, projResPool);
 
     if (vaProj.Min >= vbProj.Max || vbProj.Min >= vaProj.Max) {
       const res = colResPool.Rent();
@@ -81,8 +80,8 @@ export function IntersectsPolygons(
     }
   }
 
-  const centerA = FindArithemticMean(verticiesA, vecPool.Rent());
-  const centerB = FindArithemticMean(verticiesB, vecPool.Rent());
+  const centerA = findArithemticMean(verticiesA, vecPool.Rent());
+  const centerB = findArithemticMean(verticiesB, vecPool.Rent());
 
   const direction = centerB.Subtract(centerA);
 
@@ -98,7 +97,7 @@ export function IntersectsPolygons(
 
 // suplimental functions ====================================
 
-function FindArithemticMean(
+function findArithemticMean(
   verticies: Array<FlatVec>,
   pooledVec: PooledVector
 ): PooledVector {
@@ -115,7 +114,7 @@ function FindArithemticMean(
   return pooledVec.SetXY(sumX, sumY).Divide(vertLength);
 }
 
-function ProjectVerticies(
+function projectVerticies(
   verticies: Array<FlatVec>,
   axis: PooledVector,
   vecPool: Pool<PooledVector>,

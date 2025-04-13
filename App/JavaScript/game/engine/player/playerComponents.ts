@@ -7,6 +7,7 @@ import {
 } from '../physics/vector';
 import { FillArrayWithFlatVec } from '../utils';
 import { Player } from './playerOrchestrator';
+import { Clamp } from '../utils';
 
 export class ComponentHistory {
   readonly positionHistory: Array<FlatVec> = [];
@@ -82,48 +83,6 @@ export class PositionComponent implements IHistoryEnabled<FlatVec> {
   }
 }
 
-export type FSMInfoSnapShot = {
-  State: FSMState;
-  StateFrame: number;
-};
-
-export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
-  private currentState: FSMState = Idle;
-  private currentStateFrame: number = 0;
-
-  public get CurrentStateFrame() {
-    return this.currentStateFrame;
-  }
-
-  public get CurrentState(): FSMState {
-    return this.currentState;
-  }
-
-  public SetCurrentState(s: FSMState) {
-    this.currentState = s;
-  }
-
-  public IncrementStateFrame(): void {
-    this.currentStateFrame++;
-  }
-
-  public SetStateFrameToZero(): void {
-    this.currentStateFrame = 0;
-  }
-
-  public SnapShot(): FSMInfoSnapShot {
-    return {
-      State: this.currentState,
-      StateFrame: this.currentStateFrame,
-    } as FSMInfoSnapShot;
-  }
-
-  public SetFromSnapShot(snapShot: FSMInfoSnapShot): void {
-    this.currentState = snapShot.State;
-    this.currentStateFrame = snapShot.StateFrame;
-  }
-}
-
 export class VelocityComponent implements IHistoryEnabled<FlatVec> {
   private readonly velocity: FlatVec;
 
@@ -183,8 +142,46 @@ export class VelocityComponent implements IHistoryEnabled<FlatVec> {
   }
 }
 
-function Clamp(val: number, clamp: number): number {
-  return Math.min(Math.max(val, -clamp), clamp);
+export type FSMInfoSnapShot = {
+  State: FSMState;
+  StateFrame: number;
+};
+
+export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
+  private currentState: FSMState = Idle;
+  private currentStateFrame: number = 0;
+
+  public get CurrentStateFrame() {
+    return this.currentStateFrame;
+  }
+
+  public get CurrentState(): FSMState {
+    return this.currentState;
+  }
+
+  public SetCurrentState(s: FSMState) {
+    this.currentState = s;
+  }
+
+  public IncrementStateFrame(): void {
+    this.currentStateFrame++;
+  }
+
+  public SetStateFrameToZero(): void {
+    this.currentStateFrame = 0;
+  }
+
+  public SnapShot(): FSMInfoSnapShot {
+    return {
+      State: this.currentState,
+      StateFrame: this.currentStateFrame,
+    } as FSMInfoSnapShot;
+  }
+
+  public SetFromSnapShot(snapShot: FSMInfoSnapShot): void {
+    this.currentState = snapShot.State;
+    this.currentStateFrame = snapShot.StateFrame;
+  }
 }
 
 export class SpeedsComponent {
