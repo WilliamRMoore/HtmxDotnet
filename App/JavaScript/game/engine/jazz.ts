@@ -43,7 +43,7 @@ export class Jazz implements IJazz {
   public Tick() {
     let frameTimeStart = performance.now();
 
-    this._tick();
+    this.tick();
 
     let frameTimeDelta = performance.now() - frameTimeStart;
 
@@ -69,7 +69,7 @@ export class Jazz implements IJazz {
       .StoreInputForFrame(frameNumber, inputAction);
   }
 
-  private _tick() {
+  private tick() {
     const world = this.world;
 
     const playerCount = world.PlayerCount;
