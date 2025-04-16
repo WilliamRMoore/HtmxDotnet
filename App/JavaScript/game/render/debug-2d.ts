@@ -29,6 +29,7 @@ export class DebugRenderer {
     for (let i = 0; i < playerCount; i++) {
       drawPlayer(ctx, renderDataDTO.players[i]);
     }
+    ctx.fillStyle = 'darkblue';
 
     ctx.fillText(`Frame: ${renderDataDTO.frame}`, 10, 30);
     ctx.fillText(`FrameTime: ${renderDataDTO.frameTime}`, 10, 60);
@@ -106,12 +107,12 @@ class PlayerRenderData {
   prevBottomY: number = 0;
   leftLedgeDetector: FlatVec[] = new Array<FlatVec>(4);
   rightLedgeDetector: FlatVec[] = new Array<FlatVec>(4);
+  hull: FlatVec[] = [];
 
   constructor() {
     FillArrayWithFlatVec(this.leftLedgeDetector);
     FillArrayWithFlatVec(this.rightLedgeDetector);
   }
-  // ccHull: FlatVec[] = new Array<FlatVec>(8);
 }
 
 function drawStage(ctx: CanvasRenderingContext2D, renderData: RenderData) {
@@ -160,66 +161,18 @@ function drawPlayer(
   const player = renderData;
   const playerPosX = player.postionx;
   const playerPosY = player.postiony;
-  //const ccHull = player.ccHull;
+  const ccHull = player.hull;
   const facingRight = player.facingRight;
 
   const ecbColor = 'orange';
-  // const ecpOutlineColor = 'white';
-  // const prevEcbOutlineColor = 'black';
 
   ctx.fillStyle = 'red';
   ctx.lineWidth = 3;
 
-  // draw hull
-  // ctx.beginPath();
-  // ctx.moveTo(ccHull[0].x, ccHull[0].y);
-  // for (let i = 0; i < ccHull.length; i++) {
-  //   ctx.lineTo(ccHull[i].x, ccHull[i].y);
-  // }
-  // ctx.closePath();
-  // ctx.fill();
-
-  // draw previous ECB
-  ctx.strokeStyle = 'black';
-  ctx.beginPath();
-  ctx.moveTo(player.prevLeftX, player.prevLeftY);
-  ctx.lineTo(player.prevTopX, player.prevTopY);
-  ctx.lineTo(player.prevRightX, player.prevRightY);
-  ctx.lineTo(player.prevBottomX, player.prevBottomY);
-  ctx.closePath();
-  ctx.stroke();
-  ctx.fill();
-
-  //draw ECB
-  ctx.fillStyle = ecbColor;
-  ctx.strokeStyle = 'purple';
-  ctx.beginPath();
-  ctx.moveTo(player.currentLeftX, player.currenltLeftY);
-  ctx.lineTo(player.currentTopX, player.currentTopY);
-  ctx.lineTo(player.currentRightX, player.currentRightY);
-  ctx.lineTo(player.currentBottomX, player.currentBottomY);
-  ctx.closePath();
-  ctx.stroke();
-  ctx.fill();
-
-  // draw position marker
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = 'blue';
-
-  ctx.beginPath();
-  ctx.moveTo(playerPosX, playerPosY);
-  ctx.lineTo(playerPosX + 10, playerPosY);
-  ctx.stroke();
-  ctx.moveTo(playerPosX, playerPosY);
-  ctx.lineTo(playerPosX - 10, playerPosY);
-  ctx.stroke();
-  ctx.moveTo(playerPosX, playerPosY);
-  ctx.lineTo(playerPosX, playerPosY + 10);
-  ctx.stroke();
-  ctx.moveTo(playerPosX, playerPosY);
-  ctx.lineTo(playerPosX, playerPosY - 10);
-  ctx.stroke();
-  ctx.closePath();
+  //drawHull(ctx, player);
+  drawPrevEcb(ctx, player);
+  drawCurrentECB(ctx, player);
+  drawPositionMarker(ctx, player);
 
   // draw direction marker
   ctx.strokeStyle = 'white';
@@ -269,4 +222,76 @@ function drawPlayer(
   }
   ctx.closePath();
   ctx.stroke();
+}
+
+function drawPrevEcb(ctx: CanvasRenderingContext2D, player: PlayerRenderData) {
+  const ecbColor = 'orange';
+
+  ctx.fillStyle = 'red';
+  ctx.lineWidth = 3;
+
+  // draw previous ECB
+  ctx.strokeStyle = 'black';
+  ctx.beginPath();
+  ctx.moveTo(player.prevLeftX, player.prevLeftY);
+  ctx.lineTo(player.prevTopX, player.prevTopY);
+  ctx.lineTo(player.prevRightX, player.prevRightY);
+  ctx.lineTo(player.prevBottomX, player.prevBottomY);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fill();
+}
+
+function drawHull(ctx: CanvasRenderingContext2D, player: PlayerRenderData) {
+  const ccHull = player.hull;
+  //draw hull
+  ctx.beginPath();
+  ctx.moveTo(ccHull[0].X, ccHull[0].Y);
+  for (let i = 0; i < ccHull.length; i++) {
+    ctx.lineTo(ccHull[i].X, ccHull[i].Y);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawCurrentECB(
+  ctx: CanvasRenderingContext2D,
+  player: PlayerRenderData
+) {
+  ctx.fillStyle = 'orange';
+  ctx.strokeStyle = 'purple';
+  ctx.beginPath();
+  ctx.moveTo(player.currentLeftX, player.currenltLeftY);
+  ctx.lineTo(player.currentTopX, player.currentTopY);
+  ctx.lineTo(player.currentRightX, player.currentRightY);
+  ctx.lineTo(player.currentBottomX, player.currentBottomY);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fill();
+}
+
+function drawPositionMarker(
+  ctx: CanvasRenderingContext2D,
+  player: PlayerRenderData
+) {
+  const playerPosX = player.postionx;
+  const playerPosY = player.postiony;
+
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'blue';
+
+  ctx.beginPath();
+  ctx.moveTo(playerPosX, playerPosY);
+  ctx.lineTo(playerPosX + 10, playerPosY);
+  ctx.stroke();
+  ctx.moveTo(playerPosX, playerPosY);
+  ctx.lineTo(playerPosX - 10, playerPosY);
+  ctx.stroke();
+  ctx.moveTo(playerPosX, playerPosY);
+  ctx.lineTo(playerPosX, playerPosY + 10);
+  ctx.stroke();
+  ctx.moveTo(playerPosX, playerPosY);
+  ctx.lineTo(playerPosX, playerPosY - 10);
+  ctx.stroke();
+  ctx.closePath();
 }

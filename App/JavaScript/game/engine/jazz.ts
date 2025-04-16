@@ -1,10 +1,12 @@
 import { InputAction } from '../loops/Input';
 import { RenderData } from '../render/debug-2d';
+import { FlatVec } from './physics/vector';
 import { Player } from './player/playerOrchestrator';
 import { defaultStage } from './stage/stageComponents';
 import {
   ApplyVelocty,
   Gravity,
+  LedgeGrabDetection,
   OutOfBoundsCheck,
   PlayerInput,
   StageCollisionDetection,
@@ -82,6 +84,7 @@ export class Jazz implements IJazz {
     PlayerInput(world);
     Gravity(world);
     ApplyVelocty(world);
+    LedgeGrabDetection(world);
     StageCollisionDetection(world);
     OutOfBoundsCheck(world);
 
@@ -149,6 +152,15 @@ export class Jazz implements IJazz {
         renderData.X = playerData.X;
         renderData.Y = playerData.Y;
       }
+
+      // const hull = worldPlayer?.ECBComponent.GetHull()!;
+      // const hullCopy: Array<FlatVec> = [];
+      // const hullLength = hull.length;
+      // for (let i = 0; i < hullLength; i++) {
+      //   hullCopy.push(new FlatVec(hull[i].X, hull[i].Y));
+      // }
+
+      // playerRenderData.hull = hullCopy;
     }
     this.renderDataDto.PooledVectors = this.world.VecPool.ActiveCount;
     this.renderDataDto.PooledProjectionResults =

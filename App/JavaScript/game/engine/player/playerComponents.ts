@@ -315,11 +315,11 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     this.yOffset = yOffset;
     FillArrayWithFlatVec(this.curVerts);
     FillArrayWithFlatVec(this.prevVerts);
+    this.loadAllVerts();
     this.update();
   }
 
   public GetHull(): FlatVec[] {
-    this.loadAllVerts();
     return createConvexHull(this.allVerts);
   }
 
@@ -360,6 +360,25 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     this.position.X = x;
     this.position.Y = y;
     this.update();
+  }
+
+  private areVertsClose(
+    prevVerts: FlatVec[],
+    curVerts: FlatVec[],
+    threshold: number
+  ): boolean {
+    for (let i = 0; i < prevVerts.length; i++) {
+      const prev = prevVerts[i];
+      const cur = curVerts[i];
+      const dx = prev.X - cur.X;
+      const dy = prev.Y - cur.Y;
+
+      // Check if the distance between the points exceeds the threshold
+      if (Math.sqrt(dx * dx + dy * dy) > threshold) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private update(): void {
@@ -627,6 +646,14 @@ export class LedgeDetectorComponent implements IHistoryEnabled<FlatVec> {
 
   public get RightSide(): Array<FlatVec> {
     return this.rightSide;
+  }
+
+  public GetFrontDetector(IsFacingRight: boolean) {
+    if (IsFacingRight) {
+      return this.rightSide;
+    }
+
+    return this.leftSide;
   }
 
   private update(): void {

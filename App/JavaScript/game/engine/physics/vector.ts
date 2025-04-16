@@ -97,23 +97,85 @@ function cross(o: FlatVec, a: FlatVec, b: FlatVec): number {
   return (a.X - o.X) * (b.Y - o.Y) - (a.Y - o.Y) * (b.X - o.X);
 }
 
-const srt = (a: FlatVec, b: FlatVec) => (a.X === b.X ? a.Y - b.Y : a.X - b.X);
+// const srt = (a: FlatVec, b: FlatVec) => (a.X === b.X ? a.Y - b.Y : a.X - b.X);
 
+// const lower: Array<FlatVec> = [];
+// const upper: Array<FlatVec> = [];
+// const returnHull: Array<FlatVec> = [];
+// // Function to create a convex hull using Andrew's monotone chain algorithm
+// export function createConvexHull(points: Array<FlatVec>): Array<FlatVec> {
+//   //returnHull.length = 0;
+//   while (returnHull.length > 0) {
+//     returnHull.pop();
+//   }
+
+//   // Sort points lexicographically
+//   points.sort(srt);
+
+//   const pointsLength = points.length;
+
+//   for (let i = 0; i < pointsLength - 1; i++) {
+//     const p = points[i];
+//     while (
+//       lower.length >= 2 &&
+//       cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0
+//     ) {
+//       lower.pop();
+//     }
+//     lower.push(p);
+//   }
+
+//   for (let i = pointsLength - 1; i >= 0; i--) {
+//     const p = points[i];
+//     while (
+//       upper.length >= 2 &&
+//       cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0
+//     ) {
+//       upper.pop();
+//     }
+//     upper.push(p);
+//   }
+
+//   // Remove the last point of each half because it's repeated at the beginning of the other half
+//   upper.pop();
+//   lower.pop();
+
+//   // Concatenate lower and upper hull to get the full convex hull
+//   //return lower.concat(upper);
+//   while (lower.length > 0) {
+//     returnHull.push(lower.pop()!);
+//   }
+
+//   while (upper.length > 0) {
+//     returnHull.push(upper.pop()!);
+//   }
+
+//   return returnHull;
+// }
+// Function to create a convex hull using Andrew's monotone chain algorithm
+// Reusable arrays for lower and upper hulls
 const lower: Array<FlatVec> = [];
 const upper: Array<FlatVec> = [];
-const returnHull: Array<FlatVec> = [];
-// Function to create a convex hull using Andrew's monotone chain algorithm
+
 export function createConvexHull(points: Array<FlatVec>): Array<FlatVec> {
-  while (returnHull.length > 0) {
-    returnHull.pop();
+  if (points.length < 3) {
+    // A convex hull is not possible with fewer than 3 points
+    lower.length = 0; // Clear the lower array
+    for (let i = 0; i < points.length; i++) {
+      lower.push(points[i]);
+    }
+    return lower;
   }
 
-  // Sort points lexicographically
-  points.sort(srt);
+  // Sort points lexicographically (by X, then by Y)
+  points.sort((a, b) => (a.X === b.X ? a.Y - b.Y : a.X - b.X));
 
-  const pointsLength = points.length;
+  // Clear the lower and upper arrays
+  lower.length = 0;
+  upper.length = 0;
 
-  for (let i = 0; i < pointsLength - 1; i++) {
+  // Build the lower hull
+  for (let i = 0; i < points.length; i++) {
     const p = points[i];
     while (
       lower.length >= 2 &&
@@ -124,7 +186,8 @@ export function createConvexHull(points: Array<FlatVec>): Array<FlatVec> {
     lower.push(p);
   }
 
-  for (let i = pointsLength - 1; i >= 0; i--) {
+  // Build the upper hull
+  for (let i = points.length - 1; i >= 0; i--) {
     const p = points[i];
     while (
       upper.length >= 2 &&
@@ -136,18 +199,13 @@ export function createConvexHull(points: Array<FlatVec>): Array<FlatVec> {
   }
 
   // Remove the last point of each half because it's repeated at the beginning of the other half
-  upper.pop();
   lower.pop();
+  upper.pop();
 
-  // Concatenate lower and upper hull to get the full convex hull
-  //return lower.concat(upper);
-  while (lower.length > 0) {
-    returnHull.push(lower.pop()!);
+  // Concatenate upper hull into the lower array
+  for (let i = 0; i < upper.length; i++) {
+    lower.push(upper[i]);
   }
 
-  while (upper.length > 0) {
-    returnHull.push(upper.pop()!);
-  }
-
-  return returnHull;
+  return lower;
 }

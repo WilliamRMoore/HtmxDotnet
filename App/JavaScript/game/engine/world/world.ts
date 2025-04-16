@@ -35,7 +35,7 @@ export class World {
 
   public SetPlayer(p: Player): void {
     this.players?.push(p);
-    this.stateMachines.push(new StateMachine(p));
+    this.stateMachines.push(new StateMachine(p, this));
     this.InputStorage.push(new InputStorageManagerLocal<InputAction>());
   }
 

@@ -62,16 +62,23 @@ export function StageCollisionDetection(world: World): void {
       }
     }
 
+    // We didn't collide this frame, but are still grounded (E.G. Just idling grounded)
     if (collision === NO_COLLISION && grnd == true) {
       sm.UpdateFromWorld(GameEvents.land);
       continue;
     }
 
-    if (collision === NO_COLLISION || grnd === false) {
+    // No collision
+    if (
+      collision === NO_COLLISION ||
+      (grnd === false &&
+        p.FSMInfoComponent.CurrentState.StateId != STATES.LEDGE_GRAB)
+    ) {
       sm.UpdateFromWorld(GameEvents.fall);
       continue;
     }
 
+    // We have a collision and we are landed
     if (collision !== NO_COLLISION && grnd === true) {
       const playerVelY = p.VelocityComponent.Y;
       const landState = playerVelY > 2 ? GameEvents.land : GameEvents.softLand;
@@ -154,7 +161,6 @@ function stageCollision(world: World, playerIndex: number): number {
     // corner case, literally
     if (Math.abs(normalX) > 0 && Math.abs(normalY) > 0) {
       move.AddToX(move.X <= 0 ? move.Y : -move.Y); // add the y value into x
-      //move._setY(0);
       playerPosDTO.Add(move);
       PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
 
@@ -167,12 +173,80 @@ function stageCollision(world: World, playerIndex: number): number {
   return NO_COLLISION;
 }
 
+export function LedgeGrabDetection(w: World) {
+  const playerCount = w.PlayerCount;
+  const stage = w.Stage!;
+  const leftLedge = stage.Ledges.GetLeftLedge();
+  const rightLedge = stage.Ledges.GetRightLedge();
+  const vecPool = w.VecPool;
+  const colResPool = w.ColResPool;
+  const projResPool = w.ProjResPool;
+
+  for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
+    const p = w.GetPlayer(playerIndex)!;
+    const sm = w.GetStateMachine(playerIndex);
+    const flags = p.FlagsComponent;
+    const ecb = p.ECBComponent;
+    if (
+      p.VelocityComponent.Y < 0 ||
+      p.FSMInfoComponent.CurrentState.StateId == STATES.JUMP
+    ) {
+      continue;
+    }
+    if (PlayerHelpers.IsPlayerGroundedOnStage(p, stage)) {
+      continue;
+    }
+    const front = p.LedgeDetectorComponent.GetFrontDetector(
+      flags.IsFacingRight()
+    );
+
+    if (flags.IsFacingRight()) {
+      const intersectsLeftLedge = IntersectsPolygons(
+        leftLedge,
+        front,
+        vecPool,
+        colResPool,
+        projResPool
+      );
+      if (intersectsLeftLedge.Collision) {
+        sm?.UpdateFromWorld(GameEvents.ledgeGrab);
+        PlayerHelpers.SetPlayerPosition(
+          p,
+          leftLedge[0].X - 25,
+          leftLedge[0].Y + (ecb.Bottom.Y - ecb.Top.Y)
+        );
+      }
+      continue;
+    }
+    const intersectsRightLedge = IntersectsPolygons(
+      rightLedge,
+      front,
+      vecPool,
+      colResPool,
+      projResPool
+    );
+    if (intersectsRightLedge.Collision) {
+      sm?.UpdateFromWorld(GameEvents.ledgeGrab);
+      PlayerHelpers.SetPlayerPosition(
+        p,
+        rightLedge[0].X + 25,
+        rightLedge[0].Y + (ecb.Bottom.Y - ecb.Top.Y)
+      );
+    }
+  }
+}
+
 export function Gravity(world: World) {
   const playerCount = world.PlayerCount;
   const stage = world.Stage!;
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = world.GetPlayer(playerIndex)!;
-    PlayerHelpers.AddGravityToPlayer(p, stage);
+    if (
+      p.FSMInfoComponent.CurrentState.StateId !== STATES.LEDGE_GRAB ||
+      PlayerHelpers.IsPlayerGroundedOnStage(p, stage)
+    ) {
+      PlayerHelpers.AddGravityToPlayer(p, stage);
+    }
   }
 }
 
@@ -214,6 +288,10 @@ export function ApplyVelocty(world: World) {
       }
       if (Math.abs(pvx) < 1) {
         playerVelocity.X = 0;
+      }
+
+      if (pvy > 0) {
+        playerVelocity.Y = 0;
       }
       continue;
     }

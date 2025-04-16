@@ -27,9 +27,11 @@ class _GameEvents {
   public readonly guard = 13;
   public readonly down = 14;
   public readonly turn = 15;
+  // End of GameEvents that can be source from player input
   public readonly land = 16;
   public readonly softLand = 17;
   public readonly fall = 18;
+  public readonly ledgeGrab = 19;
 }
 
 export const GameEvents = new _GameEvents();
@@ -51,6 +53,7 @@ class _STATES {
   public readonly F_FALL = 13 as stateId;
   public readonly LAND = 14 as stateId;
   public readonly SOFT_LAND = 15 as stateId;
+  public readonly LEDGE_GRAB = 16 as stateId;
 }
 
 export const STATES = new _STATES();
@@ -453,6 +456,7 @@ export const NFALL_RELATIONS = InitNeutralFallRelations();
 export const FFALL_RELATIONS = InitFastFallRelations();
 export const LAND_RELATIONS = InitLandRelations();
 export const SOFT_LAND_RELATIONS = InitSoftLandRelations();
+export const LEDGE_GRAB_RELATIONS = InitLedgeGrabRelations();
 
 // ====================================================================
 
@@ -560,12 +564,21 @@ function InitLandRelations(): StateRelation {
 }
 
 function InitSoftLandRelations(): StateRelation {
-  const softLandTranslations = new StateRelation(
+  const softLandRelations = new StateRelation(
     STATES.SOFT_LAND,
     InitSoftLandTranslations()
   );
 
-  return softLandTranslations;
+  return softLandRelations;
+}
+
+function InitLedgeGrabRelations(): StateRelation {
+  const LedgeGrabRelations = new StateRelation(
+    STATES.LEDGE_GRAB,
+    InitLedgeGrabTranslations()
+  );
+
+  return LedgeGrabRelations;
 }
 
 // ================================================================================
@@ -742,6 +755,7 @@ function InitNFallTranslations(): ActionStateMappings {
     { geId: GameEvents.down, sId: STATES.F_FALL },
     { geId: GameEvents.land, sId: STATES.LAND },
     { geId: GameEvents.softLand, sId: STATES.SOFT_LAND },
+    { geId: GameEvents.ledgeGrab, sId: STATES.LEDGE_GRAB },
   ]);
 
   const condtions: Array<condition> = [ToJump];
@@ -778,6 +792,15 @@ function InitSoftLandTranslations(): ActionStateMappings {
   return softLandTranslations;
 }
 
+function InitLedgeGrabTranslations(): ActionStateMappings {
+  const LedgeGrabTranslations = new ActionStateMappings();
+  LedgeGrabTranslations._setMappings([
+    { geId: GameEvents.jump, sId: STATES.JUMP },
+  ]);
+
+  return LedgeGrabTranslations;
+}
+
 // STATES ==================================================================
 
 export const Idle = {
@@ -789,7 +812,8 @@ export const StartWalk: FSMState = {
   StateName: 'START_WALK',
   StateId: STATES.START_WALK,
   FrameLength: 5,
-  OnEnter: (p: Player, ia?: InputAction) => {
+  OnEnter: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID);
     if (ia != undefined) {
       const flags = p.FlagsComponent;
       if (flags.IsFacingRight() && ia!.LXAxsis < 0) {
@@ -800,7 +824,8 @@ export const StartWalk: FSMState = {
       }
     }
   },
-  OnUpdate: (p: Player, ia?: InputAction) => {
+  OnUpdate: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID);
     if (ia != undefined) {
       PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
     }
@@ -816,7 +841,8 @@ export const Walk: FSMState = {
   OnEnter: (p: Player) => {
     console.log('Walk');
   },
-  OnUpdate: (p: Player, ia?: InputAction) => {
+  OnUpdate: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID);
     if (ia != undefined) {
       PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
     }
@@ -852,7 +878,8 @@ export const Dash: FSMState = {
 
     p.VelocityComponent.AddClampedXImpulse(MaxDashSpeed, impulse);
   },
-  OnUpdate: (p: Player, ia?: InputAction) => {
+  OnUpdate: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID);
     const dashSpeedMultiplier = p.SpeedsComponent.DashMultiplier;
     const impulse = (ia?.LXAxsis ?? 0) * dashSpeedMultiplier;
     p.VelocityComponent.AddClampedXImpulse(
@@ -888,7 +915,8 @@ export const Run: FSMState = {
   OnEnter: (p: Player) => {
     console.log('Run');
   },
-  OnUpdate: (p: Player, ia?: InputAction) => {
+  OnUpdate: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID);
     if (ia != undefined) {
       PlayerHelpers.AddRunImpulseToPlayer(p, ia.LXAxsis);
     }
@@ -949,7 +977,8 @@ export const Jump: FSMState = {
       p.JumpComponent.IncrementJumps();
     }
   },
-  OnUpdate: (p: Player, inputAction?: InputAction) => {
+  OnUpdate: (p: Player, w: World) => {
+    const inputAction = w.GetPlayerCurrentInput(p.ID);
     p.VelocityComponent.AddClampedXImpulse(
       p.SpeedsComponent.AerialSpeedInpulseLimit,
       inputAction?.LXAxsis ?? 0
@@ -963,7 +992,8 @@ export const Jump: FSMState = {
 export const NeutralFall: FSMState = {
   StateName: 'NFALL',
   StateId: STATES.N_FALL,
-  OnUpdate: (p: Player, ia?: InputAction) => {
+  OnUpdate: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID);
     p.VelocityComponent.AddClampedXImpulse(
       p.SpeedsComponent.AerialSpeedInpulseLimit,
       (ia?.LXAxsis ?? 0) * 2
@@ -999,5 +1029,14 @@ export const SoftLand: FSMState = {
   OnEnter: (p: Player) => {
     p.JumpComponent.ResetJumps();
     p.VelocityComponent.Y = 0;
+  },
+};
+
+export const LedgeGrab: FSMState = {
+  StateName: 'LedgeGrab',
+  StateId: STATES.LEDGE_GRAB,
+  OnEnter: (p: Player) => {
+    p.JumpComponent.ResetJumps();
+    p.JumpComponent.IncrementJumps();
   },
 };

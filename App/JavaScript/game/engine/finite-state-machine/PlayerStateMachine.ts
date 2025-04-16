@@ -18,6 +18,8 @@ import {
   JumpSquat,
   Land,
   LAND_RELATIONS,
+  LEDGE_GRAB_RELATIONS,
+  LedgeGrab,
   NeutralFall,
   NFALL_RELATIONS,
   Run,
@@ -43,18 +45,20 @@ export type FSMState = {
   StateId: number;
   FrameLength?: number;
   InteruptFrame?: number;
-  OnEnter?: (p: Player, ia?: InputAction) => void;
-  OnUpdate?: (p: Player, inputAction?: InputAction) => void;
-  OnExit?: (p: Player) => void;
+  OnEnter?: (p: Player, world: World) => void;
+  OnUpdate?: (p: Player, world: World) => void;
+  OnExit?: (p: Player, world: World) => void;
 };
 
 export class StateMachine {
   private player: Player;
+  private world: World;
   private stateMappings: Map<stateId, ActionStateMappings> = new Map();
   private states: Map<stateId, FSMState> = new Map();
 
-  constructor(p: Player) {
+  constructor(p: Player, world: World) {
     this.player = p;
+    this.world = world;
     this.player.FSMInfoComponent.SetCurrentState(Idle);
     this.stateMappings.set(
       IDLE_STATE_RELATIONS.stateId,
@@ -92,6 +96,10 @@ export class StateMachine {
       SOFT_LAND_RELATIONS.stateId,
       SOFT_LAND_RELATIONS.mappings
     );
+    this.stateMappings.set(
+      LEDGE_GRAB_RELATIONS.stateId,
+      LEDGE_GRAB_RELATIONS.mappings
+    );
     this.states.set(Idle.StateId, Idle);
     this.states.set(StartWalk.StateId, StartWalk);
     this.states.set(Turn.StateId, Turn);
@@ -107,6 +115,7 @@ export class StateMachine {
     this.states.set(FastFall.StateId, FastFall);
     this.states.set(Land.StateId, Land);
     this.states.set(SoftLand.StateId, SoftLand);
+    this.states.set(LedgeGrab.StateId, LedgeGrab);
   }
 
   public SetInitialState(stateId: stateId) {
@@ -120,7 +129,7 @@ export class StateMachine {
       const fsmInfo = this.player.FSMInfoComponent;
 
       this.changeState(state);
-      fsmInfo.CurrentState.OnUpdate?.(this.player);
+      fsmInfo.CurrentState.OnUpdate?.(this.player, this.world);
       fsmInfo.IncrementStateFrame();
     }
   }
@@ -136,7 +145,7 @@ export class StateMachine {
     const fsmInfo = this.player.FSMInfoComponent;
 
     this.changeState(state);
-    fsmInfo.CurrentState.OnUpdate?.(this.player);
+    fsmInfo.CurrentState.OnUpdate?.(this.player, this.world);
     fsmInfo.IncrementStateFrame();
   }
 
@@ -279,14 +288,14 @@ export class StateMachine {
     const p = this.player;
     const fsmInfo = p.FSMInfoComponent;
     fsmInfo.SetStateFrameToZero();
-    fsmInfo.CurrentState.OnExit?.(this.player);
+    fsmInfo.CurrentState.OnExit?.(this.player, this.world);
     fsmInfo.SetCurrentState(state);
-    fsmInfo.CurrentState.OnEnter?.(this.player, ia);
+    fsmInfo.CurrentState.OnEnter?.(this.player, this.world);
   }
 
   private updateState(inputAction: InputAction) {
     const fsmInfo = this.player.FSMInfoComponent;
-    fsmInfo.CurrentState.OnUpdate?.(this.player, inputAction);
+    fsmInfo.CurrentState.OnUpdate?.(this.player, this.world);
     fsmInfo.IncrementStateFrame();
   }
 
