@@ -19,7 +19,7 @@ const defaultSpeedsBuilderOptions: speedBuilderOptions = (
   scb.SetWalkSpeeds(10, 2);
   scb.SetRunSpeeds(15, 2.2);
   scb.SetFallSpeeds(21, 15, 0.5);
-  scb.SetAerialSpeeds(0.8, 18);
+  scb.SetAerialSpeeds(0.8, 18, 2);
   scb.SetDashSpeeds(3, 20);
   scb.SetGroundedVelocityDecay(1);
 };
@@ -111,14 +111,12 @@ export class PlayerHelpers {
   }
 
   public static AddGravityToPlayer(p: Player, s: Stage): void {
-    const speeds = p.SpeedsComponent;
     if (!this.IsPlayerGroundedOnStage(p, s)) {
+      const speeds = p.SpeedsComponent;
       const grav = speeds.Gravity;
-      const flags = p.FlagsComponent;
-      const fallSpeed = flags.IsFastFalling()
-        ? speeds.FastFallSpeed
-        : speeds.FallSpeed;
-      const GravMutliplier = flags.IsFastFalling() ? 1.4 : 1;
+      const isFF = p.FlagsComponent.IsFastFalling();
+      const fallSpeed = isFF ? speeds.FastFallSpeed : speeds.FallSpeed;
+      const GravMutliplier = isFF ? 1.4 : 1;
       p.VelocityComponent.AddClampedYImpulse(fallSpeed, grav * GravMutliplier);
     }
   }

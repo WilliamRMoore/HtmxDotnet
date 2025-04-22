@@ -1,6 +1,9 @@
 import { FlatVec } from '../engine/physics/vector';
-import { Stage } from '../engine/stage/stageComponents';
-import { FillArrayWithFlatVec } from '../engine/utils';
+import {
+  ComponentHistory,
+  ECBSnapShot,
+} from '../engine/player/playerComponents';
+import { World } from '../engine/world/world';
 
 export class DebugRenderer {
   private canvas: HTMLCanvasElement;
@@ -8,7 +11,11 @@ export class DebugRenderer {
   private xRes: number;
   private yRes: number;
 
-  constructor(canvas: HTMLCanvasElement, res: resolution) {
+  constructor(
+    canvas: HTMLCanvasElement,
+    res: resolution,
+    numberOfPlayers: number = 1
+  ) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
     this.xRes = res.x;
@@ -17,40 +24,49 @@ export class DebugRenderer {
     this.canvas.height = this.yRes;
   }
 
-  render(renderDataDTO: RenderData) {
+  render(world: World, alpha: number) {
+    let localFrame = world.localFrame;
+
+    if (localFrame == 0) {
+      return;
+    }
+
+    localFrame--;
     const ctx = this.ctx;
     ctx.fillStyle = 'grey';
     ctx.fillRect(0, 0, this.xRes, this.yRes); // Fill the entire canvas with grey
 
-    //ctx.fillStyle = 'white';
-    drawStage(ctx, renderDataDTO);
-    const playerCount = renderDataDTO.players.length;
+    drawStage(ctx, world);
+    drawPlayer(ctx, world);
 
-    for (let i = 0; i < playerCount; i++) {
-      drawPlayer(ctx, renderDataDTO.players[i]);
-    }
+    const frameTime = world.GetFrameTimeForFrame(localFrame);
+
     ctx.fillStyle = 'darkblue';
 
-    ctx.fillText(`Frame: ${renderDataDTO.frame}`, 10, 30);
-    ctx.fillText(`FrameTime: ${renderDataDTO.frameTime}`, 10, 60);
+    ctx.fillText(`Frame: ${localFrame}`, 10, 30);
+    ctx.fillText(`FrameTime: ${frameTime}`, 10, 60);
+    // ctx.fillText(
+    //   `PlayerState: ${renderDataDTO.players[0].playerState}`,
+    //   10,
+    //   90
+    // );
+    // ctx.fillText(
+    //   `PlayerState: ${renderDataDTO.players[0].facingRight}`,
+    //   10,
+    //   120
+    // );
     ctx.fillText(
-      `PlayerState: ${renderDataDTO.players[0].playerState}`,
+      `VectorsRented: ${world.GetRentedVecsForFrame(localFrame)}`,
       10,
-      90
+      150
     );
     ctx.fillText(
-      `PlayerState: ${renderDataDTO.players[0].facingRight}`,
-      10,
-      120
-    );
-    ctx.fillText(`VectorsRented: ${renderDataDTO.PooledVectors}`, 10, 150);
-    ctx.fillText(
-      `CollisionResultsRented: ${renderDataDTO.PooledCollisionResults}`,
+      `CollisionResultsRented: ${world.GetRentedColResForFrame(localFrame)}`,
       10,
       180
     );
     ctx.fillText(
-      `ProjectionReultsRented: ${renderDataDTO.PooledProjectionResults}`,
+      `ProjectionReultsRented: ${world.GetRentedProjResForFrame(localFrame)}`,
       10,
       210
     );
@@ -62,65 +78,9 @@ export type resolution = {
   y: number;
 };
 
-export class RenderData {
-  frame: number = 0;
-  frameTime: number = 0;
-  players: Array<PlayerRenderData> = [];
-  stage?: Stage;
-  PooledVectors: number = 0;
-  PooledCollisionResults: number = 0;
-  PooledProjectionResults: number = 0;
-
-  constructor(playerCount: number) {
-    for (let i = 0; i < playerCount; i++) {
-      this.players[i] = new PlayerRenderData();
-    }
-  }
-}
-
-class StageRenderData {
-  stage: FlatVec[] = [];
-  leftLegd: FlatVec[] = [];
-  rightLegd: FlatVec[] = [];
-}
-
-class PlayerRenderData {
-  playerState: string = 'IDLE';
-  postionx: number = 0;
-  postiony: number = 0;
-  facingRight = true;
-  currentLeftX: number = 0;
-  currenltLeftY: number = 0;
-  currentRightX: number = 0;
-  currentRightY: number = 0;
-  currentTopX: number = 0;
-  currentTopY: number = 0;
-  currentBottomX: number = 0;
-  currentBottomY: number = 0;
-  prevLeftX: number = 0;
-  prevLeftY: number = 0;
-  prevRightX: number = 0;
-  prevRightY: number = 0;
-  prevTopX: number = 0;
-  prevTopY: number = 0;
-  prevBottomX: number = 0;
-  prevBottomY: number = 0;
-  leftLedgeDetector: FlatVec[] = new Array<FlatVec>(4);
-  rightLedgeDetector: FlatVec[] = new Array<FlatVec>(4);
-  hull: FlatVec[] = [];
-
-  constructor() {
-    FillArrayWithFlatVec(this.leftLedgeDetector);
-    FillArrayWithFlatVec(this.rightLedgeDetector);
-  }
-}
-
-function drawStage(ctx: CanvasRenderingContext2D, renderData: RenderData) {
-  if (renderData.stage === undefined) {
-    return;
-  }
-
-  const stageVerts = renderData.stage.StageVerticies.GetVerts();
+function drawStage(ctx: CanvasRenderingContext2D, world: World) {
+  const stage = world.Stage;
+  const stageVerts = stage!.StageVerticies.GetVerts()!;
   const color = 'green';
   const stageVertsLength = stageVerts.length;
 
@@ -133,8 +93,8 @@ function drawStage(ctx: CanvasRenderingContext2D, renderData: RenderData) {
   ctx.fillStyle = color;
   ctx.fill();
 
-  const lLedge = renderData.stage.Ledges.GetLeftLedge();
-  const rLedge = renderData.stage.Ledges.GetRightLedge();
+  const lLedge = stage!.Ledges.GetLeftLedge();
+  const rLedge = stage!.Ledges.GetRightLedge();
 
   ctx.fillStyle = 'yellow';
   ctx.beginPath();
@@ -154,117 +114,144 @@ function drawStage(ctx: CanvasRenderingContext2D, renderData: RenderData) {
   ctx.fill();
 }
 
-function drawPlayer(
-  ctx: CanvasRenderingContext2D,
-  renderData: PlayerRenderData
-) {
-  const player = renderData;
-  const playerPosX = player.postionx;
-  const playerPosY = player.postiony;
-  const ccHull = player.hull;
-  const facingRight = player.facingRight;
+function drawPlayer(ctx: CanvasRenderingContext2D, world: World) {
+  const playerCount = world.PlayerCount;
+  const currentFrame = world.localFrame - 1;
+  for (let i = 0; i < playerCount; i++) {
+    const playerHistory = world.GetComponentHistory(i);
+    const pos = playerHistory!.PositionHistory[currentFrame];
+    const flags = playerHistory!.FlagsHistory[currentFrame];
+    const ecb = playerHistory!.EcbHistory[currentFrame];
+    const lD = playerHistory!.LedgeDetectorHistory[currentFrame];
+    const facingRight = flags.FacingRight;
 
-  const ecbColor = 'orange';
+    //drawHull(ctx, player);
+    drawPrevEcb(ctx, ecb);
+    drawCurrentECB(ctx, ecb);
+    drawPositionMarker(ctx, pos);
 
-  ctx.fillStyle = 'red';
-  ctx.lineWidth = 3;
+    // draw direction marker
+    ctx.strokeStyle = 'white';
+    if (facingRight) {
+      const rightX = ComponentHistory.GetRightXFromEcbHistory(ecb);
+      const rightY = ComponentHistory.GetRightYFromEcbHistory(ecb);
+      ctx.beginPath();
+      ctx.moveTo(rightX, rightY);
+      ctx.lineTo(rightX + 10, rightY);
+      ctx.stroke();
+      ctx.closePath();
+    } else {
+      const leftX = ComponentHistory.GetLeftXFromEcbHistory(ecb);
+      const leftY = ComponentHistory.GetLeftYFromEcbHistory(ecb);
+      ctx.beginPath();
+      ctx.moveTo(leftX, leftY);
+      ctx.lineTo(leftX - 10, leftY);
+      ctx.stroke();
+      ctx.closePath();
+    }
 
-  //drawHull(ctx, player);
-  drawPrevEcb(ctx, player);
-  drawCurrentECB(ctx, player);
-  drawPositionMarker(ctx, player);
+    const ldHeight = playerHistory!.StaticPlayerHistory.ledgDetecorHeight;
+    const ldWidth = playerHistory!.StaticPlayerHistory.LedgeDetectorWidth;
+    const middleTopX = lD.middleX;
+    const middleTopY = lD.middleY;
+    const TopRightX = lD.middleX + ldWidth;
+    const TopRightY = lD.middleY;
+    const BottomRightX = lD.middleX + ldWidth;
+    const BottomRightY = lD.middleY + ldHeight;
+    const middleBottomx = lD.middleX;
+    const middleBottomY = lD.middleY + ldHeight;
+    const topLeftX = lD.middleX - ldWidth;
+    const topLeftY = lD.middleY;
+    const bottomLeftX = lD.middleX - ldWidth;
+    const bottomLeftY = lD.middleY + ldHeight;
 
-  // draw direction marker
-  ctx.strokeStyle = 'white';
-  if (facingRight) {
-    ctx.beginPath();
-    ctx.moveTo(player.currentRightX, player.currentRightY);
-    ctx.lineTo(player.currentRightX + 10, player.currentRightY);
-    ctx.stroke();
-    ctx.closePath();
-  } else {
-    ctx.beginPath();
-    ctx.moveTo(player.currentLeftX, player.currenltLeftY);
-    ctx.lineTo(player.currentLeftX - 10, player.currenltLeftY);
-    ctx.stroke();
-    ctx.closePath();
-  }
-
-  const leftDetector = player.leftLedgeDetector;
-  const rightDetector = player.rightLedgeDetector;
-
-  // Draw left detector
-  ctx.strokeStyle = 'blue';
-
-  if (!facingRight) {
-    ctx.strokeStyle = 'red';
-  }
-
-  ctx.beginPath();
-  ctx.moveTo(leftDetector[0].X, leftDetector[0].Y);
-  for (let index = 0; index < leftDetector.length; index++) {
-    ctx.lineTo(leftDetector[index].X, leftDetector[index].Y);
-  }
-  ctx.closePath();
-  ctx.stroke();
-
-  // Draw right detector
-  ctx.strokeStyle = 'red';
-
-  if (!facingRight) {
+    // Draw right detector
     ctx.strokeStyle = 'blue';
-  }
 
-  ctx.beginPath();
-  ctx.moveTo(rightDetector[0].X, rightDetector[0].Y);
-  for (let index = 0; index < rightDetector.length; index++) {
-    ctx.lineTo(rightDetector[index].X, rightDetector[index].Y);
+    if (!facingRight) {
+      ctx.strokeStyle = 'red';
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(middleTopX, middleTopY);
+    ctx.lineTo(TopRightX, TopRightY);
+    ctx.lineTo(BottomRightX, BottomRightY);
+    ctx.lineTo(middleBottomx, middleBottomY);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Draw left detector
+    ctx.strokeStyle = 'red';
+
+    if (!facingRight) {
+      ctx.strokeStyle = 'blue';
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(topLeftX, topLeftY);
+    ctx.lineTo(middleTopX, middleTopY);
+    ctx.lineTo(middleBottomx, middleBottomY);
+    ctx.lineTo(bottomLeftX, bottomLeftY);
+    ctx.closePath();
+    ctx.stroke();
   }
-  ctx.closePath();
-  ctx.stroke();
+  //const player = renderData;
 }
 
-function drawPrevEcb(ctx: CanvasRenderingContext2D, player: PlayerRenderData) {
-  const ecbColor = 'orange';
-
+function drawPrevEcb(ctx: CanvasRenderingContext2D, ecb: ECBSnapShot) {
   ctx.fillStyle = 'red';
   ctx.lineWidth = 3;
+
+  const leftX = ComponentHistory.GetPrevLeftXFromEcbHistory(ecb);
+  const leftY = ComponentHistory.GetPrevLeftYFromEcbHistory(ecb);
+  const topX = ComponentHistory.GetPrevTopXFromEcbHistory(ecb);
+  const topY = ComponentHistory.GetPrevTopYFromEcbHistory(ecb);
+  const rightX = ComponentHistory.GetPrevRightXFromEcbHistory(ecb);
+  const rightY = ComponentHistory.GetPrevRightYFromEcbHistory(ecb);
+  const bottomX = ComponentHistory.GetPrevBottomXFromEcbHistory(ecb);
+  const bottomY = ComponentHistory.GetPrevBottomYFromEcbHistory(ecb);
 
   // draw previous ECB
   ctx.strokeStyle = 'black';
   ctx.beginPath();
-  ctx.moveTo(player.prevLeftX, player.prevLeftY);
-  ctx.lineTo(player.prevTopX, player.prevTopY);
-  ctx.lineTo(player.prevRightX, player.prevRightY);
-  ctx.lineTo(player.prevBottomX, player.prevBottomY);
+  ctx.moveTo(leftX, leftY);
+  ctx.lineTo(topX, topY);
+  ctx.lineTo(rightX, rightY);
+  ctx.lineTo(bottomX, bottomY);
   ctx.closePath();
   ctx.stroke();
   ctx.fill();
 }
 
-function drawHull(ctx: CanvasRenderingContext2D, player: PlayerRenderData) {
-  const ccHull = player.hull;
-  //draw hull
-  ctx.beginPath();
-  ctx.moveTo(ccHull[0].X, ccHull[0].Y);
-  for (let i = 0; i < ccHull.length; i++) {
-    ctx.lineTo(ccHull[i].X, ccHull[i].Y);
-  }
-  ctx.closePath();
-  ctx.fill();
-}
+// function drawHull(ctx: CanvasRenderingContext2D, player: PlayerRenderData) {
+//   const ccHull = player.hull;
+//   //draw hull
+//   ctx.beginPath();
+//   ctx.moveTo(ccHull[0].X, ccHull[0].Y);
+//   for (let i = 0; i < ccHull.length; i++) {
+//     ctx.lineTo(ccHull[i].X, ccHull[i].Y);
+//   }
+//   ctx.closePath();
+//   ctx.fill();
+// }
 
-function drawCurrentECB(
-  ctx: CanvasRenderingContext2D,
-  player: PlayerRenderData
-) {
+function drawCurrentECB(ctx: CanvasRenderingContext2D, ecb: ECBSnapShot) {
+  const leftX = ComponentHistory.GetLeftXFromEcbHistory(ecb);
+  const leftY = ComponentHistory.GetLeftYFromEcbHistory(ecb);
+  const topX = ComponentHistory.GetTopXFromEcbHistory(ecb);
+  const topY = ComponentHistory.GetTopYFromEcbHistory(ecb);
+  const rightX = ComponentHistory.GetRightXFromEcbHistory(ecb);
+  const rightY = ComponentHistory.GetRightYFromEcbHistory(ecb);
+  const bottomX = ComponentHistory.GetBottomXFromEcbHistory(ecb);
+  const bottomY = ComponentHistory.GetBottomYFromEcbHistory(ecb);
+
   ctx.fillStyle = 'orange';
   ctx.strokeStyle = 'purple';
   ctx.beginPath();
-  ctx.moveTo(player.currentLeftX, player.currenltLeftY);
-  ctx.lineTo(player.currentTopX, player.currentTopY);
-  ctx.lineTo(player.currentRightX, player.currentRightY);
-  ctx.lineTo(player.currentBottomX, player.currentBottomY);
+  ctx.moveTo(leftX, leftY);
+  ctx.lineTo(topX, topY);
+  ctx.lineTo(rightX, rightY);
+  ctx.lineTo(bottomX, bottomY);
   ctx.closePath();
   ctx.stroke();
   ctx.fill();
@@ -272,10 +259,10 @@ function drawCurrentECB(
 
 function drawPositionMarker(
   ctx: CanvasRenderingContext2D,
-  player: PlayerRenderData
+  posHistory: FlatVec
 ) {
-  const playerPosX = player.postionx;
-  const playerPosY = player.postiony;
+  const playerPosX = posHistory.X;
+  const playerPosY = posHistory.Y;
 
   ctx.lineWidth = 1;
   ctx.strokeStyle = 'blue';

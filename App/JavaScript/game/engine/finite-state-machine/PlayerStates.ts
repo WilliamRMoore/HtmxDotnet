@@ -1,6 +1,5 @@
 import { Player, PlayerHelpers } from '../player/playerOrchestrator';
 import { World } from '../world/world';
-import { InputAction } from '../../loops/Input';
 import { FSMState } from './PlayerStateMachine';
 
 // Aliases =====================================
@@ -82,12 +81,12 @@ export function RunCondition(
 const IdleToDashturn: condition = {
   Name: 'IdleToTurnDash',
   ConditionFunc: (w, playerIndex) => {
-    const p = w.GetPlayer(playerIndex);
+    const p = w.GetPlayer(playerIndex)!;
     const input = w.GetPlayerCurrentInput(playerIndex)!;
-    if (p?.FlagsComponent.IsFacingRight() && input.LXAxsis < -0.5) {
+    if (input.LXAxsis < -0.5 && p.FlagsComponent.IsFacingRight()) {
       return true;
     }
-    if (p?.FlagsComponent.IsFacingLeft() && input.LXAxsis > 0.5) {
+    if (input.LXAxsis > 0.5 && p.FlagsComponent.IsFacingLeft()) {
       return true;
     }
 
@@ -103,11 +102,11 @@ const IdleToTurn: condition = {
     const flags = p.FlagsComponent;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
-    if (flags.IsFacingRight() && ia.LXAxsis < 0) {
+    if (ia.LXAxsis < 0 && flags.IsFacingRight()) {
       return true;
     }
 
-    if (flags.IsFacingLeft() && ia.LXAxsis > 0) {
+    if (ia.LXAxsis > 0 && flags.IsFacingLeft()) {
       return true;
     }
 
@@ -194,15 +193,16 @@ const DashToTurn: condition = {
     const threshold = 0.5; // Threshold for detecting significant variation
 
     const flags = p.FlagsComponent;
+    const facingRight = flags.IsFacingRight();
     // Check if the variation exceeds the threshold and is in the opposite direction of the player's facing direction
-    if (flags.IsFacingRight() && laxDifference < -threshold) {
+    if (laxDifference < -threshold && facingRight) {
       // Player is facing right, but the stick moved significantly to the left
       if (curLax < 0) {
         return true;
       }
     }
 
-    if (flags.IsFacingLeft() && laxDifference > threshold) {
+    if (laxDifference > threshold && !facingRight) {
       // Player is facing left, but the stick moved significantly to the right
       if (curLax > 0) {
         return true;
@@ -220,10 +220,11 @@ const ToJump: condition = {
     const player = w.GetPlayer(playerIndex);
     const currentInput = w.GetPlayerCurrentInput(playerIndex)!;
     const prevInput = w.GetPlayerPreviousInput(playerIndex);
+    const jumpId = GameEvents.jump;
 
     if (
-      currentInput.Action === GameEvents.jump &&
-      prevInput?.Action !== GameEvents.jump &&
+      currentInput.Action === jumpId &&
+      prevInput?.Action !== jumpId &&
       player?.JumpComponent.HasJumps()
     ) {
       return true;
@@ -241,11 +242,11 @@ const DashDefaultRun: condition = {
     const flags = p.FlagsComponent;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
-    if (flags.IsFacingRight() && ia.LXAxsis > 0) {
+    if (ia.LXAxsis > 0 && flags.IsFacingRight()) {
       return true;
     }
 
-    if (flags.IsFacingLeft() && ia.LXAxsis < 0) {
+    if (ia.LXAxsis < 0 && flags.IsFacingLeft()) {
       return true;
     }
 
@@ -319,7 +320,6 @@ const defaultNFall: condition = {
 const LandToIdle: condition = {
   Name: 'LandToIdle',
   ConditionFunc: (w: World, playerIndex) => {
-    const p = w.GetPlayer(playerIndex)!;
     const ia = w.GetInputManager(playerIndex).GetInputForFrame(w.localFrame)!;
 
     if (ia.LXAxsis === 0) {
@@ -405,14 +405,12 @@ class StateRelation {
 
 export class ActionStateMappings {
   private readonly mappings = new Map<gameEventId, stateId>();
-  // private readonly validStates = new Set<stateId>();
   private defaultConditions?: Array<condition>;
   private Condtions?: Array<condition>;
 
   _setMappings(mappingsArray: { geId: gameEventId; sId: stateId }[]) {
     mappingsArray.forEach((actSt) => {
       this.mappings.set(actSt.geId, actSt.sId);
-      //this.validStates.add(actSt.sId);
     });
   }
 
@@ -814,12 +812,13 @@ export const StartWalk: FSMState = {
   FrameLength: 5,
   OnEnter: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
+    const axis = ia?.LXAxsis ?? 0;
     if (ia != undefined) {
       const flags = p.FlagsComponent;
-      if (flags.IsFacingRight() && ia!.LXAxsis < 0) {
+      if (axis < 0 && flags.IsFacingRight()) {
         flags.ChangeDirections();
       }
-      if (flags.IsFacingLeft() && ia!.LXAxsis > 0) {
+      if (axis > 0 && flags.IsFacingLeft()) {
         flags.ChangeDirections();
       }
     }
@@ -880,12 +879,10 @@ export const Dash: FSMState = {
   },
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
-    const dashSpeedMultiplier = p.SpeedsComponent.DashMultiplier;
+    const speedsComp = p.SpeedsComponent;
+    const dashSpeedMultiplier = speedsComp.DashMultiplier;
     const impulse = (ia?.LXAxsis ?? 0) * dashSpeedMultiplier;
-    p.VelocityComponent.AddClampedXImpulse(
-      p.SpeedsComponent.MaxDashSpeed,
-      impulse!
-    );
+    p.VelocityComponent.AddClampedXImpulse(speedsComp.MaxDashSpeed, impulse);
   },
   OnExit: (p: Player) => {
     console.log('Exit Dash');
@@ -969,19 +966,20 @@ export const Jump: FSMState = {
   StateId: STATES.JUMP,
   FrameLength: 15,
   OnEnter: (p: Player) => {
-    if (p.JumpComponent.HasJumps()) {
-      //p.AddToPlayerYPosition(-0.5);
+    const jumpComp = p.JumpComponent;
+    if (jumpComp.HasJumps()) {
       PlayerHelpers.AddToPlayerYPosition(p, -0.5);
-      p.VelocityComponent.Y = -p.JumpComponent.JumpVelocity;
+      p.VelocityComponent.Y = -jumpComp.JumpVelocity;
       console.log('Jump');
-      p.JumpComponent.IncrementJumps();
+      jumpComp.IncrementJumps();
     }
   },
   OnUpdate: (p: Player, w: World) => {
     const inputAction = w.GetPlayerCurrentInput(p.ID);
+    const speedsComp = p.SpeedsComponent;
     p.VelocityComponent.AddClampedXImpulse(
-      p.SpeedsComponent.AerialSpeedInpulseLimit,
-      inputAction?.LXAxsis ?? 0
+      speedsComp.AerialSpeedInpulseLimit,
+      (inputAction?.LXAxsis ?? 0) * speedsComp.ArielVelocityMultiplier
     );
   },
   OnExit: (p: Player) => {
@@ -994,9 +992,10 @@ export const NeutralFall: FSMState = {
   StateId: STATES.N_FALL,
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
+    const speedsComp = p.SpeedsComponent;
     p.VelocityComponent.AddClampedXImpulse(
-      p.SpeedsComponent.AerialSpeedInpulseLimit,
-      (ia?.LXAxsis ?? 0) * 2
+      speedsComp.AerialSpeedInpulseLimit,
+      (ia?.LXAxsis ?? 0) * speedsComp.ArielVelocityMultiplier
     );
   },
 };
@@ -1036,7 +1035,8 @@ export const LedgeGrab: FSMState = {
   StateName: 'LedgeGrab',
   StateId: STATES.LEDGE_GRAB,
   OnEnter: (p: Player) => {
-    p.JumpComponent.ResetJumps();
-    p.JumpComponent.IncrementJumps();
+    const jumpComp = p.JumpComponent;
+    jumpComp.ResetJumps();
+    jumpComp.IncrementJumps();
   },
 };

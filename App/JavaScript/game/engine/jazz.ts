@@ -1,6 +1,4 @@
 import { InputAction } from '../loops/Input';
-import { RenderData } from '../render/debug-2d';
-import { FlatVec } from './physics/vector';
 import { Player } from './player/playerOrchestrator';
 import { defaultStage } from './stage/stageComponents';
 import {
@@ -9,6 +7,7 @@ import {
   LedgeGrabDetection,
   OutOfBoundsCheck,
   PlayerInput,
+  RecordHistory,
   StageCollisionDetection,
 } from './systems/systems';
 import { World } from './world/world';
@@ -21,15 +20,13 @@ export interface IJazz {
 }
 
 export class Jazz implements IJazz {
-  private readonly renderDataDto: RenderData;
   private readonly world: World;
 
-  constructor(rd: RenderData) {
-    this.renderDataDto = rd;
+  constructor() {
     this.world = new World();
   }
 
-  public get World(): World | undefined {
+  public get World(): World {
     return this.world;
   }
 
@@ -49,12 +46,12 @@ export class Jazz implements IJazz {
 
     let frameTimeDelta = performance.now() - frameTimeStart;
 
-    this.renderDataCopy(frameTimeDelta);
-
     const world = this.World;
+    world.SetFrameTimeForFrame(world.localFrame, frameTimeDelta);
     world?.VecPool.Zero();
     world?.ColResPool.Zero();
     world?.ProjResPool.Zero();
+    world.localFrame++;
   }
 
   public UpdateLocalInputForCurrentFrame(ia: InputAction, pIndex: number) {
@@ -87,87 +84,7 @@ export class Jazz implements IJazz {
     LedgeGrabDetection(world);
     StageCollisionDetection(world);
     OutOfBoundsCheck(world);
-
-    world.localFrame++;
-  }
-
-  private renderDataCopy(frameTime: number = 0) {
-    this.renderDataDto.frameTime = frameTime;
-    this.renderDataDto.frame = this.localFrame;
-
-    const worldStage = this.world.Stage;
-    const playerCount = this.world.PlayerCount;
-
-    for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
-      const worldPlayer = this.world.GetPlayer(playerIndex);
-      const sm = this.world.GetStateMachine(playerIndex);
-      const playerRenderData = this.renderDataDto.players[playerIndex];
-      playerRenderData.playerState = sm?.CurrentStateName ?? 'N/A';
-
-      playerRenderData.postionx = worldPlayer?.PostionComponent.X ?? 0;
-      playerRenderData.postiony = worldPlayer?.PostionComponent.Y ?? 0;
-      playerRenderData.facingRight =
-        worldPlayer?.FlagsComponent.IsFacingRight() ?? true;
-
-      const ecb = worldPlayer?.ECBComponent;
-
-      playerRenderData.currentLeftX = ecb?.Left?.X ?? 0;
-      playerRenderData.currenltLeftY = ecb?.Left?.Y ?? 0;
-      playerRenderData.currentRightX = ecb?.Right?.X ?? 0;
-      playerRenderData.currentRightY = ecb?.Right?.Y ?? 0;
-      playerRenderData.currentTopX = ecb?.Top?.X ?? 0;
-      playerRenderData.currentTopY = ecb?.Top?.Y ?? 0;
-      playerRenderData.currentBottomX = ecb?.Bottom?.X ?? 0;
-      playerRenderData.currentBottomY = ecb?.Bottom?.Y ?? 0;
-
-      playerRenderData.prevLeftX = ecb?.PrevLeft.X ?? 0;
-      playerRenderData.prevLeftY = ecb?.PrevLeft.Y ?? 0;
-      playerRenderData.prevRightX = ecb?.PrevRight.X ?? 0;
-      playerRenderData.prevRightY = ecb?.PrevRight.Y ?? 0;
-      playerRenderData.prevTopX = ecb?.PrevTop.X ?? 0;
-      playerRenderData.prevTopY = ecb?.PrevTop.Y ?? 0;
-      playerRenderData.prevBottomX = ecb?.PrevBottom.X ?? 0;
-      playerRenderData.prevBottomY = ecb?.PrevBottom.Y ?? 0;
-
-      const playerLedgeDetectorComponent = worldPlayer?.LedgeDetectorComponent!;
-
-      const leftLedgeDetectorLength =
-        playerLedgeDetectorComponent.LeftSide.length;
-
-      for (let index = 0; index < leftLedgeDetectorLength; index++) {
-        const renderData = playerRenderData.leftLedgeDetector[index];
-        const playerData = playerLedgeDetectorComponent.LeftSide[index];
-
-        renderData.X = playerData.X;
-        renderData.Y = playerData.Y;
-      }
-
-      const rightLedgeDetectorLength =
-        playerLedgeDetectorComponent.LeftSide.length;
-
-      for (let index = 0; index < rightLedgeDetectorLength; index++) {
-        const renderData = playerRenderData.rightLedgeDetector[index];
-        const playerData = playerLedgeDetectorComponent.RightSide[index];
-
-        renderData.X = playerData.X;
-        renderData.Y = playerData.Y;
-      }
-
-      // const hull = worldPlayer?.ECBComponent.GetHull()!;
-      // const hullCopy: Array<FlatVec> = [];
-      // const hullLength = hull.length;
-      // for (let i = 0; i < hullLength; i++) {
-      //   hullCopy.push(new FlatVec(hull[i].X, hull[i].Y));
-      // }
-
-      // playerRenderData.hull = hullCopy;
-    }
-    this.renderDataDto.PooledVectors = this.world.VecPool.ActiveCount;
-    this.renderDataDto.PooledProjectionResults =
-      this.world.ProjResPool.ActiveCount;
-    this.renderDataDto.PooledCollisionResults =
-      this.world.ColResPool.ActiveCount;
-    this.renderDataDto.stage = worldStage;
+    RecordHistory(world);
   }
 
   private get localFrame() {
@@ -185,8 +102,8 @@ export class JazzDebugger implements IJazz {
   private previousInput: InputAction | undefined = undefined;
   private advanceFrame: boolean = false;
 
-  constructor(renderData: RenderData) {
-    this.jazz = new Jazz(renderData);
+  constructor() {
+    this.jazz = new Jazz();
   }
 
   UpdateLocalInputForCurrentFrame(ia: InputAction, pIndex: number): void {
@@ -221,7 +138,7 @@ export class JazzDebugger implements IJazz {
     }
   }
 
-  public get World(): World | undefined {
+  public get World(): World {
     return this.jazz.World;
   }
 

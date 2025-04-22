@@ -9,30 +9,95 @@ import { FillArrayWithFlatVec } from '../utils';
 import { Player } from './playerOrchestrator';
 import { Clamp } from '../utils';
 
-export class ComponentHistory {
-  readonly positionHistory: Array<FlatVec> = [];
-  readonly fsmInfoHistory: Array<FSMInfoSnapShot> = [];
-  readonly velocityHistory: Array<FlatVec> = [];
-  readonly flagsHistory: Array<FlagsSnapShot> = [];
-  readonly ecbHistory: Array<ECBSnapShot> = [];
-  readonly jumpHistroy: Array<number> = [];
+class StaticHistory {
+  public ledgDetecorHeight: number = 0;
+  public LedgeDetectorWidth: number = 0;
+}
 
-  public RecordPlayer(p: Player, frameNumber: number) {
-    this.positionHistory[frameNumber] = p.PostionComponent.SnapShot();
-    this.fsmInfoHistory[frameNumber] = p.FSMInfoComponent.SnapShot();
-    this.velocityHistory[frameNumber] = p.VelocityComponent.SnapShot();
-    this.flagsHistory[frameNumber] = p.FlagsComponent.SnapShot();
-    this.ecbHistory[frameNumber] = p.ECBComponent.SnapShot();
-    this.jumpHistroy[frameNumber] = p.JumpComponent.SnapShot();
-  }
+export class ComponentHistory {
+  public readonly StaticPlayerHistory = new StaticHistory();
+  readonly PositionHistory: Array<FlatVec> = [];
+  readonly FsmInfoHistory: Array<FSMInfoSnapShot> = [];
+  readonly VelocityHistory: Array<FlatVec> = [];
+  readonly FlagsHistory: Array<FlagsSnapShot> = [];
+  readonly EcbHistory: Array<ECBSnapShot> = [];
+  readonly JumpHistroy: Array<number> = [];
+  readonly LedgeDetectorHistory: Array<LedgeDetectorSnapShot> = [];
 
   public SetPlayerToFrame(p: Player, frameNumber: number) {
-    p.PostionComponent.SetFromSnapShot(this.positionHistory[frameNumber]);
-    p.FSMInfoComponent.SetFromSnapShot(this.fsmInfoHistory[frameNumber]);
-    p.VelocityComponent.SetFromSnapShot(this.velocityHistory[frameNumber]);
-    p.FlagsComponent.SetFromSnapShot(this.flagsHistory[frameNumber]);
-    p.ECBComponent.SetFromSnapShot(this.ecbHistory[frameNumber]);
-    p.JumpComponent.SetFromSnapShot(this.jumpHistroy[frameNumber]);
+    p.PostionComponent.SetFromSnapShot(this.PositionHistory[frameNumber]);
+    p.FSMInfoComponent.SetFromSnapShot(this.FsmInfoHistory[frameNumber]);
+    p.VelocityComponent.SetFromSnapShot(this.VelocityHistory[frameNumber]);
+    p.FlagsComponent.SetFromSnapShot(this.FlagsHistory[frameNumber]);
+    p.ECBComponent.SetFromSnapShot(this.EcbHistory[frameNumber]);
+    p.LedgeDetectorComponent.SetFromSnapShot(
+      this.LedgeDetectorHistory[frameNumber]
+    );
+    p.JumpComponent.SetFromSnapShot(this.JumpHistroy[frameNumber]);
+  }
+
+  public static GetRightXFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.posX + ecb.Width / 2;
+  }
+
+  public static GetRightYFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.posY - ecb.Height / 2;
+  }
+
+  public static GetLeftXFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.posX - ecb.Width / 2;
+  }
+
+  public static GetLeftYFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.posY - ecb.Height / 2;
+  }
+
+  public static GetTopXFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.posX;
+  }
+
+  public static GetTopYFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.posY - ecb.Height;
+  }
+
+  public static GetBottomXFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.posX;
+  }
+
+  public static GetBottomYFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.posY;
+  }
+
+  public static GetPrevRightXFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.prevPosX + ecb.Width / 2;
+  }
+
+  public static GetPrevRightYFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.prevPosY - ecb.Height / 2;
+  }
+
+  public static GetPrevLeftXFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.prevPosX - ecb.Width / 2;
+  }
+
+  public static GetPrevLeftYFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.prevPosY - ecb.Height / 2;
+  }
+
+  public static GetPrevTopXFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.prevPosX;
+  }
+
+  public static GetPrevTopYFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.prevPosY - ecb.Height;
+  }
+
+  public static GetPrevBottomXFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.prevPosX;
+  }
+
+  public static GetPrevBottomYFromEcbHistory(ecb: ECBSnapShot) {
+    return ecb.prevPosY;
   }
 }
 
@@ -43,102 +108,94 @@ interface IHistoryEnabled<T> {
 
 // Player Components
 export class PositionComponent implements IHistoryEnabled<FlatVec> {
-  private readonly position: FlatVec;
+  private x: number;
+  private y: number;
 
-  constructor(flatVec: FlatVec | undefined = undefined) {
-    if (flatVec == undefined) {
-      this.position = new FlatVec(0, 0);
-      return;
-    }
-    this.position = flatVec;
-  }
-
-  public GetAsFlatVec(): FlatVec {
-    return this.position;
+  constructor(x: number = 0, y: number = 0) {
+    this.x = x;
+    this.y = y;
   }
 
   public get X() {
-    return this.position.X;
+    return this.x;
   }
 
   public get Y() {
-    return this.position.Y;
+    return this.y;
   }
 
   public set X(val: number) {
-    this.position.X = val;
+    this.x = val;
   }
 
   public set Y(val: number) {
-    this.position.Y = val;
+    this.y = val;
   }
 
   public SnapShot(): FlatVec {
-    return new FlatVec(this.position.X, this.position.Y);
+    return new FlatVec(this.x, this.y);
   }
 
   public SetFromSnapShot(snapShot: FlatVec): void {
-    this.position.X = snapShot.X;
-    this.position.Y = snapShot.Y;
+    this.x = snapShot.X;
+    this.y = snapShot.Y;
   }
 }
 
 export class VelocityComponent implements IHistoryEnabled<FlatVec> {
-  private readonly velocity: FlatVec;
+  private x: number;
+  private y: number;
 
-  constructor() {
-    this.velocity = new FlatVec(0, 0);
+  constructor(x: number = 0, y: number = 0) {
+    this.x = x;
+    this.y = y;
   }
 
   public AddClampedXImpulse(clamp: number, x: number): void {
     const upperBound = Math.abs(clamp);
-    const vel = this.velocity.X;
+    const vel = this.x;
 
     if (Math.abs(vel) > upperBound) {
       return;
     }
 
-    this.velocity.X = Clamp(vel + x, upperBound);
+    this.x = Clamp(vel + x, upperBound);
   }
 
   public AddClampedYImpulse(clamp: number, y: number): void {
     const upperBound = Math.abs(clamp);
-    const vel = this.velocity.Y;
+    const vel = this.y;
 
     if (Math.abs(vel) > clamp) {
       return;
     }
 
-    this.velocity.Y = Clamp(vel + y, upperBound);
+    this.y = Clamp(vel + y, upperBound);
   }
 
   public SnapShot(): FlatVec {
-    return new FlatVec(this.velocity.X, this.velocity.Y);
+    return new FlatVec(this.x, this.y);
   }
 
   public SetFromSnapShot(snapShot: FlatVec): void {
-    this.velocity.X = snapShot.X;
-    this.velocity.Y = snapShot.Y;
-  }
-
-  public GetAsFlatVec() {
-    return this.velocity;
+    this.x = snapShot.X;
+    this.y = snapShot.Y;
   }
 
   public get X(): number {
-    return this.velocity.X;
+    return this.x;
   }
 
   public get Y(): number {
-    return this.velocity.Y;
+    return this.y;
   }
 
   public set X(val: number) {
-    this.velocity.X = val;
+    this.x = val;
   }
 
   public set Y(val: number) {
-    this.velocity.Y = val;
+    this.y = val;
   }
 }
 
@@ -187,6 +244,7 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
 export class SpeedsComponent {
   public readonly GroundedVelocityDecay: number;
   public readonly AerialVelocityDecay: number;
+  public readonly ArielVelocityMultiplier: number;
   public readonly AerialSpeedInpulseLimit: number;
   public readonly MaxWalkSpeed: number;
   public readonly MaxRunSpeed: number;
@@ -203,6 +261,7 @@ export class SpeedsComponent {
     grndSpeedVelDecay: number,
     aerialVelocityDecay: number,
     aerialSpeedInpulseLimit: number,
+    aerialVelocityMultiplier: number,
     maxWalkSpeed: number,
     maxRunSpeed: number,
     walkSpeedMultiplier: number,
@@ -216,6 +275,7 @@ export class SpeedsComponent {
     this.GroundedVelocityDecay = grndSpeedVelDecay;
     this.AerialVelocityDecay = aerialVelocityDecay;
     this.AerialSpeedInpulseLimit = aerialSpeedInpulseLimit;
+    this.ArielVelocityMultiplier = aerialVelocityMultiplier;
     this.MaxWalkSpeed = maxWalkSpeed;
     this.MaxRunSpeed = maxRunSpeed;
     this.WalkSpeedMulitplier = walkSpeedMultiplier;
@@ -250,7 +310,7 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
   }
 
   public IsFacingLeft(): boolean {
-    return !this.IsFacingRight();
+    return !this.facingRight;
   }
 
   public FastFallOn(): void {
@@ -266,11 +326,7 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
   }
 
   public ChangeDirections() {
-    if (this.IsFacingRight()) {
-      this.FaceLeft();
-      return;
-    }
-    this.FaceRight();
+    this.facingRight = !this.facingRight;
   }
 
   public SnapShot(): FlagsSnapShot {
@@ -297,8 +353,10 @@ export type ECBSnapShot = {
 };
 export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   private readonly sesnsorDepth: number = 0.2;
-  private readonly position: FlatVec = new FlatVec(0, 0);
-  private readonly previousPosition: FlatVec = new FlatVec(0, 0);
+  private x: number = 0;
+  private y: number = 0;
+  private prevX: number = 0;
+  private prevY: number = 0;
   private readonly curVerts = new Array<FlatVec>(4);
   private readonly prevVerts = new Array<FlatVec>(4);
   private readonly allVerts = new Array<FlatVec>(8);
@@ -323,21 +381,9 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     return createConvexHull(this.allVerts);
   }
 
-  private loadAllVerts(): void {
-    this.allVerts.length = 0;
-
-    for (let i = 0; i < 4; i++) {
-      this.allVerts.push(this.prevVerts[i]);
-    }
-
-    for (let i = 0; i < 4; i++) {
-      this.allVerts.push(this.curVerts[i]);
-    }
-  }
-
   public UpdatePreviousECB(): void {
-    this.previousPosition.X = this.position.X;
-    this.previousPosition.Y = this.position.Y;
+    this.prevX = this.x;
+    this.prevY = this.y;
 
     const prevVert = this.prevVerts;
     const curVert = this.curVerts;
@@ -357,33 +403,14 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   }
 
   public MoveToPosition(x: number, y: number): void {
-    this.position.X = x;
-    this.position.Y = y;
+    this.x = x;
+    this.y = y;
     this.update();
   }
 
-  private areVertsClose(
-    prevVerts: FlatVec[],
-    curVerts: FlatVec[],
-    threshold: number
-  ): boolean {
-    for (let i = 0; i < prevVerts.length; i++) {
-      const prev = prevVerts[i];
-      const cur = curVerts[i];
-      const dx = prev.X - cur.X;
-      const dy = prev.Y - cur.Y;
-
-      // Check if the distance between the points exceeds the threshold
-      if (Math.sqrt(dx * dx + dy * dy) > threshold) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   private update(): void {
-    const px = this.position.X;
-    const py = this.position.Y;
+    const px = this.x;
+    const py = this.y;
     const height = this.height;
     const width = this.width;
     const yOffset = this.yOffset;
@@ -555,10 +582,10 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
 
   public SnapShot(): ECBSnapShot {
     return {
-      posX: this.position.X,
-      posY: this.position.Y,
-      prevPosX: this.previousPosition.X,
-      prevPosY: this.previousPosition.Y,
+      posX: this.x,
+      posY: this.y,
+      prevPosX: this.prevX,
+      prevPosY: this.prevY,
       YOffset: this.yOffset,
       Height: this.height,
       Width: this.width,
@@ -566,10 +593,10 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   }
 
   public SetFromSnapShot(snapShot: ECBSnapShot): void {
-    this.position.X = snapShot.posX;
-    this.position.Y = snapShot.posY;
-    this.previousPosition.X = snapShot.prevPosX;
-    this.previousPosition.Y = snapShot.prevPosY;
+    this.x = snapShot.posX;
+    this.y = snapShot.posY;
+    this.prevX = snapShot.prevPosX;
+    this.prevY = snapShot.prevPosY;
     this.yOffset = snapShot.YOffset;
     this.height = snapShot.Height;
     this.width = snapShot.Width;
@@ -578,8 +605,8 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
 
     // Update prevVerts
 
-    const px = this.previousPosition.X;
-    const py = this.previousPosition.Y;
+    const px = this.prevX;
+    const py = this.prevY;
     const height = this.height;
     const width = this.width;
     const yOffset = this.yOffset;
@@ -608,9 +635,27 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     this.prevVerts[3].X = rightX;
     this.prevVerts[3].Y = rightY;
   }
+
+  private loadAllVerts(): void {
+    this.allVerts.length = 0;
+
+    for (let i = 0; i < 4; i++) {
+      this.allVerts.push(this.prevVerts[i]);
+    }
+
+    for (let i = 0; i < 4; i++) {
+      this.allVerts.push(this.curVerts[i]);
+    }
+  }
 }
 
-export class LedgeDetectorComponent implements IHistoryEnabled<FlatVec> {
+export type LedgeDetectorSnapShot = {
+  middleX: number;
+  middleY: number;
+};
+export class LedgeDetectorComponent
+  implements IHistoryEnabled<LedgeDetectorSnapShot>
+{
   private yOffset: number;
   private x: number = 0;
   private y: number = 0;
@@ -648,6 +693,14 @@ export class LedgeDetectorComponent implements IHistoryEnabled<FlatVec> {
     return this.rightSide;
   }
 
+  public get Width(): number {
+    return this.width;
+  }
+
+  public get Height(): number {
+    return this.height;
+  }
+
   public GetFrontDetector(IsFacingRight: boolean) {
     if (IsFacingRight) {
       return this.rightSide;
@@ -667,38 +720,41 @@ export class LedgeDetectorComponent implements IHistoryEnabled<FlatVec> {
     const leftTopRight = this.leftSide[2];
     const leftBottomRight = this.leftSide[3];
 
-    //bottm left
+    //bottom left
     rightBottomLeft.X = this.x;
-    rightBottomLeft.Y = this.y;
+    rightBottomLeft.Y = this.y + this.height;
     //top left
     rightTopLeft.X = this.x;
-    rightTopLeft.Y = this.y + this.height;
+    rightTopLeft.Y = this.y;
     // top right
     rightTopRight.X = this.x + this.width;
-    rightTopRight.Y = this.y + this.height;
+    rightTopRight.Y = this.y;
     // bottom right
     rightBottomRight.X = this.x + this.width;
-    rightBottomRight.Y = this.y;
+    rightBottomRight.Y = this.y + this.height;
 
     //bottom left
     leftBottomLeft.X = this.x - this.width;
-    leftBottomLeft.Y = this.y;
+    leftBottomLeft.Y = this.y + this.height;
     // top left
     leftTopLeft.X = this.x - this.width;
-    leftTopLeft.Y = this.y + this.height;
+    leftTopLeft.Y = this.y;
     // top right
     leftTopRight.X = this.x;
-    leftTopRight.Y = this.y + this.height;
+    leftTopRight.Y = this.y;
     // bottom right
     leftBottomRight.X = this.x;
-    leftBottomRight.Y = this.y;
+    leftBottomRight.Y = this.y + this.height;
   }
 
-  public SnapShot(): FlatVec {
-    return new FlatVec(this.x, this.y);
+  public SnapShot(): LedgeDetectorSnapShot {
+    return {
+      middleX: this.x,
+      middleY: this.y,
+    } as LedgeDetectorSnapShot;
   }
-  public SetFromSnapShot(snapShot: FlatVec): void {
-    this.MoveTo(snapShot.X, snapShot.Y);
+  public SetFromSnapShot(snapShot: LedgeDetectorSnapShot): void {
+    this.MoveTo(snapShot.middleX, snapShot.middleY);
   }
 }
 
@@ -739,6 +795,7 @@ export class SpeedsComponentBuilder {
   private groundedVelocityDecay: number = 0;
   private aerialVelocityDecay: number = 0;
   private aerialSpeedInpulseLimit: number = 0;
+  private aerialSpeedMultiplier: number = 0;
   private maxWalkSpeed: number = 0;
   private maxRunSpeed: number = 0;
   private dashMutiplier: number = 0;
@@ -751,10 +808,12 @@ export class SpeedsComponentBuilder {
 
   SetAerialSpeeds(
     aerialVelocityDecay: number,
-    aerialSpeedImpulseLimit: number
+    aerialSpeedImpulseLimit: number,
+    aerialSpeedMultiplier: number
   ) {
     this.aerialVelocityDecay = aerialVelocityDecay;
     this.aerialSpeedInpulseLimit = aerialSpeedImpulseLimit;
+    this.aerialSpeedMultiplier = aerialSpeedMultiplier;
   }
 
   SetFallSpeeds(fastFallSpeed: number, fallSpeed: number, gravity: number = 1) {
@@ -787,6 +846,7 @@ export class SpeedsComponentBuilder {
       this.groundedVelocityDecay,
       this.aerialVelocityDecay,
       this.aerialSpeedInpulseLimit,
+      this.aerialSpeedMultiplier,
       this.maxWalkSpeed,
       this.maxRunSpeed,
       this.walkSpeedMulitplier,

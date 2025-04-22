@@ -151,7 +151,7 @@ export class StateMachine {
 
   public UpdateFromInput(inputAction: InputAction, world: World): void {
     // if we have a conditional on the state, check it
-    if (this.RunConditional(inputAction, world)) {
+    if (this.RunConditional(world)) {
       return;
     }
 
@@ -161,27 +161,27 @@ export class StateMachine {
     }
 
     // if we have a default state, run it
-    if (this.RunDefault(inputAction, world)) {
+    if (this.RunDefault(world)) {
       return;
     }
 
     // None of the above? Update current state
-    this.updateState(inputAction);
+    this.updateState();
   }
 
   private RunNext(inputAction: InputAction): boolean {
     const state = this.GetTranslation(inputAction.Action);
 
     if (state != undefined) {
-      this.changeState(state, inputAction);
-      this.updateState(inputAction);
+      this.changeState(state);
+      this.updateState();
       return true;
     }
 
     return false;
   }
 
-  private RunDefault(inputAction: InputAction, w: World): boolean {
+  private RunDefault(w: World): boolean {
     // Check to see if we are on a default frame
     // If not, return false
     if (!this.IsDefaultFrame()) {
@@ -199,13 +199,13 @@ export class StateMachine {
     }
 
     // Default transition resolved, change/update state, return true
-    this.changeState(defaultTransition, inputAction);
-    this.updateState(inputAction);
+    this.changeState(defaultTransition);
+    this.updateState();
 
     return true;
   }
 
-  private RunConditional(inputAction: InputAction, world: World): boolean {
+  private RunConditional(world: World): boolean {
     const mappings = this.stateMappings.get(
       this.player.FSMInfoComponent.CurrentState.StateId
     );
@@ -233,8 +233,8 @@ export class StateMachine {
         }
 
         // stateId resolved, change state and return true
-        this.changeState(state, inputAction);
-        this.updateState(inputAction);
+        this.changeState(state);
+        this.updateState();
 
         return true;
       }
@@ -284,7 +284,7 @@ export class StateMachine {
     return undefined;
   }
 
-  private changeState(state: FSMState, ia?: InputAction) {
+  private changeState(state: FSMState) {
     const p = this.player;
     const fsmInfo = p.FSMInfoComponent;
     fsmInfo.SetStateFrameToZero();
@@ -293,7 +293,7 @@ export class StateMachine {
     fsmInfo.CurrentState.OnEnter?.(this.player, this.world);
   }
 
-  private updateState(inputAction: InputAction) {
+  private updateState() {
     const fsmInfo = this.player.FSMInfoComponent;
     fsmInfo.CurrentState.OnUpdate?.(this.player, this.world);
     fsmInfo.IncrementStateFrame();

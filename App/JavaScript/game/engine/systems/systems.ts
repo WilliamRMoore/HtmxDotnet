@@ -36,8 +36,9 @@ export function StageCollisionDetection(world: World): void {
         CurrentPlayerStateId === STATES.RUN_TURN ||
         CurrentPlayerStateId === STATES.STOP_RUN
       ) {
-        const leftStagePoint = s.StageVerticies.GetGround()[0];
-        const rightStagePoint = s.StageVerticies.GetGround()[1];
+        const stageGround = s.StageVerticies.GetGround();
+        const leftStagePoint = stageGround[0]; //s.StageVerticies.GetGround()[0];
+        const rightStagePoint = stageGround[1]; //s.StageVerticies.GetGround()[1];
         const flags = p.FlagsComponent;
         const position = p.PostionComponent;
 
@@ -112,9 +113,8 @@ function stageCollision(world: World, playerIndex: number): number {
   if (collisionResult.Collision) {
     const normalX = collisionResult.NormX;
     const normalY = collisionResult.NormY;
-    const playerPosDTO = vecPool
-      .Rent()
-      .SetFromFlatVec(p.PostionComponent.GetAsFlatVec());
+    const pPos = p.PostionComponent;
+    const playerPosDTO = vecPool.Rent().SetXY(pPos.X, pPos.Y);
     const move = vecPool
       .Rent()
       .SetXY(normalX, normalY)
@@ -176,8 +176,9 @@ function stageCollision(world: World, playerIndex: number): number {
 export function LedgeGrabDetection(w: World) {
   const playerCount = w.PlayerCount;
   const stage = w.Stage!;
-  const leftLedge = stage.Ledges.GetLeftLedge();
-  const rightLedge = stage.Ledges.GetRightLedge();
+  const ledges = stage.Ledges;
+  const leftLedge = ledges.GetLeftLedge();
+  const rightLedge = ledges.GetRightLedge();
   const vecPool = w.VecPool;
   const colResPool = w.ColResPool;
   const projResPool = w.ProjResPool;
@@ -187,6 +188,7 @@ export function LedgeGrabDetection(w: World) {
     const sm = w.GetStateMachine(playerIndex);
     const flags = p.FlagsComponent;
     const ecb = p.ECBComponent;
+
     if (
       p.VelocityComponent.Y < 0 ||
       p.FSMInfoComponent.CurrentState.StateId == STATES.JUMP
@@ -196,11 +198,12 @@ export function LedgeGrabDetection(w: World) {
     if (PlayerHelpers.IsPlayerGroundedOnStage(p, stage)) {
       continue;
     }
-    const front = p.LedgeDetectorComponent.GetFrontDetector(
-      flags.IsFacingRight()
-    );
 
-    if (flags.IsFacingRight()) {
+    const isFacingRight = flags.IsFacingRight();
+
+    const front = p.LedgeDetectorComponent.GetFrontDetector(isFacingRight);
+
+    if (isFacingRight) {
       const intersectsLeftLedge = IntersectsPolygons(
         leftLedge,
         front,
@@ -263,7 +266,6 @@ export function ApplyVelocty(world: World) {
   const playerCount = world.PlayerCount;
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = world.GetPlayer(playerIndex)!;
-    const flags = p.FlagsComponent;
     const speeds = p.SpeedsComponent;
     const s = world.Stage!;
 
@@ -271,7 +273,7 @@ export function ApplyVelocty(world: World) {
     const playerVelocity = p.VelocityComponent;
     const pvx = playerVelocity.X;
     const pvy = playerVelocity.Y;
-    const fallSpeed = flags.IsFastFalling()
+    const fallSpeed = p.FlagsComponent.IsFastFalling()
       ? speeds.FastFallSpeed
       : speeds.FallSpeed;
     const groundedVelocityDecay = speeds.GroundedVelocityDecay;
@@ -326,25 +328,27 @@ export function OutOfBoundsCheck(world: World) {
     const s = world.Stage!;
 
     const pPos = p.PostionComponent;
+    const pY = pPos.Y;
+    const pX = pPos.X;
     const deathBoundry = s.DeathBoundry!;
 
-    if (pPos.Y < deathBoundry.topBoundry) {
+    if (pY < deathBoundry.topBoundry) {
       // kill player if in hit stun.
       KillPlayer(p, sm);
       return;
     }
 
-    if (pPos.Y > deathBoundry.bottomBoundry) {
+    if (pY > deathBoundry.bottomBoundry) {
       // kill player?
       KillPlayer(p, sm);
     }
 
-    if (pPos.X < deathBoundry.leftBoundry) {
+    if (pX < deathBoundry.leftBoundry) {
       // kill Player?
       KillPlayer(p, sm);
     }
 
-    if (pPos.X > deathBoundry.rightBoundry) {
+    if (pX > deathBoundry.rightBoundry) {
       // kill player?
       KillPlayer(p, sm);
     }
@@ -365,10 +369,25 @@ function KillPlayer(p: Player, sm: StateMachine) {
 
 export function RecordHistory(w: World) {
   const playerCount = w.PlayerCount;
+  const frameNumber = w.localFrame;
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
-    const localFrame = w.localFrame;
-    const p = w.GetPlayer(playerIndex);
-    const history = w.GetComponentHistory(playerIndex);
-    history?.RecordPlayer(p!, localFrame);
+    const p = w.GetPlayer(playerIndex)!;
+    const history = w.GetComponentHistory(playerIndex)!;
+    history.PositionHistory[frameNumber] = p.PostionComponent.SnapShot();
+    history.FsmInfoHistory[frameNumber] = p.FSMInfoComponent.SnapShot();
+    history.VelocityHistory[frameNumber] = p.VelocityComponent.SnapShot();
+    history.FlagsHistory[frameNumber] = p.FlagsComponent.SnapShot();
+    history.LedgeDetectorHistory[frameNumber] =
+      p.LedgeDetectorComponent.SnapShot();
+    history.EcbHistory[frameNumber] = p.ECBComponent.SnapShot();
+    history.JumpHistroy[frameNumber] = p.JumpComponent.SnapShot();
   }
+  w.SetPoolHistory(
+    frameNumber,
+    w.VecPool.ActiveCount,
+    w.ColResPool.ActiveCount,
+    w.ProjResPool.ActiveCount
+  );
 }
+
+class WorldFrameStateInfo {}

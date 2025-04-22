@@ -20,6 +20,10 @@ export class World {
   private readonly InputStorage: Array<InputStorageManagerLocal<InputAction>> =
     [];
   private readonly PlayerComponentHistories: Array<ComponentHistory> = [];
+  private readonly RentedVecHistory: Array<number> = [];
+  private readonly RentedColResHsitory: Array<number> = [];
+  private readonly RentedProjResHistory: Array<number> = [];
+  private readonly FrameTimes: Array<number> = [];
 
   constructor() {
     this.VecPool = new Pool<PooledVector>(500, () => new PooledVector());
@@ -37,6 +41,12 @@ export class World {
     this.players?.push(p);
     this.stateMachines.push(new StateMachine(p, this));
     this.InputStorage.push(new InputStorageManagerLocal<InputAction>());
+    const compHist = new ComponentHistory();
+    compHist.StaticPlayerHistory.LedgeDetectorWidth =
+      p.LedgeDetectorComponent.Width;
+    compHist.StaticPlayerHistory.ledgDetecorHeight =
+      p.LedgeDetectorComponent.Height;
+    this.PlayerComponentHistories.push(compHist);
   }
 
   public SetStage(s: Stage) {
@@ -53,6 +63,37 @@ export class World {
 
   public GetComponentHistory(index: number): ComponentHistory | undefined {
     return this.PlayerComponentHistories[index];
+  }
+
+  public GetFrameTimeForFrame(frame: number): number | undefined {
+    return this.FrameTimes[frame];
+  }
+
+  public SetFrameTimeForFrame(frame: number, frameTime: number): void {
+    this.FrameTimes[frame] = frameTime;
+  }
+
+  public GetRentedVecsForFrame(frame: number): number {
+    return this.RentedVecHistory[frame];
+  }
+
+  public GetRentedColResForFrame(frame: number): number {
+    return this.RentedColResHsitory[frame];
+  }
+
+  public GetRentedProjResForFrame(frame: number): number {
+    return this.RentedProjResHistory[frame];
+  }
+
+  public SetPoolHistory(
+    frame: number,
+    vecs: number,
+    colReses: number,
+    projReses: number
+  ): void {
+    this.RentedVecHistory[frame] = vecs;
+    this.RentedColResHsitory[frame] = colReses;
+    this.RentedProjResHistory[frame] = projReses;
   }
 
   public get Stage(): Stage | undefined {

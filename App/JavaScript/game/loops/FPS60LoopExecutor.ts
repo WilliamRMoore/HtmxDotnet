@@ -1,16 +1,27 @@
-const FPS = 60; // 60; // 59.94 is the standard for film and video, but 60 is used in some games and applications
-let now = {} as number;
-let then = Date.now();
-const interval = 1000 / FPS;
-let delta = {} as number;
+const FPS = 60; // Target simulation FPS
+const SIMULATION_INTERVAL = 1000 / FPS; // Time per simulation tick (in ms)
 
-export function RENDERFPS60Loop(loopFunc: () => void) {
-  window.requestAnimationFrame(() => RENDERFPS60Loop(loopFunc));
-  now = Date.now();
-  delta = now - then;
-  if (delta > interval) {
-    loopFunc();
-  }
+let previousTime = performance.now();
+let accumulator = 0;
+
+export function RENDERFPS60Loop(
+  renderFunc: (alpha: number) => void // Render function with interpolation
+) {
+  const currentTime = performance.now();
+  const deltaTime = currentTime - previousTime;
+  previousTime = currentTime;
+
+  // Accumulate time for interpolation
+  accumulator += deltaTime;
+
+  // Calculate the interpolation factor (alpha)
+  const alpha = Math.min(accumulator / SIMULATION_INTERVAL, 1);
+
+  // Render the frame with interpolation
+  renderFunc(alpha);
+
+  // Request the next frame
+  window.requestAnimationFrame(() => RENDERFPS60Loop(renderFunc));
 }
 
 class AnimationFrame60FPSExecutor {
