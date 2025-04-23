@@ -2,6 +2,7 @@ import { FlatVec } from '../engine/physics/vector';
 import {
   ComponentHistory,
   ECBSnapShot,
+  HurtCirclesSnapShot,
 } from '../engine/player/playerComponents';
 import { World } from '../engine/world/world';
 
@@ -120,6 +121,7 @@ function drawPlayer(ctx: CanvasRenderingContext2D, world: World) {
   for (let i = 0; i < playerCount; i++) {
     const playerHistory = world.GetComponentHistory(i);
     const pos = playerHistory!.PositionHistory[currentFrame];
+    const circleHistory = playerHistory!.HurtCirclesHistory[currentFrame];
     const flags = playerHistory!.FlagsHistory[currentFrame];
     const ecb = playerHistory!.EcbHistory[currentFrame];
     const lD = playerHistory!.LedgeDetectorHistory[currentFrame];
@@ -128,6 +130,7 @@ function drawPlayer(ctx: CanvasRenderingContext2D, world: World) {
     //drawHull(ctx, player);
     drawPrevEcb(ctx, ecb);
     drawCurrentECB(ctx, ecb);
+    drawHurtCircles(ctx, circleHistory);
     drawPositionMarker(ctx, pos);
 
     // draw direction marker
@@ -255,6 +258,30 @@ function drawCurrentECB(ctx: CanvasRenderingContext2D, ecb: ECBSnapShot) {
   ctx.closePath();
   ctx.stroke();
   ctx.fill();
+}
+
+function drawHurtCircles(
+  ctx: CanvasRenderingContext2D,
+  hurtCircles: HurtCirclesSnapShot
+) {
+  const circles = hurtCircles.circls;
+  const circlesLength = circles.length;
+
+  ctx.strokeStyle = 'yellow'; // Set the stroke color for the circles
+  ctx.fillStyle = 'yellow'; // Set the fill color for the circles
+  ctx.lineWidth = 2; // Set the line width
+  ctx.globalAlpha = 0.5; // Set transparency (50%)
+
+  for (let i = 0; i < circlesLength; i++) {
+    const circle = circles[i];
+    ctx.beginPath();
+    ctx.arc(circle.X, circle.Y, circle.Radius, 0, Math.PI * 2); // Draw the circle
+    ctx.fill(); // Fill the circle with yellow
+    ctx.stroke(); // Draw the circle outline
+    ctx.closePath();
+  }
+
+  ctx.globalAlpha = 1.0; // Reset transparency to fully opaque
 }
 
 function drawPositionMarker(

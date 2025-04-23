@@ -2,6 +2,7 @@ import { Stage } from '../stage/stageComponents';
 import {
   ECBComponent,
   FSMInfoComponent,
+  HurtCircles,
   JumpComponent,
   LedgeDetectorComponent,
   PlayerFlagsComponent,
@@ -30,6 +31,7 @@ export class Player {
   private readonly flags: PlayerFlagsComponent;
   private readonly speeds: SpeedsComponent;
   private readonly ecb: ECBComponent;
+  private readonly hurtCircles: HurtCircles;
   private readonly jump: JumpComponent;
   private readonly fsmInfo: FSMInfoComponent;
   private readonly ledgeDetector: LedgeDetectorComponent;
@@ -48,6 +50,7 @@ export class Player {
     this.speeds = speedsBuilder.Build();
     this.flags = new PlayerFlagsComponent();
     this.ecb = new ECBComponent();
+    this.hurtCircles = new HurtCircles();
     this.jump = new JumpComponent(20, 2);
     this.fsmInfo = new FSMInfoComponent();
     this.ledgeDetector = new LedgeDetectorComponent(
@@ -60,6 +63,10 @@ export class Player {
 
   public get ECBComponent(): ECBComponent {
     return this.ecb;
+  }
+
+  public get HurtCirclesComponent(): HurtCircles {
+    return this.hurtCircles;
   }
 
   public get FlagsComponent(): PlayerFlagsComponent {
@@ -165,6 +172,7 @@ export class PlayerHelpers {
     p.PostionComponent.X = x;
     p.PostionComponent.Y = y;
     p.ECBComponent.MoveToPosition(x, y);
+    p.HurtCirclesComponent.MoveTo(x, y);
     p.LedgeDetectorComponent.MoveTo(x, y);
   }
 
@@ -176,6 +184,7 @@ export class PlayerHelpers {
     p.PostionComponent.X = x;
     p.PostionComponent.Y = y;
     p.ECBComponent.SetInitialPosition(x, y);
+    p.HurtCirclesComponent.MoveTo(x, y);
     p.LedgeDetectorComponent.MoveTo(x, y);
   }
 
@@ -183,6 +192,7 @@ export class PlayerHelpers {
     const position = p.PostionComponent;
     position.Y += y;
     p.ECBComponent.MoveToPosition(position.X, position.Y);
+    p.HurtCirclesComponent.MoveTo(position.X, position.Y);
     p.LedgeDetectorComponent.MoveTo(position.X, position.Y);
   }
 
@@ -191,6 +201,7 @@ export class PlayerHelpers {
     pos.X += x;
     pos.Y += y;
     p.ECBComponent.MoveToPosition(pos.X, pos.Y);
+    p.HurtCirclesComponent.MoveTo(pos.X, pos.Y);
     p.LedgeDetectorComponent.MoveTo(pos.X, pos.Y);
   }
 }

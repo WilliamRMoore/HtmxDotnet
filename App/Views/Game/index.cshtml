@@ -1,6 +1,12 @@
 <h1>Hello from game page</h1>
-<select id="gamepad-select"></select>
-<button id="refresh-gamepad-select">Refresh</button>
+<select id="mode-select">
+    <option value="">Select a mode</option>
+    <option value="1">Test</option>
+    <option value="2">Local 2 player</option>
+</select>
+<select disabled id="p1-gamepad-select"></select>
+<select disabled id="p2-gamepad-select"></select>
+<button disabled id="refresh-gamepad-select">Refresh</button>
 <canvas id="game"></canvas>
 <button disabled id="start-game">Start Game</button>
 

@@ -3,7 +3,7 @@ import { PlayerHelpers } from '../engine/player/playerOrchestrator';
 import { STATES } from '../engine/finite-state-machine/PlayerStates';
 import { DebugRenderer, resolution } from '../render/debug-2d';
 import { RENDERFPS60Loop } from './FPS60LoopExecutor';
-import { GetInput, listenForGamePadInput } from './Input';
+import { GetInput } from './Input';
 import { World } from '../engine/world/world';
 
 const frameInterval = 1000 / 60;
@@ -11,22 +11,22 @@ const frameInterval = 1000 / 60;
 export type GamePadIndexes = Array<number>;
 
 export function start(localPlayerGamePadIndex: number) {
-  INPUT_LOOP(localPlayerGamePadIndex);
+  //INPUT_LOOP(localPlayerGamePadIndex);
   const engine = new JazzDebugger();
   engine.Init(1);
   PlayerHelpers.SetPlayerInitialPosition(engine.World?.GetPlayer(0)!, 610, 100);
   engine.World?.GetStateMachine(0)?.SetInitialState(STATES.N_FALL);
-  LOGIC_LOOP(engine);
+  LOGIC_LOOP(engine, localPlayerGamePadIndex);
   RENDER_LOOP(engine.World);
 }
 
-function INPUT_LOOP(gamePadIndex: number) {
-  listenForGamePadInput(gamePadIndex);
-}
+// function INPUT_LOOP(gamePadIndex: number) {
+//   listenForGamePadInput(gamePadIndex);
+// }
 
-function LOGIC_LOOP(engine: IJazz) {
+function LOGIC_LOOP(engine: IJazz, gamePadIndex: number) {
   const logicLoopHandle = setInterval(() => {
-    logicStep(engine);
+    logicStep(engine, gamePadIndex);
   }, frameInterval);
 }
 
@@ -39,8 +39,8 @@ function RENDER_LOOP(world: World) {
   });
 }
 
-function logicStep(engine: IJazz) {
-  const input = GetInput();
+function logicStep(engine: IJazz, gamePadIndex: number) {
+  const input = GetInput(gamePadIndex);
   engine.UpdateLocalInputForCurrentFrame(input, 0);
   engine.Tick();
 }

@@ -380,6 +380,7 @@ export function RecordHistory(w: World) {
     history.LedgeDetectorHistory[frameNumber] =
       p.LedgeDetectorComponent.SnapShot();
     history.EcbHistory[frameNumber] = p.ECBComponent.SnapShot();
+    history.HurtCirclesHistory[frameNumber] = p.HurtCirclesComponent.SnapShot();
     history.JumpHistroy[frameNumber] = p.JumpComponent.SnapShot();
   }
   w.SetPoolHistory(
@@ -389,5 +390,3 @@ export function RecordHistory(w: World) {
     w.ProjResPool.ActiveCount
   );
 }
-
-class WorldFrameStateInfo {}

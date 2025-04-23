@@ -58,16 +58,16 @@ export class GamePadInput {
 
 const currentInput = new GamePadInput();
 
-export function listenForGamePadInput(index: number = 0) {
-  setInterval(() => pollInput(index), 4);
-}
+// export function listenForGamePadInput(index: number = 0) {
+//   setInterval(() => pollInput(index), 4);
+// }
 
-function pollInput(index: number) {
-  const gp = navigator.getGamepads()[index];
-  if (gp && gp.connected) {
-    readInput(gp);
-  }
-}
+// function pollInput(index: number) {
+//   const gp = navigator.getGamepads()[index];
+//   if (gp && gp.connected) {
+//     readInput(gp);
+//   }
+// }
 
 function readInput(gamePad: Gamepad) {
   currentInput.Clear();
@@ -110,7 +110,11 @@ function readInput(gamePad: Gamepad) {
   currentInput.select = gamePad.buttons[8].pressed;
 }
 
-export function GetInput(): InputAction {
+export function GetInput(index: number): InputAction {
+  const gp = navigator.getGamepads()[index];
+  if (gp && gp.connected) {
+    readInput(gp);
+  }
   return transcribeInput(currentInput);
 }
 

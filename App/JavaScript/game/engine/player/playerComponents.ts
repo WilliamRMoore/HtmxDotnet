@@ -8,6 +8,7 @@ import {
 import { FillArrayWithFlatVec } from '../utils';
 import { Player } from './playerOrchestrator';
 import { Clamp } from '../utils';
+import { Circle } from '../physics/circle';
 
 class StaticHistory {
   public ledgDetecorHeight: number = 0;
@@ -21,6 +22,7 @@ export class ComponentHistory {
   readonly VelocityHistory: Array<FlatVec> = [];
   readonly FlagsHistory: Array<FlagsSnapShot> = [];
   readonly EcbHistory: Array<ECBSnapShot> = [];
+  readonly HurtCirclesHistory: Array<HurtCirclesSnapShot> = [];
   readonly JumpHistroy: Array<number> = [];
   readonly LedgeDetectorHistory: Array<LedgeDetectorSnapShot> = [];
 
@@ -30,6 +32,7 @@ export class ComponentHistory {
     p.VelocityComponent.SetFromSnapShot(this.VelocityHistory[frameNumber]);
     p.FlagsComponent.SetFromSnapShot(this.FlagsHistory[frameNumber]);
     p.ECBComponent.SetFromSnapShot(this.EcbHistory[frameNumber]);
+
     p.LedgeDetectorComponent.SetFromSnapShot(
       this.LedgeDetectorHistory[frameNumber]
     );
@@ -646,6 +649,66 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     for (let i = 0; i < 4; i++) {
       this.allVerts.push(this.curVerts[i]);
     }
+  }
+}
+
+export type HurtCirclesSnapShot = {
+  position: FlatVec;
+  circls: Array<Circle>;
+};
+
+export class HurtCircles implements IHistoryEnabled<HurtCirclesSnapShot> {
+  private offSets: Array<FlatVec> = [];
+  private circles: Array<Circle> = [];
+  private x: number = 0;
+  private y: number = 0;
+
+  constructor() {
+    const body = new Circle(40);
+    const head = new Circle(10);
+    const bodyOffset = new FlatVec(0, -50);
+    const headOffset = new FlatVec(0, -105);
+    this.circles.push(body);
+    this.circles.push(head);
+    this.offSets.push(bodyOffset);
+    this.offSets.push(headOffset);
+  }
+
+  private update(): void {
+    const circlesLength = this.circles.length;
+
+    for (let i = 0; i < circlesLength; i++) {
+      const circ = this.circles[i];
+      const offSet = this.offSets[i];
+      circ.SetXY(this.x + offSet.X, this.y + offSet.Y);
+    }
+  }
+
+  public MoveTo(x: number, y: number): void {
+    this.x = x;
+    this.y = y;
+    this.update();
+  }
+
+  SnapShot(): HurtCirclesSnapShot {
+    const pos = new FlatVec(this.x, this.y);
+    const arr = new Array<Circle>();
+    const circlesLength = this.circles.length;
+
+    for (let i = 0; i < circlesLength; i++) {
+      const compCirc = this.circles[i];
+      const histCirc = new Circle(compCirc.Radius);
+      histCirc.SetXY(compCirc.X, compCirc.Y);
+      arr.push(histCirc);
+    }
+
+    return { position: pos, circls: arr } as HurtCirclesSnapShot;
+  }
+
+  SetFromSnapShot(snapShot: HurtCirclesSnapShot): void {
+    this.x = snapShot.position.X;
+    this.y = snapShot.position.Y;
+    this.update();
   }
 }
 

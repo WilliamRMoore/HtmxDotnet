@@ -1,7 +1,7 @@
 import { start } from './loops/local-main';
 
 const gamePadSelect = document.getElementById(
-  'gamepad-select'
+  'p1-gamepad-select'
 ) as HTMLSelectElement;
 
 const starBtn = document.getElementById('start-game') as HTMLButtonElement;
