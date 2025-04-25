@@ -42,10 +42,8 @@ export class World {
     this.stateMachines.push(new StateMachine(p, this));
     this.InputStorage.push(new InputStorageManagerLocal<InputAction>());
     const compHist = new ComponentHistory();
-    compHist.StaticPlayerHistory.LedgeDetectorWidth =
-      p.LedgeDetectorComponent.Width;
-    compHist.StaticPlayerHistory.ledgDetecorHeight =
-      p.LedgeDetectorComponent.Height;
+    compHist.StaticPlayerHistory.LedgeDetectorWidth = p.LedgeDetector.Width;
+    compHist.StaticPlayerHistory.ledgDetecorHeight = p.LedgeDetector.Height;
     this.PlayerComponentHistories.push(compHist);
   }
 

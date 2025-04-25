@@ -1,4 +1,4 @@
-import { Idle } from '../finite-state-machine/PlayerStates';
+import { Idle, stateId, STATES } from '../finite-state-machine/PlayerStates';
 import { FSMState } from '../finite-state-machine/PlayerStateMachine';
 import {
   createConvexHull,
@@ -21,22 +21,22 @@ export class ComponentHistory {
   readonly FsmInfoHistory: Array<FSMInfoSnapShot> = [];
   readonly VelocityHistory: Array<FlatVec> = [];
   readonly FlagsHistory: Array<FlagsSnapShot> = [];
+  readonly FrameLengthHistory: Array<StateFrameLengthsSnapShot> = [];
   readonly EcbHistory: Array<ECBSnapShot> = [];
   readonly HurtCirclesHistory: Array<HurtCirclesSnapShot> = [];
   readonly JumpHistroy: Array<number> = [];
   readonly LedgeDetectorHistory: Array<LedgeDetectorSnapShot> = [];
 
   public SetPlayerToFrame(p: Player, frameNumber: number) {
-    p.PostionComponent.SetFromSnapShot(this.PositionHistory[frameNumber]);
-    p.FSMInfoComponent.SetFromSnapShot(this.FsmInfoHistory[frameNumber]);
-    p.VelocityComponent.SetFromSnapShot(this.VelocityHistory[frameNumber]);
-    p.FlagsComponent.SetFromSnapShot(this.FlagsHistory[frameNumber]);
-    p.ECBComponent.SetFromSnapShot(this.EcbHistory[frameNumber]);
-
-    p.LedgeDetectorComponent.SetFromSnapShot(
-      this.LedgeDetectorHistory[frameNumber]
-    );
-    p.JumpComponent.SetFromSnapShot(this.JumpHistroy[frameNumber]);
+    p.Postion.SetFromSnapShot(this.PositionHistory[frameNumber]);
+    p.FSMInfo.SetFromSnapShot(this.FsmInfoHistory[frameNumber]);
+    p.Velocity.SetFromSnapShot(this.VelocityHistory[frameNumber]);
+    p.Flags.SetFromSnapShot(this.FlagsHistory[frameNumber]);
+    p.StateFrameLengths.SetFromSnapShot(this.FrameLengthHistory[frameNumber]);
+    p.ECB.SetFromSnapShot(this.EcbHistory[frameNumber]);
+    p.HurtCircles.SetFromSnapShot(this.HurtCirclesHistory[frameNumber]);
+    p.LedgeDetector.SetFromSnapShot(this.LedgeDetectorHistory[frameNumber]);
+    p.Jump.SetFromSnapShot(this.JumpHistroy[frameNumber]);
   }
 
   public static GetRightXFromEcbHistory(ecb: ECBSnapShot) {
@@ -199,6 +199,45 @@ export class VelocityComponent implements IHistoryEnabled<FlatVec> {
 
   public set Y(val: number) {
     this.y = val;
+  }
+}
+export type StateFrameLengthsSnapShot = {
+  frameLengths: Map<stateId, number>;
+};
+
+export class StateFrameLengthsComponent
+  implements IHistoryEnabled<StateFrameLengthsSnapShot>
+{
+  private readonly frameLengths = new Map<stateId, number>();
+
+  constructor() {
+    this.frameLengths
+      .set(STATES.START_WALK, 5)
+      .set(STATES.JUMP_SQUAT, 4)
+      .set(STATES.TURN, 3)
+      .set(STATES.DASH, 20)
+      .set(STATES.DASH_TURN, 1)
+      .set(STATES.RUN_TURN, 20)
+      .set(STATES.STOP_RUN, 15)
+      .set(STATES.JUMP, 15)
+      .set(STATES.LAND, 3)
+      .set(STATES.SOFT_LAND, 1);
+  }
+
+  public GetFrameLengthOrUndefined(stateId: stateId): number | undefined {
+    return this.frameLengths.get(stateId);
+  }
+
+  public SnapShot(): StateFrameLengthsSnapShot {
+    return {
+      frameLengths: new Map(this.frameLengths),
+    } as StateFrameLengthsSnapShot;
+  }
+
+  public SetFromSnapShot(snapShot: StateFrameLengthsSnapShot): void {
+    for (const [key, value] of snapShot.frameLengths.entries()) {
+      this.frameLengths.set(key, value);
+    }
   }
 }
 
@@ -665,9 +704,9 @@ export class HurtCircles implements IHistoryEnabled<HurtCirclesSnapShot> {
 
   constructor() {
     const body = new Circle(40);
-    const head = new Circle(10);
+    const head = new Circle(14);
     const bodyOffset = new FlatVec(0, -50);
-    const headOffset = new FlatVec(0, -105);
+    const headOffset = new FlatVec(0, -108);
     this.circles.push(body);
     this.circles.push(head);
     this.offSets.push(bodyOffset);
@@ -762,14 +801,6 @@ export class LedgeDetectorComponent
 
   public get Height(): number {
     return this.height;
-  }
-
-  public GetFrontDetector(IsFacingRight: boolean) {
-    if (IsFacingRight) {
-      return this.rightSide;
-    }
-
-    return this.leftSide;
   }
 
   private update(): void {

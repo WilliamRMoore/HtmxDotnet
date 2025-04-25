@@ -43,7 +43,6 @@ import {
 export type FSMState = {
   StateName: string;
   StateId: number;
-  FrameLength?: number;
   InteruptFrame?: number;
   OnEnter?: (p: Player, world: World) => void;
   OnUpdate?: (p: Player, world: World) => void;
@@ -59,7 +58,7 @@ export class StateMachine {
   constructor(p: Player, world: World) {
     this.player = p;
     this.world = world;
-    this.player.FSMInfoComponent.SetCurrentState(Idle);
+    this.player.FSMInfo.SetCurrentState(Idle);
     this.stateMappings.set(
       IDLE_STATE_RELATIONS.stateId,
       IDLE_STATE_RELATIONS.mappings
@@ -126,7 +125,7 @@ export class StateMachine {
     // world events should still have to follow mapping rules
     const state = this.GetTranslation(gameEventId);
     if (state != undefined) {
-      const fsmInfo = this.player.FSMInfoComponent;
+      const fsmInfo = this.player.FSMInfo;
 
       this.changeState(state);
       fsmInfo.CurrentState.OnUpdate?.(this.player, this.world);
@@ -142,7 +141,7 @@ export class StateMachine {
       return;
     }
 
-    const fsmInfo = this.player.FSMInfoComponent;
+    const fsmInfo = this.player.FSMInfo;
 
     this.changeState(state);
     fsmInfo.CurrentState.OnUpdate?.(this.player, this.world);
@@ -189,7 +188,7 @@ export class StateMachine {
     }
 
     const defaultTransition = this.GetDefaultState(
-      this.player.FSMInfoComponent.CurrentState.StateId,
+      this.player.FSMInfo.CurrentState.StateId,
       w
     );
 
@@ -206,11 +205,9 @@ export class StateMachine {
   }
 
   private RunConditional(world: World): boolean {
-    const mappings = this.stateMappings.get(
-      this.player.FSMInfoComponent.CurrentState.StateId
-    );
-
-    const conditions = mappings?.GetConditions();
+    const conditions = this.stateMappings
+      .get(this.player.FSMInfo.CurrentState.StateId)!
+      .GetConditions();
 
     // We have no conditionals, return
     if (conditions === undefined) {
@@ -246,7 +243,7 @@ export class StateMachine {
 
   private GetTranslation(gameEventId: gameEventId): FSMState | undefined {
     const stateMappings = this.stateMappings.get(
-      this.player.FSMInfoComponent.CurrentState.StateId
+      this.player.FSMInfo.CurrentState.StateId
     );
     const nextStateId = stateMappings?.getMapping(gameEventId);
 
@@ -286,7 +283,7 @@ export class StateMachine {
 
   private changeState(state: FSMState) {
     const p = this.player;
-    const fsmInfo = p.FSMInfoComponent;
+    const fsmInfo = p.FSMInfo;
     fsmInfo.SetStateFrameToZero();
     fsmInfo.CurrentState.OnExit?.(this.player, this.world);
     fsmInfo.SetCurrentState(state);
@@ -294,14 +291,16 @@ export class StateMachine {
   }
 
   private updateState() {
-    const fsmInfo = this.player.FSMInfoComponent;
+    const fsmInfo = this.player.FSMInfo;
     fsmInfo.CurrentState.OnUpdate?.(this.player, this.world);
     fsmInfo.IncrementStateFrame();
   }
 
   private IsDefaultFrame(): boolean {
-    const fsmInfo = this.player.FSMInfoComponent;
-    const fl = fsmInfo.CurrentState.FrameLength;
+    const fsmInfo = this.player.FSMInfo;
+    const fl = this.player.StateFrameLengths.GetFrameLengthOrUndefined(
+      fsmInfo.CurrentState.StateId
+    ); //fsmInfo.CurrentState.FrameLength;
 
     if (fl === undefined) {
       return false;
@@ -315,6 +314,6 @@ export class StateMachine {
   }
 
   public get CurrentStateName(): string {
-    return this.player.FSMInfoComponent.CurrentState.StateName ?? 'N/A';
+    return this.player.FSMInfo.CurrentState.StateName ?? 'N/A';
   }
 }

@@ -83,10 +83,10 @@ const IdleToDashturn: condition = {
   ConditionFunc: (w, playerIndex) => {
     const p = w.GetPlayer(playerIndex)!;
     const input = w.GetPlayerCurrentInput(playerIndex)!;
-    if (input.LXAxsis < -0.5 && p.FlagsComponent.IsFacingRight()) {
+    if (input.LXAxsis < -0.5 && p.Flags.IsFacingRight()) {
       return true;
     }
-    if (input.LXAxsis > 0.5 && p.FlagsComponent.IsFacingLeft()) {
+    if (input.LXAxsis > 0.5 && p.Flags.IsFacingLeft()) {
       return true;
     }
 
@@ -99,7 +99,7 @@ const IdleToTurn: condition = {
   Name: 'IdleToTurn',
   ConditionFunc: (w, playerIndex) => {
     const p = w.GetPlayer(playerIndex)!;
-    const flags = p.FlagsComponent;
+    const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
     if (ia.LXAxsis < 0 && flags.IsFacingRight()) {
@@ -132,7 +132,7 @@ const WalkToTurn: condition = {
       return true;
     }
 
-    const flags = p.FlagsComponent;
+    const flags = p.Flags;
     if (
       (prevLax === 0 && flags.IsFacingRight() && curLax < 0) ||
       (prevLax === 0 && flags.IsFacingLeft() && curLax > 0)
@@ -163,7 +163,7 @@ const RunToTurn: condition = {
       return true;
     }
 
-    const flags = p.FlagsComponent;
+    const flags = p.Flags;
     if (
       (prevLax === 0 && flags.IsFacingRight() && curLax < 0) ||
       (prevLax === 0 && flags.IsFacingLeft() && curLax > 0)
@@ -192,7 +192,7 @@ const DashToTurn: condition = {
     const laxDifference = curLax - prevLax; // Difference between current and previous X-axis
     const threshold = 0.5; // Threshold for detecting significant variation
 
-    const flags = p.FlagsComponent;
+    const flags = p.Flags;
     const facingRight = flags.IsFacingRight();
     // Check if the variation exceeds the threshold and is in the opposite direction of the player's facing direction
     if (laxDifference < -threshold && facingRight) {
@@ -225,7 +225,7 @@ const ToJump: condition = {
     if (
       currentInput.Action === jumpId &&
       prevInput?.Action !== jumpId &&
-      player?.JumpComponent.HasJumps()
+      player?.Jump.HasJumps()
     ) {
       return true;
     }
@@ -239,7 +239,7 @@ const DashDefaultRun: condition = {
   Name: 'DashDefaultRun',
   ConditionFunc: (w, playerIndex) => {
     const p = w.GetPlayer(playerIndex)!;
-    const flags = p.FlagsComponent;
+    const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
     if (ia.LXAxsis > 0 && flags.IsFacingRight()) {
@@ -267,6 +267,21 @@ const DashDefaultIdle: condition = {
     return false;
   },
   StateId: STATES.IDLE,
+};
+
+const TurnDefaultWalk: condition = {
+  Name: 'TurnDefaultWalk',
+  ConditionFunc: (w, playerIndex) => {
+    const ia = w.GetPlayerCurrentInput(playerIndex);
+    const p = w.GetPlayer(playerIndex);
+    const facingRight = p?.Flags.IsFacingRight();
+
+    if ((facingRight && ia!.LXAxsis < 0) || (!facingRight && ia!.LXAxsis > 0)) {
+      return true;
+    }
+    return false;
+  },
+  StateId: STATES.WALK,
 };
 
 const defaultWalk: condition = {
@@ -335,7 +350,7 @@ const LandToWalk: condition = {
   Name: 'LandToWalk',
   ConditionFunc: (w: World, playerIndex) => {
     const p = w.GetPlayer(playerIndex)!;
-    const flags = p.FlagsComponent;
+    const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
     if (ia.LXAxsis > 0 && flags.IsFacingRight()) {
@@ -355,7 +370,7 @@ const LandToTurn: condition = {
   Name: 'LandToTurn',
   ConditionFunc: (w: World, playerIndex) => {
     const p = w.GetPlayer(playerIndex)!;
-    const flags = p.FlagsComponent;
+    const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
     if (ia.LXAxsis < 0 && flags.IsFacingRight()) {
@@ -375,7 +390,7 @@ const RunStopToTurn: condition = {
   Name: 'RunStopToTurn',
   ConditionFunc: (w, playerIndex) => {
     const p = w.GetPlayer(playerIndex)!;
-    const flags = p.FlagsComponent;
+    const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
     if (ia.LXAxsis > 0 && flags.IsFacingLeft()) {
@@ -623,7 +638,7 @@ function InitTurnTranslations(): ActionStateMappings {
     { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
   ]);
 
-  const defaultConditions: Array<condition> = [defaultIdle];
+  const defaultConditions: Array<condition> = [TurnDefaultWalk, defaultIdle];
 
   turnTranslations._setDefault(defaultConditions);
 
@@ -809,12 +824,11 @@ export const Idle = {
 export const StartWalk: FSMState = {
   StateName: 'START_WALK',
   StateId: STATES.START_WALK,
-  FrameLength: 5,
   OnEnter: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     const axis = ia?.LXAxsis ?? 0;
     if (ia != undefined) {
-      const flags = p.FlagsComponent;
+      const flags = p.Flags;
       if (axis < 0 && flags.IsFacingRight()) {
         flags.ChangeDirections();
       }
@@ -854,35 +868,33 @@ export const Walk: FSMState = {
 export const Turn: FSMState = {
   StateName: 'TURN',
   StateId: STATES.TURN,
-  FrameLength: 4,
   OnEnter: (p: Player) => {
     console.log('Turn');
   },
   OnExit: (p: Player) => {
-    p.FlagsComponent.ChangeDirections();
+    p.Flags.ChangeDirections();
   },
 };
 
 export const Dash: FSMState = {
   StateName: 'DASH',
   StateId: STATES.DASH,
-  FrameLength: 20,
   OnEnter: (p: Player) => {
     console.log('Dash');
-    const flags = p.FlagsComponent;
-    const MaxDashSpeed = p.SpeedsComponent.MaxDashSpeed;
+    const flags = p.Flags;
+    const MaxDashSpeed = p.Speeds.MaxDashSpeed;
     const impulse = flags.IsFacingRight()
       ? Math.floor(MaxDashSpeed / 0.33)
       : -Math.floor(MaxDashSpeed / 0.33);
 
-    p.VelocityComponent.AddClampedXImpulse(MaxDashSpeed, impulse);
+    p.Velocity.AddClampedXImpulse(MaxDashSpeed, impulse);
   },
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
-    const speedsComp = p.SpeedsComponent;
+    const speedsComp = p.Speeds;
     const dashSpeedMultiplier = speedsComp.DashMultiplier;
     const impulse = (ia?.LXAxsis ?? 0) * dashSpeedMultiplier;
-    p.VelocityComponent.AddClampedXImpulse(speedsComp.MaxDashSpeed, impulse);
+    p.Velocity.AddClampedXImpulse(speedsComp.MaxDashSpeed, impulse);
   },
   OnExit: (p: Player) => {
     console.log('Exit Dash');
@@ -892,11 +904,10 @@ export const Dash: FSMState = {
 export const DashTurn: FSMState = {
   StateName: 'DASH_TURN',
   StateId: STATES.DASH_TURN,
-  FrameLength: 1,
   OnEnter: (p: Player) => {
     console.log('Dash Turn');
-    p.VelocityComponent.X = 0;
-    p.FlagsComponent.ChangeDirections();
+    p.Velocity.X = 0;
+    p.Flags.ChangeDirections();
   },
   OnUpdate() {
     console.log('Dash Turn Update');
@@ -926,13 +937,12 @@ export const Run: FSMState = {
 export const RunTurn: FSMState = {
   StateName: 'RUN_TURN',
   StateId: STATES.RUN_TURN,
-  FrameLength: 20,
   OnEnter: (p: Player) => {
     console.log('Run Turn');
   },
   OnUpdate: (p: Player) => {},
   OnExit: (p: Player) => {
-    p.FlagsComponent.ChangeDirections();
+    p.Flags.ChangeDirections();
     console.log('Exit Run Turn');
   },
 };
@@ -940,7 +950,6 @@ export const RunTurn: FSMState = {
 export const RunStop: FSMState = {
   StateName: 'RUN_STOP',
   StateId: STATES.STOP_RUN,
-  FrameLength: 15,
   OnEnter: (p: Player) => {
     console.log('Run Stop');
   },
@@ -952,7 +961,6 @@ export const RunStop: FSMState = {
 export const JumpSquat: FSMState = {
   StateName: 'JUMPSQUAT',
   StateId: STATES.JUMP_SQUAT,
-  FrameLength: 4,
   OnEnter: (p: Player) => {
     console.log('Jump Squat');
   },
@@ -964,20 +972,19 @@ export const JumpSquat: FSMState = {
 export const Jump: FSMState = {
   StateName: 'JUMP',
   StateId: STATES.JUMP,
-  FrameLength: 15,
   OnEnter: (p: Player) => {
-    const jumpComp = p.JumpComponent;
+    const jumpComp = p.Jump;
     if (jumpComp.HasJumps()) {
       PlayerHelpers.AddToPlayerYPosition(p, -0.5);
-      p.VelocityComponent.Y = -jumpComp.JumpVelocity;
+      p.Velocity.Y = -jumpComp.JumpVelocity;
       console.log('Jump');
       jumpComp.IncrementJumps();
     }
   },
   OnUpdate: (p: Player, w: World) => {
     const inputAction = w.GetPlayerCurrentInput(p.ID);
-    const speedsComp = p.SpeedsComponent;
-    p.VelocityComponent.AddClampedXImpulse(
+    const speedsComp = p.Speeds;
+    p.Velocity.AddClampedXImpulse(
       speedsComp.AerialSpeedInpulseLimit,
       (inputAction?.LXAxsis ?? 0) * speedsComp.ArielVelocityMultiplier
     );
@@ -992,8 +999,8 @@ export const NeutralFall: FSMState = {
   StateId: STATES.N_FALL,
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
-    const speedsComp = p.SpeedsComponent;
-    p.VelocityComponent.AddClampedXImpulse(
+    const speedsComp = p.Speeds;
+    p.Velocity.AddClampedXImpulse(
       speedsComp.AerialSpeedInpulseLimit,
       (ia?.LXAxsis ?? 0) * speedsComp.ArielVelocityMultiplier
     );
@@ -1004,30 +1011,28 @@ export const FastFall: FSMState = {
   StateName: 'FastFall',
   StateId: STATES.F_FALL,
   OnEnter: (p: Player) => {
-    p.FlagsComponent.FastFallOn();
+    p.Flags.FastFallOn();
   },
   OnExit: (p: Player) => {
-    p.FlagsComponent.FastFallOff();
+    p.Flags.FastFallOff();
   },
 };
 
 export const Land: FSMState = {
-  FrameLength: 3,
   StateName: 'Land',
   StateId: STATES.LAND,
   OnEnter: (p: Player) => {
-    p.JumpComponent.ResetJumps();
-    p.VelocityComponent.Y = 0;
+    p.Jump.ResetJumps();
+    p.Velocity.Y = 0;
   },
 };
 
 export const SoftLand: FSMState = {
   StateName: 'SoftLand',
   StateId: STATES.SOFT_LAND,
-  FrameLength: 1,
   OnEnter: (p: Player) => {
-    p.JumpComponent.ResetJumps();
-    p.VelocityComponent.Y = 0;
+    p.Jump.ResetJumps();
+    p.Velocity.Y = 0;
   },
 };
 
@@ -1035,7 +1040,7 @@ export const LedgeGrab: FSMState = {
   StateName: 'LedgeGrab',
   StateId: STATES.LEDGE_GRAB,
   OnEnter: (p: Player) => {
-    const jumpComp = p.JumpComponent;
+    const jumpComp = p.Jump;
     jumpComp.ResetJumps();
     jumpComp.IncrementJumps();
   },

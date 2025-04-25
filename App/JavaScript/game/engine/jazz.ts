@@ -75,7 +75,7 @@ export class Jazz implements IJazz {
 
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
       const player = world.GetPlayer(playerIndex);
-      player?.ECBComponent.UpdatePreviousECB();
+      player?.ECB.UpdatePreviousECB();
     }
 
     PlayerInput(world);

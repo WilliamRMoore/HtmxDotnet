@@ -9,6 +9,7 @@ import {
   PositionComponent,
   SpeedsComponent,
   SpeedsComponentBuilder,
+  StateFrameLengthsComponent,
   VelocityComponent,
 } from './playerComponents';
 
@@ -17,18 +18,19 @@ type speedBuilderOptions = (scb: SpeedsComponentBuilder) => void;
 const defaultSpeedsBuilderOptions: speedBuilderOptions = (
   scb: SpeedsComponentBuilder
 ) => {
-  scb.SetWalkSpeeds(10, 2);
-  scb.SetRunSpeeds(15, 2.2);
-  scb.SetFallSpeeds(21, 15, 0.5);
-  scb.SetAerialSpeeds(0.8, 18, 2);
-  scb.SetDashSpeeds(3, 20);
-  scb.SetGroundedVelocityDecay(1);
+  scb.SetWalkSpeeds(11, 2);
+  scb.SetRunSpeeds(14, 2.2);
+  scb.SetFallSpeeds(22, 15, 0.7);
+  scb.SetAerialSpeeds(0.5, 13, 1.8);
+  scb.SetDashSpeeds(3, 17);
+  scb.SetGroundedVelocityDecay(0.8);
 };
 
 export class Player {
   private readonly position: PositionComponent;
   private readonly velocity: VelocityComponent;
   private readonly flags: PlayerFlagsComponent;
+  private readonly frameLengths: StateFrameLengthsComponent;
   private readonly speeds: SpeedsComponent;
   private readonly ecb: ECBComponent;
   private readonly hurtCircles: HurtCircles;
@@ -49,9 +51,10 @@ export class Player {
     this.velocity = new VelocityComponent();
     this.speeds = speedsBuilder.Build();
     this.flags = new PlayerFlagsComponent();
+    this.frameLengths = new StateFrameLengthsComponent();
     this.ecb = new ECBComponent();
     this.hurtCircles = new HurtCircles();
-    this.jump = new JumpComponent(20, 2);
+    this.jump = new JumpComponent(18, 2);
     this.fsmInfo = new FSMInfoComponent();
     this.ledgeDetector = new LedgeDetectorComponent(
       this.position.X,
@@ -61,47 +64,51 @@ export class Player {
     );
   }
 
-  public get ECBComponent(): ECBComponent {
+  public get ECB(): ECBComponent {
     return this.ecb;
   }
 
-  public get HurtCirclesComponent(): HurtCircles {
+  public get HurtCircles(): HurtCircles {
     return this.hurtCircles;
   }
 
-  public get FlagsComponent(): PlayerFlagsComponent {
+  public get Flags(): PlayerFlagsComponent {
     return this.flags;
   }
 
-  public get JumpComponent(): JumpComponent {
+  public get StateFrameLengths(): StateFrameLengthsComponent {
+    return this.frameLengths;
+  }
+
+  public get Jump(): JumpComponent {
     return this.jump;
   }
 
-  public get PostionComponent(): PositionComponent {
+  public get Postion(): PositionComponent {
     return this.position;
   }
 
-  public get VelocityComponent(): VelocityComponent {
+  public get Velocity(): VelocityComponent {
     return this.velocity;
   }
 
-  public get SpeedsComponent(): SpeedsComponent {
+  public get Speeds(): SpeedsComponent {
     return this.speeds;
   }
 
-  public get FSMInfoComponent(): FSMInfoComponent {
+  public get FSMInfo(): FSMInfoComponent {
     return this.fsmInfo;
   }
 
-  public get LedgeDetectorComponent(): LedgeDetectorComponent {
+  public get LedgeDetector(): LedgeDetectorComponent {
     return this.ledgeDetector;
   }
 }
 
 export class PlayerHelpers {
   public static AddWalkImpulseToPlayer(p: Player, impulse: number): void {
-    const velocity = p.VelocityComponent;
-    const speeds = p.SpeedsComponent;
+    const velocity = p.Velocity;
+    const speeds = p.Speeds;
     velocity.AddClampedXImpulse(
       speeds.MaxWalkSpeed,
       impulse * speeds.WalkSpeedMulitplier
@@ -109,8 +116,8 @@ export class PlayerHelpers {
   }
 
   public static AddRunImpulseToPlayer(p: Player, impulse: number): void {
-    const velocity = p.VelocityComponent;
-    const speeds = p.SpeedsComponent;
+    const velocity = p.Velocity;
+    const speeds = p.Speeds;
     velocity.AddClampedXImpulse(
       speeds.MaxRunSpeed,
       impulse * speeds.RunSpeedMultiplier
@@ -119,12 +126,12 @@ export class PlayerHelpers {
 
   public static AddGravityToPlayer(p: Player, s: Stage): void {
     if (!this.IsPlayerGroundedOnStage(p, s)) {
-      const speeds = p.SpeedsComponent;
+      const speeds = p.Speeds;
       const grav = speeds.Gravity;
-      const isFF = p.FlagsComponent.IsFastFalling();
+      const isFF = p.Flags.IsFastFalling();
       const fallSpeed = isFF ? speeds.FastFallSpeed : speeds.FallSpeed;
       const GravMutliplier = isFF ? 1.4 : 1;
-      p.VelocityComponent.AddClampedYImpulse(fallSpeed, grav * GravMutliplier);
+      p.Velocity.AddClampedYImpulse(fallSpeed, grav * GravMutliplier);
     }
   }
 
@@ -139,7 +146,7 @@ export class PlayerHelpers {
     for (let i = 0; i < grndLength; i++) {
       const va = grnd[i];
       const vb = grnd[i + 1];
-      if (p.ECBComponent.DetectGroundCollision(va, vb)) {
+      if (p.ECB.DetectGroundCollision(va, vb)) {
         return true;
       }
     }
@@ -160,7 +167,7 @@ export class PlayerHelpers {
     for (let i = 0; i < grndLength; i++) {
       const va = grnd[i];
       const vb = grnd[i + 1];
-      if (p.ECBComponent.DetectPreviousGroundCollision(va, vb)) {
+      if (p.ECB.DetectPreviousGroundCollision(va, vb)) {
         return true;
       }
     }
@@ -169,11 +176,11 @@ export class PlayerHelpers {
   }
 
   public static SetPlayerPosition(p: Player, x: number, y: number) {
-    p.PostionComponent.X = x;
-    p.PostionComponent.Y = y;
-    p.ECBComponent.MoveToPosition(x, y);
-    p.HurtCirclesComponent.MoveTo(x, y);
-    p.LedgeDetectorComponent.MoveTo(x, y);
+    p.Postion.X = x;
+    p.Postion.Y = y;
+    p.ECB.MoveToPosition(x, y);
+    p.HurtCircles.MoveTo(x, y);
+    p.LedgeDetector.MoveTo(x, y);
   }
 
   public static SetPlayerInitialPosition(
@@ -181,27 +188,27 @@ export class PlayerHelpers {
     x: number,
     y: number
   ): void {
-    p.PostionComponent.X = x;
-    p.PostionComponent.Y = y;
-    p.ECBComponent.SetInitialPosition(x, y);
-    p.HurtCirclesComponent.MoveTo(x, y);
-    p.LedgeDetectorComponent.MoveTo(x, y);
+    p.Postion.X = x;
+    p.Postion.Y = y;
+    p.ECB.SetInitialPosition(x, y);
+    p.HurtCircles.MoveTo(x, y);
+    p.LedgeDetector.MoveTo(x, y);
   }
 
   public static AddToPlayerYPosition(p: Player, y: number): void {
-    const position = p.PostionComponent;
+    const position = p.Postion;
     position.Y += y;
-    p.ECBComponent.MoveToPosition(position.X, position.Y);
-    p.HurtCirclesComponent.MoveTo(position.X, position.Y);
-    p.LedgeDetectorComponent.MoveTo(position.X, position.Y);
+    p.ECB.MoveToPosition(position.X, position.Y);
+    p.HurtCircles.MoveTo(position.X, position.Y);
+    p.LedgeDetector.MoveTo(position.X, position.Y);
   }
 
   public static AddToPlayerPosition(p: Player, x: number, y: number): void {
-    const pos = p.PostionComponent;
+    const pos = p.Postion;
     pos.X += x;
     pos.Y += y;
-    p.ECBComponent.MoveToPosition(pos.X, pos.Y);
-    p.HurtCirclesComponent.MoveTo(pos.X, pos.Y);
-    p.LedgeDetectorComponent.MoveTo(pos.X, pos.Y);
+    p.ECB.MoveToPosition(pos.X, pos.Y);
+    p.HurtCircles.MoveTo(pos.X, pos.Y);
+    p.LedgeDetector.MoveTo(pos.X, pos.Y);
   }
 }

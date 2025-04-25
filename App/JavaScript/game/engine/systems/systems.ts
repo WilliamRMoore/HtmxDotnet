@@ -27,7 +27,7 @@ export function StageCollisionDetection(world: World): void {
 
     // Did we walk off the ledge?
     if (grnd == false && prevGround == true) {
-      const CurrentPlayerStateId = p.FSMInfoComponent.CurrentState.StateId;
+      const CurrentPlayerStateId = p.FSMInfo.CurrentState.StateId;
 
       if (
         CurrentPlayerStateId === STATES.WALK ||
@@ -39,8 +39,8 @@ export function StageCollisionDetection(world: World): void {
         const stageGround = s.StageVerticies.GetGround();
         const leftStagePoint = stageGround[0]; //s.StageVerticies.GetGround()[0];
         const rightStagePoint = stageGround[1]; //s.StageVerticies.GetGround()[1];
-        const flags = p.FlagsComponent;
-        const position = p.PostionComponent;
+        const flags = p.Flags;
+        const position = p.Postion;
 
         if (leftStagePoint.X > position.X && flags.IsFacingLeft()) {
           PlayerHelpers.SetPlayerPosition(
@@ -72,8 +72,7 @@ export function StageCollisionDetection(world: World): void {
     // No collision
     if (
       collision === NO_COLLISION ||
-      (grnd === false &&
-        p.FSMInfoComponent.CurrentState.StateId != STATES.LEDGE_GRAB)
+      (grnd === false && p.FSMInfo.CurrentState.StateId != STATES.LEDGE_GRAB)
     ) {
       sm.UpdateFromWorld(GameEvents.fall);
       continue;
@@ -81,7 +80,7 @@ export function StageCollisionDetection(world: World): void {
 
     // We have a collision and we are landed
     if (collision !== NO_COLLISION && grnd === true) {
-      const playerVelY = p.VelocityComponent.Y;
+      const playerVelY = p.Velocity.Y;
       const landState = playerVelY > 2 ? GameEvents.land : GameEvents.softLand;
       sm.UpdateFromWorld(landState);
       continue;
@@ -99,7 +98,7 @@ function stageCollision(world: World, playerIndex: number): number {
   const projResPool = world.ProjResPool;
 
   const stageVerts = s.StageVerticies.GetVerts();
-  const playerVerts = p.ECBComponent.GetHull();
+  const playerVerts = p.ECB.GetHull();
 
   // detect the collision
   const collisionResult = IntersectsPolygons(
@@ -113,7 +112,7 @@ function stageCollision(world: World, playerIndex: number): number {
   if (collisionResult.Collision) {
     const normalX = collisionResult.NormX;
     const normalY = collisionResult.NormY;
-    const pPos = p.PostionComponent;
+    const pPos = p.Postion;
     const playerPosDTO = vecPool.Rent().SetXY(pPos.X, pPos.Y);
     const move = vecPool
       .Rent()
@@ -167,7 +166,7 @@ function stageCollision(world: World, playerIndex: number): number {
       return CORNER_COLLISION;
     }
 
-    return NO_COLLISION;
+    return NO_COLLISION; // This can happen because we use the CC Hull for collision detection, the hull can make contact with the stage, but the current ECB might be off of it completely, as is the case for running off stage
   }
 
   return NO_COLLISION;
@@ -186,13 +185,10 @@ export function LedgeGrabDetection(w: World) {
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = w.GetPlayer(playerIndex)!;
     const sm = w.GetStateMachine(playerIndex);
-    const flags = p.FlagsComponent;
-    const ecb = p.ECBComponent;
+    const flags = p.Flags;
+    const ecb = p.ECB;
 
-    if (
-      p.VelocityComponent.Y < 0 ||
-      p.FSMInfoComponent.CurrentState.StateId == STATES.JUMP
-    ) {
+    if (p.Velocity.Y < 0 || p.FSMInfo.CurrentState.StateId == STATES.JUMP) {
       continue;
     }
     if (PlayerHelpers.IsPlayerGroundedOnStage(p, stage)) {
@@ -201,7 +197,10 @@ export function LedgeGrabDetection(w: World) {
 
     const isFacingRight = flags.IsFacingRight();
 
-    const front = p.LedgeDetectorComponent.GetFrontDetector(isFacingRight);
+    const front =
+      isFacingRight == true
+        ? p.LedgeDetector.RightSide
+        : p.LedgeDetector.LeftSide;
 
     if (isFacingRight) {
       const intersectsLeftLedge = IntersectsPolygons(
@@ -245,8 +244,8 @@ export function Gravity(world: World) {
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = world.GetPlayer(playerIndex)!;
     if (
-      p.FSMInfoComponent.CurrentState.StateId !== STATES.LEDGE_GRAB ||
-      PlayerHelpers.IsPlayerGroundedOnStage(p, stage)
+      p.FSMInfo.CurrentState.StateId !== STATES.LEDGE_GRAB ||
+      !PlayerHelpers.IsPlayerGroundedOnStage(p, stage)
     ) {
       PlayerHelpers.AddGravityToPlayer(p, stage);
     }
@@ -266,14 +265,14 @@ export function ApplyVelocty(world: World) {
   const playerCount = world.PlayerCount;
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = world.GetPlayer(playerIndex)!;
-    const speeds = p.SpeedsComponent;
+    const speeds = p.Speeds;
     const s = world.Stage!;
 
     const grounded = PlayerHelpers.IsPlayerGroundedOnStage(p, s);
-    const playerVelocity = p.VelocityComponent;
+    const playerVelocity = p.Velocity;
     const pvx = playerVelocity.X;
     const pvy = playerVelocity.Y;
-    const fallSpeed = p.FlagsComponent.IsFastFalling()
+    const fallSpeed = p.Flags.IsFastFalling()
       ? speeds.FastFallSpeed
       : speeds.FallSpeed;
     const groundedVelocityDecay = speeds.GroundedVelocityDecay;
@@ -327,7 +326,7 @@ export function OutOfBoundsCheck(world: World) {
     const sm = world.GetStateMachine(playerIndex)!;
     const s = world.Stage!;
 
-    const pPos = p.PostionComponent;
+    const pPos = p.Postion;
     const pY = pPos.Y;
     const pX = pPos.X;
     const deathBoundry = s.DeathBoundry!;
@@ -359,10 +358,10 @@ function KillPlayer(p: Player, sm: StateMachine) {
   // reset player to spawn point
   PlayerHelpers.SetPlayerInitialPosition(p, 610, 300);
   // reset any stats
-  p.JumpComponent.ResetJumps();
-  p.JumpComponent.IncrementJumps();
-  p.VelocityComponent.X = 0;
-  p.VelocityComponent.Y = 0;
+  p.Jump.ResetJumps();
+  p.Jump.IncrementJumps();
+  p.Velocity.X = 0;
+  p.Velocity.Y = 0;
   sm.ForceState(STATES.N_FALL);
   // reduce stock count
 }
@@ -373,15 +372,15 @@ export function RecordHistory(w: World) {
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = w.GetPlayer(playerIndex)!;
     const history = w.GetComponentHistory(playerIndex)!;
-    history.PositionHistory[frameNumber] = p.PostionComponent.SnapShot();
-    history.FsmInfoHistory[frameNumber] = p.FSMInfoComponent.SnapShot();
-    history.VelocityHistory[frameNumber] = p.VelocityComponent.SnapShot();
-    history.FlagsHistory[frameNumber] = p.FlagsComponent.SnapShot();
-    history.LedgeDetectorHistory[frameNumber] =
-      p.LedgeDetectorComponent.SnapShot();
-    history.EcbHistory[frameNumber] = p.ECBComponent.SnapShot();
-    history.HurtCirclesHistory[frameNumber] = p.HurtCirclesComponent.SnapShot();
-    history.JumpHistroy[frameNumber] = p.JumpComponent.SnapShot();
+    history.PositionHistory[frameNumber] = p.Postion.SnapShot();
+    history.FsmInfoHistory[frameNumber] = p.FSMInfo.SnapShot();
+    history.VelocityHistory[frameNumber] = p.Velocity.SnapShot();
+    history.FlagsHistory[frameNumber] = p.Flags.SnapShot();
+    history.FrameLengthHistory[frameNumber] = p.StateFrameLengths.SnapShot();
+    history.LedgeDetectorHistory[frameNumber] = p.LedgeDetector.SnapShot();
+    history.EcbHistory[frameNumber] = p.ECB.SnapShot();
+    history.HurtCirclesHistory[frameNumber] = p.HurtCircles.SnapShot();
+    history.JumpHistroy[frameNumber] = p.Jump.SnapShot();
   }
   w.SetPoolHistory(
     frameNumber,

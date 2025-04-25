@@ -45,7 +45,7 @@ test('StateMachineShould', () => {
 
   sm.UpdateFromInput(ia, world);
 
-  expect(p.FSMInfoComponent.CurrentState.StateId).toBe(STATES.TURN);
+  expect(p.FSMInfo.CurrentState.StateId).toBe(STATES.TURN);
 });
 
 test('StateMachineShould2', () => {
@@ -61,7 +61,7 @@ test('StateMachineShould2', () => {
     s.StageVerticies.GetGround()[0].Y + 0.001
   );
 
-  p.FlagsComponent.FaceLeft();
+  p.Flags.FaceLeft();
 
   const sm: StateMachine = new StateMachine(p);
 
@@ -77,7 +77,7 @@ test('StateMachineShould2', () => {
 
   sm.UpdateFromInput(ia, world);
 
-  expect(p.FSMInfoComponent.CurrentState.StateId).toBe(STATES.TURN);
+  expect(p.FSMInfo.CurrentState.StateId).toBe(STATES.TURN);
 });
 
 function UpdateNTimes(w: World, sm: StateMachine, ia: InputAction, n: number) {

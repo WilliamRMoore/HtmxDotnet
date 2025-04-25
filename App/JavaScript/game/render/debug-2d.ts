@@ -26,7 +26,12 @@ export class DebugRenderer {
   }
 
   render(world: World, alpha: number) {
-    let localFrame = world.localFrame;
+    let localFrame = world.localFrame - 1 < 0 ? 0 : world.localFrame - 1;
+    const playerStateHistory = world.GetComponentHistory(0); // hard coded to player 1 right now
+    const playerFacingRight =
+      playerStateHistory?.FlagsHistory[localFrame]?.FacingRight ?? true;
+    const playerFsmState =
+      playerStateHistory?.FsmInfoHistory[localFrame]?.State?.StateName ?? 'N/A';
 
     if (localFrame == 0) {
       return;
@@ -46,16 +51,8 @@ export class DebugRenderer {
 
     ctx.fillText(`Frame: ${localFrame}`, 10, 30);
     ctx.fillText(`FrameTime: ${frameTime}`, 10, 60);
-    // ctx.fillText(
-    //   `PlayerState: ${renderDataDTO.players[0].playerState}`,
-    //   10,
-    //   90
-    // );
-    // ctx.fillText(
-    //   `PlayerState: ${renderDataDTO.players[0].facingRight}`,
-    //   10,
-    //   120
-    // );
+    ctx.fillText(`PlayerState: ${playerFsmState}`, 10, 90);
+    ctx.fillText(`Facing Right: ${playerFacingRight}`, 10, 120);
     ctx.fillText(
       `VectorsRented: ${world.GetRentedVecsForFrame(localFrame)}`,
       10,
