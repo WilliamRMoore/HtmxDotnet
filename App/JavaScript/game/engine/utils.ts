@@ -22,6 +22,14 @@ export function Clamp(val: number, clamp: number): number {
   return Math.min(Math.max(val, -clamp), clamp);
 }
 
-export function lerp(start: number, end: number, alpha: number): number {
+export function Lerp(start: number, end: number, alpha: number): number {
   return start + (end - start) * alpha;
+}
+
+export function EaseIn(t: number) {
+  return t * t;
+}
+
+export function EaseInPower(t: number, p: number) {
+  return Math.pow(t, p);
 }

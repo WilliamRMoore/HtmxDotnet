@@ -11,18 +11,13 @@ const frameInterval = 1000 / 60;
 export type GamePadIndexes = Array<number>;
 
 export function start(localPlayerGamePadIndex: number) {
-  //INPUT_LOOP(localPlayerGamePadIndex);
   const engine = new JazzDebugger();
   engine.Init(1);
   PlayerHelpers.SetPlayerInitialPosition(engine.World?.GetPlayer(0)!, 610, 100);
-  engine.World?.GetStateMachine(0)?.SetInitialState(STATES.N_FALL);
+  engine.World?.GetStateMachine(0)?.SetInitialState(STATES.N_FALL_S);
   LOGIC_LOOP(engine, localPlayerGamePadIndex);
   RENDER_LOOP(engine.World);
 }
-
-// function INPUT_LOOP(gamePadIndex: number) {
-//   listenForGamePadInput(gamePadIndex);
-// }
 
 function LOGIC_LOOP(engine: IJazz, gamePadIndex: number) {
   const logicLoopHandle = setInterval(() => {

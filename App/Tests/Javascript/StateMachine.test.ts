@@ -7,7 +7,7 @@ import {
   Stage,
 } from '../../JavaScript/game/engine/stage/stageComponents';
 import { World } from '../../JavaScript/game/engine/world/world';
-import { GameEvents } from '../../JavaScript/game/engine/finite-state-machine/PlayerStates';
+import { GAME_EVENTS } from '../../JavaScript/game/engine/finite-state-machine/PlayerStates';
 import { STATES } from '../../JavaScript/game/engine/finite-state-machine/PlayerStates';
 import { StateMachine } from '../../JavaScript/game/engine/finite-state-machine/PlayerStateMachine';
 import { InputAction } from '../../JavaScript/game/loops/Input';
@@ -28,7 +28,7 @@ test('StateMachineShould', () => {
   const sm: StateMachine = new StateMachine(p);
 
   const ia: InputAction = {
-    Action: GameEvents.move,
+    Action: GAME_EVENTS.MOVE_GE,
     LXAxsis: 0.4,
     RXAxis: 0,
     LYAxsis: 0,
@@ -38,14 +38,14 @@ test('StateMachineShould', () => {
   };
 
   world.localFrame = 0;
-  sm.SetInitialState(STATES.IDLE);
+  sm.SetInitialState(STATES.IDLE_S);
 
   // sm.UpdateFromInput(ia, world);
   world.GetInputManager(0).StoreInputForFrame(world.localFrame, ia);
 
   sm.UpdateFromInput(ia, world);
 
-  expect(p.FSMInfo.CurrentState.StateId).toBe(STATES.TURN);
+  expect(p.FSMInfo.CurrentState.StateId).toBe(STATES.TURN_S);
 });
 
 test('StateMachineShould2', () => {
@@ -66,7 +66,7 @@ test('StateMachineShould2', () => {
   const sm: StateMachine = new StateMachine(p);
 
   const ia: InputAction = {
-    Action: GameEvents.move,
+    Action: GAME_EVENTS.MOVE_GE,
     LXAxsis: 0.4,
     RXAxis: 0,
     LYAxsis: 0,
@@ -77,7 +77,7 @@ test('StateMachineShould2', () => {
 
   sm.UpdateFromInput(ia, world);
 
-  expect(p.FSMInfo.CurrentState.StateId).toBe(STATES.TURN);
+  expect(p.FSMInfo.CurrentState.StateId).toBe(STATES.TURN_S);
 });
 
 function UpdateNTimes(w: World, sm: StateMachine, ia: InputAction, n: number) {

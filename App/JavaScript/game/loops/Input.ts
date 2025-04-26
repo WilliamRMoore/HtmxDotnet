@@ -1,4 +1,4 @@
-import { GameEvents } from '../engine/finite-state-machine/PlayerStates';
+import { GAME_EVENTS } from '../engine/finite-state-machine/PlayerStates';
 
 export type InputAction = {
   Action: number;
@@ -57,17 +57,6 @@ export class GamePadInput {
 }
 
 const currentInput = new GamePadInput();
-
-// export function listenForGamePadInput(index: number = 0) {
-//   setInterval(() => pollInput(index), 4);
-// }
-
-// function pollInput(index: number) {
-//   const gp = navigator.getGamepads()[index];
-//   if (gp && gp.connected) {
-//     readInput(gp);
-//   }
-// }
 
 function readInput(gamePad: Gamepad) {
   currentInput.Clear();
@@ -138,20 +127,20 @@ function transcribeInput(input: GamePadInput) {
     // Is it a special on the y axis?
     if (Math.abs(LYAxis) > Math.abs(LXAxis)) {
       if (LYAxis > 0) {
-        inputAction.Action = GameEvents.upSpecial;
+        inputAction.Action = GAME_EVENTS.UP_SPECIAL_GE;
         return inputAction;
       }
-      inputAction.Action = GameEvents.downSpecial;
+      inputAction.Action = GAME_EVENTS.DOWN_SPECIAL_GE;
       return inputAction;
     }
     // Is it a special on the x axis?
     if (LXAxis != 0) {
-      inputAction.Action = GameEvents.sideSpecial;
+      inputAction.Action = GAME_EVENTS.SIDE_SPECIAL_GE;
       return inputAction;
     }
 
     // It is a nuetral special
-    inputAction.Action = GameEvents.special;
+    inputAction.Action = GAME_EVENTS.SPECIAL_GE;
     return inputAction;
   }
 
@@ -160,25 +149,25 @@ function transcribeInput(input: GamePadInput) {
     // Y axis?
     if (Math.abs(LYAxis) > Math.abs(LXAxis)) {
       if (LYAxis > 0) {
-        inputAction.Action = GameEvents.upAttack;
+        inputAction.Action = GAME_EVENTS.UP_ATTACK_GE;
         return inputAction;
       }
-      inputAction.Action = GameEvents.downAttack;
+      inputAction.Action = GAME_EVENTS.DOWN_ATTACK_GE;
       return inputAction;
     }
 
     if (LXAxis != 0) {
-      inputAction.Action = GameEvents.sideAttack;
+      inputAction.Action = GAME_EVENTS.SIDE_ATTACK_GE;
       return inputAction;
     }
-    inputAction.Action = GameEvents.attack;
+    inputAction.Action = GAME_EVENTS.ATTACK_GE;
     return inputAction;
   }
 
   // Right stick was used
   // Right stick more horizontal than vertical
   if (Math.abs(RXAxis) > Math.abs(RYAxis)) {
-    inputAction.Action = GameEvents.sideAttack;
+    inputAction.Action = GAME_EVENTS.SIDE_ATTACK_GE;
     return inputAction;
   }
 
@@ -186,43 +175,45 @@ function transcribeInput(input: GamePadInput) {
   // Right stick more vertical than horrizontal
   if (Math.abs(RYAxis) > Math.abs(RXAxis)) {
     if (RYAxis > 0) {
-      inputAction.Action = GameEvents.upAttack;
+      inputAction.Action = GAME_EVENTS.UP_ATTACK_GE;
       return inputAction;
     }
-    inputAction.Action = GameEvents.downAttack;
+    inputAction.Action = GAME_EVENTS.DOWN_ATTACK_GE;
     return inputAction;
   }
 
   // Grab was pressed
   if (input.rb) {
-    inputAction.Action = GameEvents.grab;
+    inputAction.Action = GAME_EVENTS.GRAB_GE;
     return inputAction;
   }
 
   // Guard was pressed
   if (input.rt || input.lt) {
-    inputAction.Action = GameEvents.guard;
+    inputAction.Action = GAME_EVENTS.GUARD_GE;
     return inputAction;
   }
 
   // Jump was pressed
   if (input.jump) {
-    inputAction.Action = GameEvents.jump;
+    inputAction.Action = GAME_EVENTS.JUMP_GE;
     return inputAction;
   }
 
   if (input.LYAxis < 0.5) {
-    inputAction.Action = GameEvents.down;
+    inputAction.Action = GAME_EVENTS.DOWN_GE;
   }
 
   if (Math.abs(input.LXAxis) > 0) {
     inputAction.Action =
-      Math.abs(input.LXAxis) > 0.6 ? GameEvents.moveFast : GameEvents.move;
+      Math.abs(input.LXAxis) > 0.6
+        ? GAME_EVENTS.MOVE_FAST_GE
+        : GAME_EVENTS.MOVE_GE;
     return inputAction;
   }
 
   // Nothing was pressed
-  inputAction.Action = GameEvents.idle;
+  inputAction.Action = GAME_EVENTS.IDLE_GE;
   return inputAction;
 }
 
@@ -253,7 +244,7 @@ function clampStick(x: number, y: number) {
 
 export function NewInputAction() {
   return {
-    Action: GameEvents.idle,
+    Action: GAME_EVENTS.IDLE_GE,
     LXAxsis: 0,
     LYAxsis: 0,
     RXAxis: 0,

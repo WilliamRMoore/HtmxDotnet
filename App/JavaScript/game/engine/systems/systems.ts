@@ -1,5 +1,5 @@
 import { IntersectsPolygons } from '../physics/collisions';
-import { GameEvents, STATES } from '../finite-state-machine/PlayerStates';
+import { GAME_EVENTS, STATES } from '../finite-state-machine/PlayerStates';
 import { World } from '../world/world';
 import { StateMachine } from '../finite-state-machine/PlayerStateMachine';
 import { Player, PlayerHelpers } from '../player/playerOrchestrator';
@@ -30,11 +30,11 @@ export function StageCollisionDetection(world: World): void {
       const CurrentPlayerStateId = p.FSMInfo.CurrentState.StateId;
 
       if (
-        CurrentPlayerStateId === STATES.WALK ||
-        CurrentPlayerStateId === STATES.START_WALK ||
-        CurrentPlayerStateId === STATES.IDLE ||
-        CurrentPlayerStateId === STATES.RUN_TURN ||
-        CurrentPlayerStateId === STATES.STOP_RUN
+        CurrentPlayerStateId === STATES.WALK_S ||
+        CurrentPlayerStateId === STATES.START_WALK_S ||
+        CurrentPlayerStateId === STATES.IDLE_S ||
+        CurrentPlayerStateId === STATES.RUN_TURN_S ||
+        CurrentPlayerStateId === STATES.STOP_RUN_S
       ) {
         const stageGround = s.StageVerticies.GetGround();
         const leftStagePoint = stageGround[0]; //s.StageVerticies.GetGround()[0];
@@ -48,7 +48,7 @@ export function StageCollisionDetection(world: World): void {
             leftStagePoint.X + 0.1,
             leftStagePoint.Y
           );
-          sm.UpdateFromWorld(GameEvents.land);
+          sm.UpdateFromWorld(GAME_EVENTS.LAND_GE);
         }
 
         if (rightStagePoint.X < position.X && flags.IsFacingRight()) {
@@ -57,7 +57,7 @@ export function StageCollisionDetection(world: World): void {
             rightStagePoint.X - 0.1,
             rightStagePoint.Y
           );
-          sm.UpdateFromWorld(GameEvents.land);
+          sm.UpdateFromWorld(GAME_EVENTS.LAND_GE);
         }
         continue;
       }
@@ -65,23 +65,24 @@ export function StageCollisionDetection(world: World): void {
 
     // We didn't collide this frame, but are still grounded (E.G. Just idling grounded)
     if (collision === NO_COLLISION && grnd == true) {
-      sm.UpdateFromWorld(GameEvents.land);
+      sm.UpdateFromWorld(GAME_EVENTS.LAND_GE);
       continue;
     }
 
     // No collision
     if (
       collision === NO_COLLISION ||
-      (grnd === false && p.FSMInfo.CurrentState.StateId != STATES.LEDGE_GRAB)
+      (grnd === false && p.FSMInfo.CurrentState.StateId != STATES.LEDGE_GRAB_S)
     ) {
-      sm.UpdateFromWorld(GameEvents.fall);
+      sm.UpdateFromWorld(GAME_EVENTS.FALL_GE);
       continue;
     }
 
     // We have a collision and we are landed
     if (collision !== NO_COLLISION && grnd === true) {
       const playerVelY = p.Velocity.Y;
-      const landState = playerVelY > 2 ? GameEvents.land : GameEvents.softLand;
+      const landState =
+        playerVelY > 2 ? GAME_EVENTS.LAND_GE : GAME_EVENTS.SOFT_LAND_GE;
       sm.UpdateFromWorld(landState);
       continue;
     }
@@ -188,7 +189,7 @@ export function LedgeGrabDetection(w: World) {
     const flags = p.Flags;
     const ecb = p.ECB;
 
-    if (p.Velocity.Y < 0 || p.FSMInfo.CurrentState.StateId == STATES.JUMP) {
+    if (p.Velocity.Y < 0 || p.FSMInfo.CurrentState.StateId == STATES.JUMP_S) {
       continue;
     }
     if (PlayerHelpers.IsPlayerGroundedOnStage(p, stage)) {
@@ -211,7 +212,7 @@ export function LedgeGrabDetection(w: World) {
         projResPool
       );
       if (intersectsLeftLedge.Collision) {
-        sm?.UpdateFromWorld(GameEvents.ledgeGrab);
+        sm?.UpdateFromWorld(GAME_EVENTS.LEDGE_GRAB_GE);
         PlayerHelpers.SetPlayerPosition(
           p,
           leftLedge[0].X - 25,
@@ -228,7 +229,7 @@ export function LedgeGrabDetection(w: World) {
       projResPool
     );
     if (intersectsRightLedge.Collision) {
-      sm?.UpdateFromWorld(GameEvents.ledgeGrab);
+      sm?.UpdateFromWorld(GAME_EVENTS.LEDGE_GRAB_GE);
       PlayerHelpers.SetPlayerPosition(
         p,
         rightLedge[0].X + 25,
@@ -243,8 +244,10 @@ export function Gravity(world: World) {
   const stage = world.Stage!;
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = world.GetPlayer(playerIndex)!;
+    const stateId = p.FSMInfo.CurrentState.StateId;
     if (
-      p.FSMInfo.CurrentState.StateId !== STATES.LEDGE_GRAB ||
+      stateId !== STATES.LEDGE_GRAB_S &&
+      stateId !== STATES.AIR_DODGE_S &&
       !PlayerHelpers.IsPlayerGroundedOnStage(p, stage)
     ) {
       PlayerHelpers.AddGravityToPlayer(p, stage);
@@ -362,7 +365,7 @@ function KillPlayer(p: Player, sm: StateMachine) {
   p.Jump.IncrementJumps();
   p.Velocity.X = 0;
   p.Velocity.Y = 0;
-  sm.ForceState(STATES.N_FALL);
+  sm.ForceState(STATES.N_FALL_S);
   // reduce stock count
 }
 

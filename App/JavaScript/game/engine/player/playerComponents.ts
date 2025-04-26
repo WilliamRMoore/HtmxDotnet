@@ -201,6 +201,7 @@ export class VelocityComponent implements IHistoryEnabled<FlatVec> {
     this.y = val;
   }
 }
+
 export type StateFrameLengthsSnapShot = {
   frameLengths: Map<stateId, number>;
 };
@@ -212,16 +213,17 @@ export class StateFrameLengthsComponent
 
   constructor() {
     this.frameLengths
-      .set(STATES.START_WALK, 5)
-      .set(STATES.JUMP_SQUAT, 4)
-      .set(STATES.TURN, 3)
-      .set(STATES.DASH, 20)
-      .set(STATES.DASH_TURN, 1)
-      .set(STATES.RUN_TURN, 20)
-      .set(STATES.STOP_RUN, 15)
-      .set(STATES.JUMP, 15)
-      .set(STATES.LAND, 3)
-      .set(STATES.SOFT_LAND, 1);
+      .set(STATES.START_WALK_S, 5)
+      .set(STATES.JUMP_SQUAT_S, 5)
+      .set(STATES.TURN_S, 3)
+      .set(STATES.DASH_S, 20)
+      .set(STATES.DASH_TURN_S, 1)
+      .set(STATES.RUN_TURN_S, 20)
+      .set(STATES.STOP_RUN_S, 15)
+      .set(STATES.JUMP_S, 15)
+      .set(STATES.AIR_DODGE_S, 25)
+      .set(STATES.LAND_S, 5)
+      .set(STATES.SOFT_LAND_S, 1);
   }
 
   public GetFrameLengthOrUndefined(stateId: stateId): number | undefined {
@@ -286,6 +288,7 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
 export class SpeedsComponent {
   public readonly GroundedVelocityDecay: number;
   public readonly AerialVelocityDecay: number;
+  public readonly AirDogeSpeed: number;
   public readonly ArielVelocityMultiplier: number;
   public readonly AerialSpeedInpulseLimit: number;
   public readonly MaxWalkSpeed: number;
@@ -304,6 +307,7 @@ export class SpeedsComponent {
     aerialVelocityDecay: number,
     aerialSpeedInpulseLimit: number,
     aerialVelocityMultiplier: number,
+    airDodgeSpeed: number,
     maxWalkSpeed: number,
     maxRunSpeed: number,
     walkSpeedMultiplier: number,
@@ -318,6 +322,7 @@ export class SpeedsComponent {
     this.AerialVelocityDecay = aerialVelocityDecay;
     this.AerialSpeedInpulseLimit = aerialSpeedInpulseLimit;
     this.ArielVelocityMultiplier = aerialVelocityMultiplier;
+    this.AirDogeSpeed = airDodgeSpeed;
     this.MaxWalkSpeed = maxWalkSpeed;
     this.MaxRunSpeed = maxRunSpeed;
     this.WalkSpeedMulitplier = walkSpeedMultiplier;
@@ -890,6 +895,7 @@ export class SpeedsComponentBuilder {
   private aerialVelocityDecay: number = 0;
   private aerialSpeedInpulseLimit: number = 0;
   private aerialSpeedMultiplier: number = 0;
+  private airDodgeSpeed: number = 0;
   private maxWalkSpeed: number = 0;
   private maxRunSpeed: number = 0;
   private dashMutiplier: number = 0;
@@ -908,6 +914,10 @@ export class SpeedsComponentBuilder {
     this.aerialVelocityDecay = aerialVelocityDecay;
     this.aerialSpeedInpulseLimit = aerialSpeedImpulseLimit;
     this.aerialSpeedMultiplier = aerialSpeedMultiplier;
+  }
+
+  SetAirDodgeSpeed(airDodgeSpeed: number): void {
+    this.airDodgeSpeed = airDodgeSpeed;
   }
 
   SetFallSpeeds(fastFallSpeed: number, fallSpeed: number, gravity: number = 1) {
@@ -941,6 +951,7 @@ export class SpeedsComponentBuilder {
       this.aerialVelocityDecay,
       this.aerialSpeedInpulseLimit,
       this.aerialSpeedMultiplier,
+      this.airDodgeSpeed,
       this.maxWalkSpeed,
       this.maxRunSpeed,
       this.walkSpeedMulitplier,

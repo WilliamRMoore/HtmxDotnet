@@ -1,6 +1,6 @@
 import { Jazz } from '../../JavaScript/game/engine/jazz';
 import {
-  GameEvents,
+  GAME_EVENTS,
   STATES,
 } from '../../JavaScript/game/engine/finite-state-machine/PlayerStates';
 import { InputAction } from '../../JavaScript/game/loops/Input';
@@ -16,10 +16,10 @@ test('test', () => {
     610,
     200
   );
-  engine.World!.GetStateMachine(0)!.SetInitialState(STATES.N_FALL);
+  engine.World!.GetStateMachine(0)!.SetInitialState(STATES.N_FALL_S);
 
   const ia: InputAction = {
-    Action: GameEvents.idle,
+    Action: GAME_EVENTS.IDLE_GE,
     LXAxsis: 0,
     LYAxsis: 0,
     RXAxis: 0,
@@ -55,10 +55,10 @@ test('test fast fall to ground', () => {
     610,
     430
   );
-  engine.World!.GetStateMachine(0)!.SetInitialState(STATES.N_FALL);
+  engine.World!.GetStateMachine(0)!.SetInitialState(STATES.N_FALL_S);
 
   let ia: InputAction = {
-    Action: GameEvents.idle,
+    Action: GAME_EVENTS.IDLE_GE,
     LXAxsis: 0,
     LYAxsis: 0,
     RXAxis: 0,
@@ -69,7 +69,7 @@ test('test fast fall to ground', () => {
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
   engine.Tick();
 
-  ia.Action = GameEvents.down;
+  ia.Action = GAME_EVENTS.DOWN_GE;
 
   engine.UpdateLocalInputForCurrentFrame(ia, 0);
   engine.Tick();

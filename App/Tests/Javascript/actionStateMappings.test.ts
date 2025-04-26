@@ -1,4 +1,4 @@
-import { GameEvents } from '../../JavaScript/game/engine/finite-state-machine/PlayerStates';
+import { GAME_EVENTS } from '../../JavaScript/game/engine/finite-state-machine/PlayerStates';
 import {
   DASH_RELATIONS,
   DASH_TURN_RELATIONS,
@@ -18,41 +18,43 @@ import {
 
 // Idle tests
 test('IDLE ', () => {
-  let res = IDLE_STATE_RELATIONS.mappings.getMapping(GameEvents.move);
-  expect(res).toBe(STATES.START_WALK);
-  res = IDLE_STATE_RELATIONS.mappings.getMapping(GameEvents.moveFast);
-  expect(res).toBe(STATES.DASH);
-  res = IDLE_STATE_RELATIONS.mappings.getMapping(GameEvents.turn);
-  expect(res).toBe(STATES.TURN);
-  res = IDLE_STATE_RELATIONS.mappings.getMapping(GameEvents.jump);
-  expect(res).toBe(STATES.JUMP_SQUAT);
+  let res = IDLE_STATE_RELATIONS.mappings.getMapping(GAME_EVENTS.MOVE_GE);
+  expect(res).toBe(STATES.START_WALK_S);
+  res = IDLE_STATE_RELATIONS.mappings.getMapping(GAME_EVENTS.MOVE_FAST_GE);
+  expect(res).toBe(STATES.DASH_S);
+  res = IDLE_STATE_RELATIONS.mappings.getMapping(GAME_EVENTS.TURN_GE);
+  expect(res).toBe(STATES.TURN_S);
+  res = IDLE_STATE_RELATIONS.mappings.getMapping(GAME_EVENTS.JUMP_GE);
+  expect(res).toBe(STATES.JUMP_SQUAT_S);
 });
 
 //WALK TESTS
 test('START_WALK ', () => {
-  expect(START_WALK_RELATIONS.mappings.getMapping(GameEvents.idle)).toBe(
-    STATES.IDLE
+  expect(START_WALK_RELATIONS.mappings.getMapping(GAME_EVENTS.IDLE_GE)).toBe(
+    STATES.IDLE_S
   );
-  expect(START_WALK_RELATIONS.mappings.getMapping(GameEvents.moveFast)).toBe(
-    STATES.DASH
+  expect(
+    START_WALK_RELATIONS.mappings.getMapping(GAME_EVENTS.MOVE_FAST_GE)
+  ).toBe(STATES.DASH_S);
+  expect(START_WALK_RELATIONS.mappings.getMapping(GAME_EVENTS.JUMP_GE)).toBe(
+    STATES.JUMP_SQUAT_S
   );
-  expect(START_WALK_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
-    STATES.JUMP_SQUAT
-  );
-  expect(START_WALK_RELATIONS.mappings.getDefaults()).toBe(STATES.WALK);
+  expect(START_WALK_RELATIONS.mappings.getDefaults()).toBe(STATES.WALK_S);
 });
 
 test('TURN', () => {
-  expect(TURN_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
-    STATES.JUMP_SQUAT
+  expect(TURN_RELATIONS.mappings.getMapping(GAME_EVENTS.JUMP_GE)).toBe(
+    STATES.JUMP_SQUAT_S
   );
-  expect(TURN_RELATIONS.mappings.getDefaults()).toBe(STATES.IDLE);
+  expect(TURN_RELATIONS.mappings.getDefaults()).toBe(STATES.IDLE_S);
 });
 
 test('WALK', () => {
-  expect(WALK_RELATIONS.mappings.getMapping(GameEvents.idle)).toBe(STATES.IDLE);
-  expect(WALK_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
-    STATES.JUMP_SQUAT
+  expect(WALK_RELATIONS.mappings.getMapping(GAME_EVENTS.IDLE_GE)).toBe(
+    STATES.IDLE_S
+  );
+  expect(WALK_RELATIONS.mappings.getMapping(GAME_EVENTS.JUMP_GE)).toBe(
+    STATES.JUMP_SQUAT_S
   );
 
   const conditions = WALK_RELATIONS.mappings.GetConditions();
@@ -63,28 +65,28 @@ test('WALK', () => {
 });
 
 test('DASH', () => {
-  expect(DASH_RELATIONS.mappings.getMapping(GameEvents.turn)).toBe(
-    STATES.DASH_TURN
+  expect(DASH_RELATIONS.mappings.getMapping(GAME_EVENTS.TURN_GE)).toBe(
+    STATES.DASH_TURN_S
   );
-  expect(DASH_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
-    STATES.JUMP_SQUAT
+  expect(DASH_RELATIONS.mappings.getMapping(GAME_EVENTS.JUMP_GE)).toBe(
+    STATES.JUMP_SQUAT_S
   );
-  expect(DASH_RELATIONS.mappings.getDefaults()).toBe(STATES.RUN);
+  expect(DASH_RELATIONS.mappings.getDefaults()).toBe(STATES.RUN_S);
 });
 
 test('DASH_TURN', () => {
-  expect(DASH_TURN_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
-    STATES.JUMP_SQUAT
+  expect(DASH_TURN_RELATIONS.mappings.getMapping(GAME_EVENTS.JUMP_GE)).toBe(
+    STATES.JUMP_SQUAT_S
   );
-  expect(DASH_TURN_RELATIONS.mappings.getDefaults()).toBe(STATES.DASH);
+  expect(DASH_TURN_RELATIONS.mappings.getDefaults()).toBe(STATES.DASH_S);
 });
 
 test('RUN', () => {
-  expect(RUN_RELATIONS.mappings.getMapping(GameEvents.idle)).toBe(
-    STATES.STOP_RUN
+  expect(RUN_RELATIONS.mappings.getMapping(GAME_EVENTS.IDLE_GE)).toBe(
+    STATES.STOP_RUN_S
   );
-  expect(RUN_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
-    STATES.JUMP_SQUAT
+  expect(RUN_RELATIONS.mappings.getMapping(GAME_EVENTS.JUMP_GE)).toBe(
+    STATES.JUMP_SQUAT_S
   );
 
   const con = RUN_RELATIONS.mappings.GetConditions();
@@ -95,51 +97,51 @@ test('RUN', () => {
 });
 
 test('RUN_TURN', () => {
-  expect(RUN_TURN_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
-    STATES.JUMP_SQUAT
+  expect(RUN_TURN_RELATIONS.mappings.getMapping(GAME_EVENTS.JUMP_GE)).toBe(
+    STATES.JUMP_SQUAT_S
   );
-  expect(RUN_TURN_RELATIONS.mappings.getDefaults()).toBe(STATES.RUN);
+  expect(RUN_TURN_RELATIONS.mappings.getDefaults()).toBe(STATES.RUN_S);
 });
 
 test('RUN_STOP', () => {
-  expect(STOP_RUN_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
-    STATES.JUMP_SQUAT
+  expect(STOP_RUN_RELATIONS.mappings.getMapping(GAME_EVENTS.JUMP_GE)).toBe(
+    STATES.JUMP_SQUAT_S
   );
-  expect(STOP_RUN_RELATIONS.mappings.getMapping(GameEvents.moveFast)).toBe(
-    STATES.DASH
+  expect(STOP_RUN_RELATIONS.mappings.getMapping(GAME_EVENTS.MOVE_FAST_GE)).toBe(
+    STATES.DASH_S
   );
-  expect(STOP_RUN_RELATIONS.mappings.getDefaults()).toBe(STATES.IDLE);
+  expect(STOP_RUN_RELATIONS.mappings.getDefaults()).toBe(STATES.IDLE_S);
 });
 
 test('STOP_RUN_TURN', () => {
-  expect(STOP_RUN_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
-    STATES.JUMP_SQUAT
+  expect(STOP_RUN_RELATIONS.mappings.getMapping(GAME_EVENTS.JUMP_GE)).toBe(
+    STATES.JUMP_SQUAT_S
   );
-  expect(STOP_RUN_RELATIONS.mappings.getMapping(GameEvents.moveFast)).toBe(
-    STATES.DASH
+  expect(STOP_RUN_RELATIONS.mappings.getMapping(GAME_EVENTS.MOVE_FAST_GE)).toBe(
+    STATES.DASH_S
   );
-  expect(STOP_RUN_RELATIONS.mappings.getDefaults()).toBe(STATES.IDLE);
+  expect(STOP_RUN_RELATIONS.mappings.getDefaults()).toBe(STATES.IDLE_S);
 });
 
 test('JUMPSQUAT', () => {
-  expect(JUMP_SQUAT_RELATIONS.mappings.getDefaults()).toBe(STATES.JUMP);
+  expect(JUMP_SQUAT_RELATIONS.mappings.getDefaults()).toBe(STATES.JUMP_S);
 });
 
 test('JUMP', () => {
-  expect(JUMP_RELATIONS.mappings.getDefaults()).toBe(STATES.N_FALL);
+  expect(JUMP_RELATIONS.mappings.getDefaults()).toBe(STATES.N_FALL_S);
 });
 
 test('NFALL', () => {
-  expect(NFALL_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
-    STATES.JUMP
+  expect(NFALL_RELATIONS.mappings.getMapping(GAME_EVENTS.JUMP_GE)).toBe(
+    STATES.JUMP_S
   );
-  expect(NFALL_RELATIONS.mappings.getMapping(GameEvents.down)).toBe(
-    STATES.F_FALL
+  expect(NFALL_RELATIONS.mappings.getMapping(GAME_EVENTS.DOWN_GE)).toBe(
+    STATES.F_FALL_S
   );
 });
 
 test('FFALL', () => {
-  expect(FFALL_RELATIONS.mappings.getMapping(GameEvents.jump)).toBe(
-    STATES.JUMP
+  expect(FFALL_RELATIONS.mappings.getMapping(GAME_EVENTS.JUMP_GE)).toBe(
+    STATES.JUMP_S
   );
 });

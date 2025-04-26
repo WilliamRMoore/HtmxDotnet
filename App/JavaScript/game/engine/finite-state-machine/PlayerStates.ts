@@ -1,4 +1,5 @@
 import { Player, PlayerHelpers } from '../player/playerOrchestrator';
+import { EaseIn } from '../utils';
 import { World } from '../world/world';
 import { FSMState } from './PlayerStateMachine';
 
@@ -9,50 +10,54 @@ export type stateId = number;
 
 // Constants ===================================
 
+//Postfixed with _GE for game event. So you know you are looking at game event Ids.
 class _GameEvents {
-  public readonly upSpecial = 0;
-  public readonly downSpecial = 1;
-  public readonly sideSpecial = 2;
-  public readonly special = 3;
-  public readonly upAttack = 4;
-  public readonly downAttack = 5;
-  public readonly sideAttack = 6;
-  public readonly attack = 7;
-  public readonly idle = 8;
-  public readonly move = 9;
-  public readonly moveFast = 10;
-  public readonly jump = 11;
-  public readonly grab = 12;
-  public readonly guard = 13;
-  public readonly down = 14;
-  public readonly turn = 15;
+  public readonly UP_SPECIAL_GE = 0;
+  public readonly DOWN_SPECIAL_GE = 1;
+  public readonly SIDE_SPECIAL_GE = 2;
+  public readonly SPECIAL_GE = 3;
+  public readonly UP_ATTACK_GE = 4;
+  public readonly DOWN_ATTACK_GE = 5;
+  public readonly SIDE_ATTACK_GE = 6;
+  public readonly ATTACK_GE = 7;
+  public readonly IDLE_GE = 8;
+  public readonly MOVE_GE = 9;
+  public readonly MOVE_FAST_GE = 10;
+  public readonly JUMP_GE = 11;
+  public readonly GRAB_GE = 12;
+  public readonly GUARD_GE = 13;
+  public readonly DOWN_GE = 14;
+  public readonly TURN_GE = 15;
   // End of GameEvents that can be source from player input
-  public readonly land = 16;
-  public readonly softLand = 17;
-  public readonly fall = 18;
-  public readonly ledgeGrab = 19;
+  public readonly LAND_GE = 16;
+  public readonly SOFT_LAND_GE = 17;
+  public readonly FALL_GE = 18;
+  public readonly LEDGE_GRAB_GE = 19;
 }
 
-export const GameEvents = new _GameEvents();
+export const GAME_EVENTS = new _GameEvents();
 
+//Postfixed _S for state, so you know you are looking at state Ids.
 class _STATES {
-  public readonly IDLE = 0 as stateId;
-  public readonly START_WALK = 1 as stateId;
-  public readonly TURN = 2 as stateId;
-  public readonly WALK = 3 as stateId;
-  public readonly DASH = 4 as stateId;
-  public readonly DASH_TURN = 5 as stateId;
-  public readonly STOP_RUN = 6 as stateId;
-  public readonly RUN_TURN = 7 as stateId;
-  public readonly STOP_RUN_TURN = 8 as stateId;
-  public readonly RUN = 9 as stateId;
-  public readonly JUMP_SQUAT = 10 as stateId;
-  public readonly JUMP = 11 as stateId;
-  public readonly N_FALL = 12 as stateId;
-  public readonly F_FALL = 13 as stateId;
-  public readonly LAND = 14 as stateId;
-  public readonly SOFT_LAND = 15 as stateId;
-  public readonly LEDGE_GRAB = 16 as stateId;
+  public readonly IDLE_S = 0 as stateId;
+  public readonly START_WALK_S = 1 as stateId;
+  public readonly TURN_S = 2 as stateId;
+  public readonly WALK_S = 3 as stateId;
+  public readonly DASH_S = 4 as stateId;
+  public readonly DASH_TURN_S = 5 as stateId;
+  public readonly STOP_RUN_S = 6 as stateId;
+  public readonly RUN_TURN_S = 7 as stateId;
+  public readonly STOP_RUN_TURN_S = 8 as stateId;
+  public readonly RUN_S = 9 as stateId;
+  public readonly JUMP_SQUAT_S = 10 as stateId;
+  public readonly JUMP_S = 11 as stateId;
+  public readonly N_FALL_S = 12 as stateId;
+  public readonly F_FALL_S = 13 as stateId;
+  public readonly LAND_S = 14 as stateId;
+  public readonly SOFT_LAND_S = 15 as stateId;
+  public readonly LEDGE_GRAB_S = 16 as stateId;
+  public readonly AIR_DODGE_S = 17 as stateId;
+  public readonly HELPESS_S = 18 as stateId;
 }
 
 export const STATES = new _STATES();
@@ -92,7 +97,7 @@ const IdleToDashturn: condition = {
 
     return false;
   },
-  StateId: STATES.DASH_TURN,
+  StateId: STATES.DASH_TURN_S,
 };
 
 const IdleToTurn: condition = {
@@ -112,7 +117,7 @@ const IdleToTurn: condition = {
 
     return false;
   },
-  StateId: STATES.TURN,
+  StateId: STATES.TURN_S,
 };
 
 const WalkToTurn: condition = {
@@ -142,7 +147,7 @@ const WalkToTurn: condition = {
 
     return false;
   },
-  StateId: STATES.TURN,
+  StateId: STATES.TURN_S,
 };
 
 const RunToTurn: condition = {
@@ -173,7 +178,7 @@ const RunToTurn: condition = {
 
     return false;
   },
-  StateId: STATES.RUN_TURN,
+  StateId: STATES.RUN_TURN_S,
 };
 
 const DashToTurn: condition = {
@@ -211,7 +216,7 @@ const DashToTurn: condition = {
 
     return false;
   },
-  StateId: STATES.DASH_TURN,
+  StateId: STATES.DASH_TURN_S,
 };
 
 const ToJump: condition = {
@@ -220,7 +225,7 @@ const ToJump: condition = {
     const player = w.GetPlayer(playerIndex);
     const currentInput = w.GetPlayerCurrentInput(playerIndex)!;
     const prevInput = w.GetPlayerPreviousInput(playerIndex);
-    const jumpId = GameEvents.jump;
+    const jumpId = GAME_EVENTS.JUMP_GE;
 
     if (
       currentInput.Action === jumpId &&
@@ -232,7 +237,19 @@ const ToJump: condition = {
 
     return false;
   },
-  StateId: STATES.JUMP,
+  StateId: STATES.JUMP_S,
+};
+
+const ToAirDodge: condition = {
+  Name: 'ToAirDodge',
+  ConditionFunc: (w, playerIndex) => {
+    const currentInput = w.GetPlayerCurrentInput(playerIndex);
+    if (currentInput?.Action == GAME_EVENTS.GUARD_GE) {
+      return true;
+    }
+    return false;
+  },
+  StateId: STATES.AIR_DODGE_S,
 };
 
 const DashDefaultRun: condition = {
@@ -252,7 +269,7 @@ const DashDefaultRun: condition = {
 
     return false;
   },
-  StateId: STATES.RUN,
+  StateId: STATES.RUN_S,
 };
 
 const DashDefaultIdle: condition = {
@@ -266,7 +283,7 @@ const DashDefaultIdle: condition = {
 
     return false;
   },
-  StateId: STATES.IDLE,
+  StateId: STATES.IDLE_S,
 };
 
 const TurnDefaultWalk: condition = {
@@ -281,7 +298,7 @@ const TurnDefaultWalk: condition = {
     }
     return false;
   },
-  StateId: STATES.WALK,
+  StateId: STATES.WALK_S,
 };
 
 const defaultWalk: condition = {
@@ -289,7 +306,7 @@ const defaultWalk: condition = {
   ConditionFunc: (w: World) => {
     return true;
   },
-  StateId: STATES.WALK,
+  StateId: STATES.WALK_S,
 };
 
 const defaultRun: condition = {
@@ -297,7 +314,7 @@ const defaultRun: condition = {
   ConditionFunc: (w: World) => {
     return true;
   },
-  StateId: STATES.RUN,
+  StateId: STATES.RUN_S,
 };
 
 const defaultIdle: condition = {
@@ -305,7 +322,7 @@ const defaultIdle: condition = {
   ConditionFunc: (w: World) => {
     return true;
   },
-  StateId: STATES.IDLE,
+  StateId: STATES.IDLE_S,
 };
 
 const defaultDash: condition = {
@@ -313,7 +330,7 @@ const defaultDash: condition = {
   ConditionFunc: (w: World) => {
     return true;
   },
-  StateId: STATES.DASH,
+  StateId: STATES.DASH_S,
 };
 
 const defaultJump: condition = {
@@ -321,7 +338,7 @@ const defaultJump: condition = {
   ConditionFunc: (w: World) => {
     return true;
   },
-  StateId: STATES.JUMP,
+  StateId: STATES.JUMP_S,
 };
 
 const defaultNFall: condition = {
@@ -329,7 +346,15 @@ const defaultNFall: condition = {
   ConditionFunc: (w: World) => {
     return true;
   },
-  StateId: STATES.N_FALL,
+  StateId: STATES.N_FALL_S,
+};
+
+const defaultHelpess: condition = {
+  Name: 'Helpless',
+  ConditionFunc: (w: World) => {
+    return true;
+  },
+  StateId: STATES.HELPESS_S,
 };
 
 const LandToIdle: condition = {
@@ -343,7 +368,7 @@ const LandToIdle: condition = {
 
     return false;
   },
-  StateId: STATES.IDLE,
+  StateId: STATES.IDLE_S,
 };
 
 const LandToWalk: condition = {
@@ -363,7 +388,7 @@ const LandToWalk: condition = {
 
     return false;
   },
-  StateId: STATES.WALK,
+  StateId: STATES.WALK_S,
 };
 
 const LandToTurn: condition = {
@@ -383,7 +408,7 @@ const LandToTurn: condition = {
 
     return false;
   },
-  StateId: STATES.TURN,
+  StateId: STATES.TURN_S,
 };
 
 const RunStopToTurn: condition = {
@@ -403,13 +428,13 @@ const RunStopToTurn: condition = {
 
     return false;
   },
-  StateId: STATES.RUN_TURN,
+  StateId: STATES.RUN_TURN_S,
 };
 
 // =======================================================
 
 class StateRelation {
-  readonly stateId: stateId = STATES.IDLE;
+  readonly stateId: stateId = STATES.IDLE_S;
   readonly mappings: ActionStateMappings;
 
   constructor(stateId: stateId, actionStateTranslations: ActionStateMappings) {
@@ -470,17 +495,19 @@ export const FFALL_RELATIONS = InitFastFallRelations();
 export const LAND_RELATIONS = InitLandRelations();
 export const SOFT_LAND_RELATIONS = InitSoftLandRelations();
 export const LEDGE_GRAB_RELATIONS = InitLedgeGrabRelations();
+export const AIR_DODGE_RELATIONS = InitAirDodgeRelations();
+export const HELPESS_RELATIONS = InitHelpessRelations();
 
 // ====================================================================
 
 function InitIdleRelations(): StateRelation {
-  const idle = new StateRelation(STATES.IDLE, InitIdleTranslations());
+  const idle = new StateRelation(STATES.IDLE_S, InitIdleTranslations());
   return idle;
 }
 
 function InitStartWalkRelations(): StateRelation {
   const startWalk = new StateRelation(
-    STATES.START_WALK,
+    STATES.START_WALK_S,
     InitStartWalkTranslations()
   );
 
@@ -488,26 +515,32 @@ function InitStartWalkRelations(): StateRelation {
 }
 
 function InitTurnWalkRelations(): StateRelation {
-  const turnWalk = new StateRelation(STATES.TURN, InitTurnTranslations());
+  const turnWalk = new StateRelation(STATES.TURN_S, InitTurnTranslations());
 
   return turnWalk;
 }
 
 function InitWalkRelations(): StateRelation {
-  const walkRelations = new StateRelation(STATES.WALK, InitWalkTranslations());
+  const walkRelations = new StateRelation(
+    STATES.WALK_S,
+    InitWalkTranslations()
+  );
 
   return walkRelations;
 }
 
 function InitDashRelations(): StateRelation {
-  const dashRelations = new StateRelation(STATES.DASH, InitDashTranslations());
+  const dashRelations = new StateRelation(
+    STATES.DASH_S,
+    InitDashTranslations()
+  );
 
   return dashRelations;
 }
 
 function InitDashTurnRelations(): StateRelation {
   const dashTurnRelations = new StateRelation(
-    STATES.DASH_TURN,
+    STATES.DASH_TURN_S,
     InitDashTrunTranslations()
   );
 
@@ -515,14 +548,14 @@ function InitDashTurnRelations(): StateRelation {
 }
 
 function InitRunRelations(): StateRelation {
-  const runRelations = new StateRelation(STATES.RUN, InitRunTranslations());
+  const runRelations = new StateRelation(STATES.RUN_S, InitRunTranslations());
 
   return runRelations;
 }
 
 function InitRunTurnRelations(): StateRelation {
   const runTurnRelations = new StateRelation(
-    STATES.RUN_TURN,
+    STATES.RUN_TURN_S,
     InitRunTurnTranslations()
   );
 
@@ -531,7 +564,7 @@ function InitRunTurnRelations(): StateRelation {
 
 function InitStopRunRelations(): StateRelation {
   const stopRunRelations = new StateRelation(
-    STATES.STOP_RUN,
+    STATES.STOP_RUN_S,
     InitStopRunTranslations()
   );
 
@@ -540,7 +573,7 @@ function InitStopRunRelations(): StateRelation {
 
 function InitJumpSquatRelations(): StateRelation {
   const jumpSquatRelations = new StateRelation(
-    STATES.JUMP_SQUAT,
+    STATES.JUMP_SQUAT_S,
     InitJumpSquatTranslations()
   );
 
@@ -548,14 +581,17 @@ function InitJumpSquatRelations(): StateRelation {
 }
 
 function InitJumpRelations(): StateRelation {
-  const jumpRelations = new StateRelation(STATES.JUMP, InitJumpTranslations());
+  const jumpRelations = new StateRelation(
+    STATES.JUMP_S,
+    InitJumpTranslations()
+  );
 
   return jumpRelations;
 }
 
 function InitNeutralFallRelations(): StateRelation {
   const nFallRelations = new StateRelation(
-    STATES.N_FALL,
+    STATES.N_FALL_S,
     InitNFallTranslations()
   );
 
@@ -564,21 +600,24 @@ function InitNeutralFallRelations(): StateRelation {
 
 function InitFastFallRelations(): StateRelation {
   const fastFallRelations = new StateRelation(
-    STATES.F_FALL,
+    STATES.F_FALL_S,
     InitFastFallTranslations()
   );
   return fastFallRelations;
 }
 
 function InitLandRelations(): StateRelation {
-  const landRelations = new StateRelation(STATES.LAND, InitLandTranslations());
+  const landRelations = new StateRelation(
+    STATES.LAND_S,
+    InitLandTranslations()
+  );
 
   return landRelations;
 }
 
 function InitSoftLandRelations(): StateRelation {
   const softLandRelations = new StateRelation(
-    STATES.SOFT_LAND,
+    STATES.SOFT_LAND_S,
     InitSoftLandTranslations()
   );
 
@@ -587,11 +626,29 @@ function InitSoftLandRelations(): StateRelation {
 
 function InitLedgeGrabRelations(): StateRelation {
   const LedgeGrabRelations = new StateRelation(
-    STATES.LEDGE_GRAB,
+    STATES.LEDGE_GRAB_S,
     InitLedgeGrabTranslations()
   );
 
   return LedgeGrabRelations;
+}
+
+function InitAirDodgeRelations(): StateRelation {
+  const AirDodgeRelations = new StateRelation(
+    STATES.AIR_DODGE_S,
+    InitAirDodgeTranslations()
+  );
+
+  return AirDodgeRelations;
+}
+
+function InitHelpessRelations(): StateRelation {
+  const HelplessRelations = new StateRelation(
+    STATES.HELPESS_S,
+    InitHelpessTranslations()
+  );
+
+  return HelplessRelations;
 }
 
 // ================================================================================
@@ -599,11 +656,11 @@ function InitLedgeGrabRelations(): StateRelation {
 function InitIdleTranslations() {
   const idleTranslations = new ActionStateMappings();
   idleTranslations._setMappings([
-    { geId: GameEvents.move, sId: STATES.START_WALK },
-    { geId: GameEvents.moveFast, sId: STATES.START_WALK },
-    { geId: GameEvents.turn, sId: STATES.TURN },
-    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
-    { geId: GameEvents.fall, sId: STATES.N_FALL },
+    { geId: GAME_EVENTS.MOVE_GE, sId: STATES.START_WALK_S },
+    { geId: GAME_EVENTS.MOVE_FAST_GE, sId: STATES.START_WALK_S },
+    { geId: GAME_EVENTS.TURN_GE, sId: STATES.TURN_S },
+    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
+    { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
   ]);
 
   const condtions: Array<condition> = [IdleToDashturn, IdleToTurn];
@@ -616,9 +673,9 @@ function InitIdleTranslations() {
 function InitStartWalkTranslations(): ActionStateMappings {
   const startWalkTranslations = new ActionStateMappings();
   startWalkTranslations._setMappings([
-    { geId: GameEvents.idle, sId: STATES.IDLE },
-    { geId: GameEvents.moveFast, sId: STATES.DASH },
-    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
+    { geId: GAME_EVENTS.IDLE_GE, sId: STATES.IDLE_S },
+    { geId: GAME_EVENTS.MOVE_FAST_GE, sId: STATES.DASH_S },
+    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
   ]);
 
   const conditions: Array<condition> = [WalkToTurn];
@@ -635,7 +692,7 @@ function InitStartWalkTranslations(): ActionStateMappings {
 function InitTurnTranslations(): ActionStateMappings {
   const turnTranslations = new ActionStateMappings();
   turnTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
+    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
   ]);
 
   const defaultConditions: Array<condition> = [TurnDefaultWalk, defaultIdle];
@@ -648,8 +705,8 @@ function InitTurnTranslations(): ActionStateMappings {
 function InitWalkTranslations(): ActionStateMappings {
   const walkTranslations = new ActionStateMappings();
   walkTranslations._setMappings([
-    { geId: GameEvents.idle, sId: STATES.IDLE },
-    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
+    { geId: GAME_EVENTS.IDLE_GE, sId: STATES.IDLE_S },
+    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
   ]);
 
   const conditions: Array<condition> = [WalkToTurn];
@@ -662,8 +719,8 @@ function InitWalkTranslations(): ActionStateMappings {
 function InitDashTranslations(): ActionStateMappings {
   const dashTranslations = new ActionStateMappings();
   dashTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
-    { geId: GameEvents.fall, sId: STATES.N_FALL },
+    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
+    { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
   ]);
 
   const conditions: Array<condition> = [DashToTurn];
@@ -680,7 +737,7 @@ function InitDashTranslations(): ActionStateMappings {
 function InitDashTrunTranslations(): ActionStateMappings {
   const dashTrunTranslations = new ActionStateMappings();
   dashTrunTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
+    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
   ]);
 
   dashTrunTranslations._setDefault([defaultDash]);
@@ -691,8 +748,8 @@ function InitDashTrunTranslations(): ActionStateMappings {
 function InitStopDashTranslations(): ActionStateMappings {
   const stopDashTranslations = new ActionStateMappings();
   stopDashTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
-    { geId: GameEvents.fall, sId: STATES.N_FALL },
+    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
+    { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
   ]);
 
   stopDashTranslations._setDefault([defaultIdle]);
@@ -703,9 +760,9 @@ function InitStopDashTranslations(): ActionStateMappings {
 function InitRunTranslations(): ActionStateMappings {
   const runTranslations = new ActionStateMappings();
   runTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
-    { geId: GameEvents.idle, sId: STATES.STOP_RUN },
-    { geId: GameEvents.fall, sId: STATES.N_FALL },
+    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
+    { geId: GAME_EVENTS.IDLE_GE, sId: STATES.STOP_RUN_S },
+    { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
   ]);
 
   const conditions: Array<condition> = [RunToTurn];
@@ -718,7 +775,7 @@ function InitRunTranslations(): ActionStateMappings {
 function InitRunTurnTranslations(): ActionStateMappings {
   const runTurnTranslations = new ActionStateMappings();
   runTurnTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
+    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
   ]);
 
   runTurnTranslations._setDefault([defaultRun]);
@@ -729,10 +786,10 @@ function InitRunTurnTranslations(): ActionStateMappings {
 function InitStopRunTranslations(): ActionStateMappings {
   const stopRunTranslations = new ActionStateMappings();
   stopRunTranslations._setMappings([
-    { geId: GameEvents.moveFast, sId: STATES.DASH },
-    { geId: GameEvents.jump, sId: STATES.JUMP_SQUAT },
-    { geId: GameEvents.fall, sId: STATES.N_FALL },
-    { geId: GameEvents.turn, sId: STATES.RUN_TURN },
+    { geId: GAME_EVENTS.MOVE_FAST_GE, sId: STATES.DASH_S },
+    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
+    { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
+    { geId: GAME_EVENTS.TURN_GE, sId: STATES.RUN_TURN_S },
   ]);
 
   const conditions: Array<condition> = [RunStopToTurn];
@@ -754,7 +811,7 @@ function InitJumpSquatTranslations(): ActionStateMappings {
 
 function InitJumpTranslations(): ActionStateMappings {
   const jumpTranslations = new ActionStateMappings();
-  const condtions: Array<condition> = [ToJump];
+  const condtions: Array<condition> = [ToJump, ToAirDodge];
 
   jumpTranslations._setConditions(condtions);
   jumpTranslations._setDefault([defaultNFall]);
@@ -765,13 +822,13 @@ function InitJumpTranslations(): ActionStateMappings {
 function InitNFallTranslations(): ActionStateMappings {
   const nFallTranslations = new ActionStateMappings();
   nFallTranslations._setMappings([
-    { geId: GameEvents.down, sId: STATES.F_FALL },
-    { geId: GameEvents.land, sId: STATES.LAND },
-    { geId: GameEvents.softLand, sId: STATES.SOFT_LAND },
-    { geId: GameEvents.ledgeGrab, sId: STATES.LEDGE_GRAB },
+    { geId: GAME_EVENTS.DOWN_GE, sId: STATES.F_FALL_S },
+    { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
+    { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.SOFT_LAND_S },
+    { geId: GAME_EVENTS.LEDGE_GRAB_GE, sId: STATES.LEDGE_GRAB_S },
   ]);
 
-  const condtions: Array<condition> = [ToJump];
+  const condtions: Array<condition> = [ToJump, ToAirDodge];
 
   nFallTranslations._setConditions(condtions);
 
@@ -781,9 +838,9 @@ function InitNFallTranslations(): ActionStateMappings {
 function InitFastFallTranslations(): ActionStateMappings {
   const ffTranslations = new ActionStateMappings();
   ffTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMP },
-    { geId: GameEvents.land, sId: STATES.LAND },
-    { geId: GameEvents.softLand, sId: STATES.SOFT_LAND },
+    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_S },
+    { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
+    { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.SOFT_LAND_S },
   ]);
 
   return ffTranslations;
@@ -808,22 +865,44 @@ function InitSoftLandTranslations(): ActionStateMappings {
 function InitLedgeGrabTranslations(): ActionStateMappings {
   const LedgeGrabTranslations = new ActionStateMappings();
   LedgeGrabTranslations._setMappings([
-    { geId: GameEvents.jump, sId: STATES.JUMP },
+    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_S },
   ]);
 
   return LedgeGrabTranslations;
+}
+
+function InitAirDodgeTranslations(): ActionStateMappings {
+  const airDodgeTranslations = new ActionStateMappings();
+  airDodgeTranslations._setMappings([
+    { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
+    { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.LAND_S },
+  ]);
+  airDodgeTranslations._setDefault([defaultHelpess]);
+
+  return airDodgeTranslations;
+}
+
+function InitHelpessTranslations(): ActionStateMappings {
+  const helpessTranslations = new ActionStateMappings();
+  helpessTranslations._setMappings([
+    { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
+    { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.LAND_S },
+    { geId: GAME_EVENTS.LEDGE_GRAB_GE, sId: STATES.LEDGE_GRAB_S },
+  ]);
+
+  return helpessTranslations;
 }
 
 // STATES ==================================================================
 
 export const Idle = {
   StateName: 'IDLE',
-  StateId: STATES.IDLE,
+  StateId: STATES.IDLE_S,
 } as FSMState;
 
 export const StartWalk: FSMState = {
   StateName: 'START_WALK',
-  StateId: STATES.START_WALK,
+  StateId: STATES.START_WALK_S,
   OnEnter: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     const axis = ia?.LXAxsis ?? 0;
@@ -843,34 +922,26 @@ export const StartWalk: FSMState = {
       PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
     }
   },
-  OnExit: (p: Player) => {
-    console.log('Exit Start Walk');
-  },
+  OnExit: (p: Player) => {},
 };
 
 export const Walk: FSMState = {
   StateName: 'WALK',
-  StateId: STATES.WALK,
-  OnEnter: (p: Player) => {
-    console.log('Walk');
-  },
+  StateId: STATES.WALK_S,
+  OnEnter: (p: Player) => {},
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     if (ia != undefined) {
       PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
     }
   },
-  OnExit: (p: Player) => {
-    console.log('Exit Walk');
-  },
+  OnExit: (p: Player) => {},
 };
 
 export const Turn: FSMState = {
   StateName: 'TURN',
-  StateId: STATES.TURN,
-  OnEnter: (p: Player) => {
-    console.log('Turn');
-  },
+  StateId: STATES.TURN_S,
+  OnEnter: (p: Player) => {},
   OnExit: (p: Player) => {
     p.Flags.ChangeDirections();
   },
@@ -878,9 +949,8 @@ export const Turn: FSMState = {
 
 export const Dash: FSMState = {
   StateName: 'DASH',
-  StateId: STATES.DASH,
+  StateId: STATES.DASH_S,
   OnEnter: (p: Player) => {
-    console.log('Dash');
     const flags = p.Flags;
     const MaxDashSpeed = p.Speeds.MaxDashSpeed;
     const impulse = flags.IsFacingRight()
@@ -896,88 +966,67 @@ export const Dash: FSMState = {
     const impulse = (ia?.LXAxsis ?? 0) * dashSpeedMultiplier;
     p.Velocity.AddClampedXImpulse(speedsComp.MaxDashSpeed, impulse);
   },
-  OnExit: (p: Player) => {
-    console.log('Exit Dash');
-  },
+  OnExit: (p: Player) => {},
 };
 
 export const DashTurn: FSMState = {
   StateName: 'DASH_TURN',
-  StateId: STATES.DASH_TURN,
+  StateId: STATES.DASH_TURN_S,
   OnEnter: (p: Player) => {
-    console.log('Dash Turn');
     p.Velocity.X = 0;
     p.Flags.ChangeDirections();
   },
-  OnUpdate() {
-    console.log('Dash Turn Update');
-  },
-  OnExit: (p: Player) => {
-    console.log('Exit Dash Turn');
-  },
+  OnUpdate() {},
+  OnExit: (p: Player) => {},
 };
 
 export const Run: FSMState = {
   StateName: 'RUN',
-  StateId: STATES.RUN,
-  OnEnter: (p: Player) => {
-    console.log('Run');
-  },
+  StateId: STATES.RUN_S,
+  OnEnter: (p: Player) => {},
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     if (ia != undefined) {
       PlayerHelpers.AddRunImpulseToPlayer(p, ia.LXAxsis);
     }
   },
-  OnExit: (p: Player) => {
-    console.log('Exit Run');
-  },
+  OnExit: (p: Player) => {},
 };
 
 export const RunTurn: FSMState = {
   StateName: 'RUN_TURN',
-  StateId: STATES.RUN_TURN,
-  OnEnter: (p: Player) => {
-    console.log('Run Turn');
-  },
+  StateId: STATES.RUN_TURN_S,
+  OnEnter: (p: Player) => {},
   OnUpdate: (p: Player) => {},
   OnExit: (p: Player) => {
     p.Flags.ChangeDirections();
-    console.log('Exit Run Turn');
   },
 };
 
 export const RunStop: FSMState = {
   StateName: 'RUN_STOP',
-  StateId: STATES.STOP_RUN,
-  OnEnter: (p: Player) => {
-    console.log('Run Stop');
-  },
-  OnExit: (p: Player) => {
-    console.log('Exit Run Stop');
-  },
+  StateId: STATES.STOP_RUN_S,
+  OnEnter: (p: Player) => {},
+  OnExit: (p: Player) => {},
 };
 
 export const JumpSquat: FSMState = {
   StateName: 'JUMPSQUAT',
-  StateId: STATES.JUMP_SQUAT,
+  StateId: STATES.JUMP_SQUAT_S,
   OnEnter: (p: Player) => {
     console.log('Jump Squat');
   },
-  OnExit: (p: Player) => {
-    console.log('Exit Jump Squat');
-  },
+  OnExit: (p: Player) => {},
 };
 
 export const Jump: FSMState = {
   StateName: 'JUMP',
-  StateId: STATES.JUMP,
+  StateId: STATES.JUMP_S,
   OnEnter: (p: Player) => {
     const jumpComp = p.Jump;
     if (jumpComp.HasJumps()) {
       PlayerHelpers.AddToPlayerYPosition(p, -0.5);
       p.Velocity.Y = -jumpComp.JumpVelocity;
-      console.log('Jump');
       jumpComp.IncrementJumps();
     }
   },
@@ -989,14 +1038,12 @@ export const Jump: FSMState = {
       (inputAction?.LXAxsis ?? 0) * speedsComp.ArielVelocityMultiplier
     );
   },
-  OnExit: (p: Player) => {
-    console.log('Exit Jump');
-  },
+  OnExit: (p: Player) => {},
 };
 
 export const NeutralFall: FSMState = {
   StateName: 'NFALL',
-  StateId: STATES.N_FALL,
+  StateId: STATES.N_FALL_S,
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     const speedsComp = p.Speeds;
@@ -1009,7 +1056,7 @@ export const NeutralFall: FSMState = {
 
 export const FastFall: FSMState = {
   StateName: 'FastFall',
-  StateId: STATES.F_FALL,
+  StateId: STATES.F_FALL_S,
   OnEnter: (p: Player) => {
     p.Flags.FastFallOn();
   },
@@ -1020,7 +1067,7 @@ export const FastFall: FSMState = {
 
 export const Land: FSMState = {
   StateName: 'Land',
-  StateId: STATES.LAND,
+  StateId: STATES.LAND_S,
   OnEnter: (p: Player) => {
     p.Jump.ResetJumps();
     p.Velocity.Y = 0;
@@ -1029,7 +1076,7 @@ export const Land: FSMState = {
 
 export const SoftLand: FSMState = {
   StateName: 'SoftLand',
-  StateId: STATES.SOFT_LAND,
+  StateId: STATES.SOFT_LAND_S,
   OnEnter: (p: Player) => {
     p.Jump.ResetJumps();
     p.Velocity.Y = 0;
@@ -1038,10 +1085,39 @@ export const SoftLand: FSMState = {
 
 export const LedgeGrab: FSMState = {
   StateName: 'LedgeGrab',
-  StateId: STATES.LEDGE_GRAB,
+  StateId: STATES.LEDGE_GRAB_S,
   OnEnter: (p: Player) => {
     const jumpComp = p.Jump;
     jumpComp.ResetJumps();
     jumpComp.IncrementJumps();
   },
+};
+
+export const AirDodge: FSMState = {
+  StateName: 'AirDodge',
+  StateId: STATES.AIR_DODGE_S,
+  OnEnter: (p, w) => {
+    const pVel = p.Velocity;
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
+    const angle = Math.atan2(ia?.LYAxsis, ia?.LXAxsis);
+    const speed = p.Speeds.AirDogeSpeed;
+    pVel.X = Math.cos(angle) * speed;
+    pVel.Y = -Math.sin(angle) * speed;
+  },
+  OnUpdate: (p, world) => {
+    const frameLength = p.StateFrameLengths.GetFrameLengthOrUndefined(
+      STATES.AIR_DODGE_S
+    )!;
+    const currentFrameForState = p.FSMInfo.CurrentStateFrame;
+    const normalizedTime = Math.min(currentFrameForState / frameLength, 1);
+    const ease = EaseIn(normalizedTime);
+    const pVel = p.Velocity;
+    pVel.X *= 1 - ease;
+    pVel.Y *= 1 - ease;
+  },
+};
+
+export const Helpess: FSMState = {
+  StateName: 'Helpess',
+  StateId: STATES.HELPESS_S,
 };

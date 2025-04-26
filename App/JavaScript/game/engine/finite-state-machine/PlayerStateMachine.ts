@@ -3,6 +3,8 @@ import { World } from '../world/world';
 import { InputAction } from '../../loops/Input';
 import {
   ActionStateMappings,
+  AIR_DODGE_RELATIONS,
+  AirDodge,
   Dash,
   DASH_RELATIONS,
   DASH_TURN_RELATIONS,
@@ -10,6 +12,8 @@ import {
   FastFall,
   FFALL_RELATIONS,
   gameEventId,
+  Helpess,
+  HELPESS_RELATIONS,
   Idle,
   IDLE_STATE_RELATIONS,
   Jump,
@@ -99,6 +103,14 @@ export class StateMachine {
       LEDGE_GRAB_RELATIONS.stateId,
       LEDGE_GRAB_RELATIONS.mappings
     );
+    this.stateMappings.set(
+      AIR_DODGE_RELATIONS.stateId,
+      AIR_DODGE_RELATIONS.mappings
+    );
+    this.stateMappings.set(
+      HELPESS_RELATIONS.stateId,
+      HELPESS_RELATIONS.mappings
+    );
     this.states.set(Idle.StateId, Idle);
     this.states.set(StartWalk.StateId, StartWalk);
     this.states.set(Turn.StateId, Turn);
@@ -115,6 +127,8 @@ export class StateMachine {
     this.states.set(Land.StateId, Land);
     this.states.set(SoftLand.StateId, SoftLand);
     this.states.set(LedgeGrab.StateId, LedgeGrab);
+    this.states.set(AirDodge.StateId, AirDodge);
+    this.states.set(Helpess.StateId, Helpess);
   }
 
   public SetInitialState(stateId: stateId) {
