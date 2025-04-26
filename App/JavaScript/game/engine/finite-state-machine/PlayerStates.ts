@@ -745,18 +745,6 @@ function InitDashTrunTranslations(): ActionStateMappings {
   return dashTrunTranslations;
 }
 
-function InitStopDashTranslations(): ActionStateMappings {
-  const stopDashTranslations = new ActionStateMappings();
-  stopDashTranslations._setMappings([
-    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
-    { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
-  ]);
-
-  stopDashTranslations._setDefault([defaultIdle]);
-
-  return stopDashTranslations;
-}
-
 function InitRunTranslations(): ActionStateMappings {
   const runTranslations = new ActionStateMappings();
   runTranslations._setMappings([
@@ -1104,7 +1092,7 @@ export const AirDodge: FSMState = {
     pVel.X = Math.cos(angle) * speed;
     pVel.Y = -Math.sin(angle) * speed;
   },
-  OnUpdate: (p, world) => {
+  OnUpdate: (p, w) => {
     const frameLength = p.StateFrameLengths.GetFrameLengthOrUndefined(
       STATES.AIR_DODGE_S
     )!;

@@ -97,10 +97,17 @@ function cross(o: FlatVec, a: FlatVec, b: FlatVec): number {
   return (a.X - o.X) * (b.Y - o.Y) - (a.Y - o.Y) * (b.X - o.X);
 }
 
+function comparePointsXY(a: FlatVec, b: FlatVec): number {
+  if (a.X === b.X) {
+    return a.Y - b.Y;
+  }
+  return a.X - b.X;
+}
+
 const lower: Array<FlatVec> = [];
 const upper: Array<FlatVec> = [];
 
-export function createConvexHull(points: Array<FlatVec>): Array<FlatVec> {
+export function CreateConvexHull(points: Array<FlatVec>): Array<FlatVec> {
   if (points.length < 3) {
     // A convex hull is not possible with fewer than 3 points
     lower.length = 0; // Clear the lower array
@@ -111,7 +118,7 @@ export function createConvexHull(points: Array<FlatVec>): Array<FlatVec> {
   }
 
   // Sort points lexicographically (by X, then by Y)
-  points.sort((a, b) => (a.X === b.X ? a.Y - b.Y : a.X - b.X));
+  points.sort(comparePointsXY);
 
   // Clear the lower and upper arrays
   lower.length = 0;

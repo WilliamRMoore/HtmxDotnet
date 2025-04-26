@@ -1,7 +1,7 @@
 import { Idle, stateId, STATES } from '../finite-state-machine/PlayerStates';
 import { FSMState } from '../finite-state-machine/PlayerStateMachine';
 import {
-  createConvexHull,
+  CreateConvexHull,
   FlatVec,
   LineSegmentIntersection,
 } from '../physics/vector';
@@ -9,6 +9,24 @@ import { FillArrayWithFlatVec } from '../utils';
 import { Player } from './playerOrchestrator';
 import { Clamp } from '../utils';
 import { Circle } from '../physics/circle';
+
+/**
+ * This file contains everything pertaining to player components.
+ *
+ * Player Componenets: Components are the building blocks for game features.
+ * Entities (Player, in this case) are componesed of components like these.
+ *
+ * Guide Line:
+ * 1. Components should not contain other components.
+ * 2. Components should not reference state outside of themselves.
+ * 3. Components should be atomic and behave similar to primitives.
+ * 4. Components should try to make as much state private as possible.
+ *
+ * ComponentHistory:
+ * ComponentHistory is used to get a snap shot of each components state once per frame.
+ * Every component that is stateful and mutative needs to implement the IHistoryEnabled Interface.
+ * This is necessary for rollback.
+ */
 
 class StaticHistory {
   public ledgDetecorHeight: number = 0;
@@ -398,6 +416,7 @@ export type ECBSnapShot = {
   Height: number;
   Width: number;
 };
+
 export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   private readonly sesnsorDepth: number = 0.2;
   private x: number = 0;
@@ -425,7 +444,7 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   }
 
   public GetHull(): FlatVec[] {
-    return createConvexHull(this.allVerts);
+    return CreateConvexHull(this.allVerts);
   }
 
   public UpdatePreviousECB(): void {
@@ -760,6 +779,7 @@ export type LedgeDetectorSnapShot = {
   middleX: number;
   middleY: number;
 };
+
 export class LedgeDetectorComponent
   implements IHistoryEnabled<LedgeDetectorSnapShot>
 {

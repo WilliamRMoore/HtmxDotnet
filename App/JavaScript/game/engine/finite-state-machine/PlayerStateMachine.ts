@@ -63,72 +63,45 @@ export class StateMachine {
     this.player = p;
     this.world = world;
     this.player.FSMInfo.SetCurrentState(Idle);
-    this.stateMappings.set(
-      IDLE_STATE_RELATIONS.stateId,
-      IDLE_STATE_RELATIONS.mappings
-    );
-    this.stateMappings.set(
-      START_WALK_RELATIONS.stateId,
-      START_WALK_RELATIONS.mappings
-    );
-    this.stateMappings.set(TURN_RELATIONS.stateId, TURN_RELATIONS.mappings);
-    this.stateMappings.set(WALK_RELATIONS.stateId, WALK_RELATIONS.mappings);
-    this.stateMappings.set(DASH_RELATIONS.stateId, DASH_RELATIONS.mappings);
-    this.stateMappings.set(
-      DASH_TURN_RELATIONS.stateId,
-      DASH_TURN_RELATIONS.mappings
-    );
-    this.stateMappings.set(RUN_RELATIONS.stateId, RUN_RELATIONS.mappings);
-    this.stateMappings.set(
-      RUN_TURN_RELATIONS.stateId,
-      RUN_TURN_RELATIONS.mappings
-    );
-    this.stateMappings.set(
-      STOP_RUN_RELATIONS.stateId,
-      STOP_RUN_RELATIONS.mappings
-    );
-    this.stateMappings.set(
-      JUMP_SQUAT_RELATIONS.stateId,
-      JUMP_SQUAT_RELATIONS.mappings
-    );
-    this.stateMappings.set(JUMP_RELATIONS.stateId, JUMP_RELATIONS.mappings);
-    this.stateMappings.set(NFALL_RELATIONS.stateId, NFALL_RELATIONS.mappings);
-    this.stateMappings.set(FFALL_RELATIONS.stateId, FFALL_RELATIONS.mappings);
-    this.stateMappings.set(LAND_RELATIONS.stateId, LAND_RELATIONS.mappings);
-    this.stateMappings.set(
-      SOFT_LAND_RELATIONS.stateId,
-      SOFT_LAND_RELATIONS.mappings
-    );
-    this.stateMappings.set(
-      LEDGE_GRAB_RELATIONS.stateId,
-      LEDGE_GRAB_RELATIONS.mappings
-    );
-    this.stateMappings.set(
-      AIR_DODGE_RELATIONS.stateId,
-      AIR_DODGE_RELATIONS.mappings
-    );
-    this.stateMappings.set(
-      HELPESS_RELATIONS.stateId,
-      HELPESS_RELATIONS.mappings
-    );
-    this.states.set(Idle.StateId, Idle);
-    this.states.set(StartWalk.StateId, StartWalk);
-    this.states.set(Turn.StateId, Turn);
-    this.states.set(Walk.StateId, Walk);
-    this.states.set(Run.StateId, Run);
-    this.states.set(RunTurn.StateId, RunTurn);
-    this.states.set(RunStop.StateId, RunStop);
-    this.states.set(Dash.StateId, Dash);
-    this.states.set(DashTurn.StateId, DashTurn);
-    this.states.set(JumpSquat.StateId, JumpSquat);
-    this.states.set(Jump.StateId, Jump);
-    this.states.set(NeutralFall.StateId, NeutralFall);
-    this.states.set(FastFall.StateId, FastFall);
-    this.states.set(Land.StateId, Land);
-    this.states.set(SoftLand.StateId, SoftLand);
-    this.states.set(LedgeGrab.StateId, LedgeGrab);
-    this.states.set(AirDodge.StateId, AirDodge);
-    this.states.set(Helpess.StateId, Helpess);
+    this.stateMappings
+      .set(IDLE_STATE_RELATIONS.stateId, IDLE_STATE_RELATIONS.mappings)
+      .set(START_WALK_RELATIONS.stateId, START_WALK_RELATIONS.mappings)
+      .set(TURN_RELATIONS.stateId, TURN_RELATIONS.mappings)
+      .set(WALK_RELATIONS.stateId, WALK_RELATIONS.mappings)
+      .set(DASH_RELATIONS.stateId, DASH_RELATIONS.mappings)
+      .set(DASH_TURN_RELATIONS.stateId, DASH_TURN_RELATIONS.mappings)
+      .set(RUN_RELATIONS.stateId, RUN_RELATIONS.mappings)
+      .set(RUN_TURN_RELATIONS.stateId, RUN_TURN_RELATIONS.mappings)
+      .set(STOP_RUN_RELATIONS.stateId, STOP_RUN_RELATIONS.mappings)
+      .set(JUMP_SQUAT_RELATIONS.stateId, JUMP_SQUAT_RELATIONS.mappings)
+      .set(JUMP_RELATIONS.stateId, JUMP_RELATIONS.mappings)
+      .set(NFALL_RELATIONS.stateId, NFALL_RELATIONS.mappings)
+      .set(FFALL_RELATIONS.stateId, FFALL_RELATIONS.mappings)
+      .set(LAND_RELATIONS.stateId, LAND_RELATIONS.mappings)
+      .set(SOFT_LAND_RELATIONS.stateId, SOFT_LAND_RELATIONS.mappings)
+      .set(LEDGE_GRAB_RELATIONS.stateId, LEDGE_GRAB_RELATIONS.mappings)
+      .set(AIR_DODGE_RELATIONS.stateId, AIR_DODGE_RELATIONS.mappings)
+      .set(HELPESS_RELATIONS.stateId, HELPESS_RELATIONS.mappings);
+
+    this.states
+      .set(Idle.StateId, Idle)
+      .set(StartWalk.StateId, StartWalk)
+      .set(Turn.StateId, Turn)
+      .set(Walk.StateId, Walk)
+      .set(Run.StateId, Run)
+      .set(RunTurn.StateId, RunTurn)
+      .set(RunStop.StateId, RunStop)
+      .set(Dash.StateId, Dash)
+      .set(DashTurn.StateId, DashTurn)
+      .set(JumpSquat.StateId, JumpSquat)
+      .set(Jump.StateId, Jump)
+      .set(NeutralFall.StateId, NeutralFall)
+      .set(FastFall.StateId, FastFall)
+      .set(Land.StateId, Land)
+      .set(SoftLand.StateId, SoftLand)
+      .set(LedgeGrab.StateId, LedgeGrab)
+      .set(AirDodge.StateId, AirDodge)
+      .set(Helpess.StateId, Helpess);
   }
 
   public SetInitialState(stateId: stateId) {
@@ -314,7 +287,7 @@ export class StateMachine {
     const fsmInfo = this.player.FSMInfo;
     const fl = this.player.StateFrameLengths.GetFrameLengthOrUndefined(
       fsmInfo.CurrentState.StateId
-    ); //fsmInfo.CurrentState.FrameLength;
+    );
 
     if (fl === undefined) {
       return false;
