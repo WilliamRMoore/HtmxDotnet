@@ -239,6 +239,87 @@ export function LedgeGrabDetection(w: World) {
   }
 }
 
+export function PlayerCollisionDetection(world: World) {
+  const playerCount = world.PlayerCount;
+  if (playerCount < 2) {
+    return;
+  }
+
+  for (
+    let playerIndexOuter = 0;
+    playerIndexOuter < playerCount;
+    playerIndexOuter++
+  ) {
+    const checkPlayer = world.GetPlayer(playerIndexOuter)!;
+
+    if (checkPlayer.FSMInfo.CurrentState.StateId == STATES.LEDGE_GRAB_S) {
+      continue;
+    }
+
+    const vecPool = world.VecPool;
+    const colResPool = world.ColResPool;
+    const projResPool = world.ProjResPool;
+
+    for (
+      let playerIndexInner = playerIndexOuter + 1;
+      playerIndexInner < playerCount;
+      playerIndexInner++
+    ) {
+      if (playerIndexInner == playerIndexOuter) {
+        continue;
+      }
+
+      const otherPlayer = world.GetPlayer(playerIndexInner)!;
+      const checkPlayerEcb = checkPlayer.ECB.GetActiveVerts();
+      const otherPlayerEcb = otherPlayer.ECB.GetActiveVerts();
+      const collision = IntersectsPolygons(
+        checkPlayerEcb,
+        otherPlayerEcb,
+        vecPool,
+        colResPool,
+        projResPool
+      );
+
+      if (collision.Collision) {
+        //const dpeth = collision.Depth;
+        const checkPlayerPos = checkPlayer.Postion;
+        const otherPlayerPos = otherPlayer.Postion;
+        const checkPlayerX = checkPlayerPos.X;
+        const checkPlayerY = checkPlayerPos.Y;
+        const otherPlayerX = otherPlayerPos.X;
+        const otherPlayerY = otherPlayerPos.Y;
+
+        const moveX = 1.5; //(1 * dpeth) / 60;
+
+        if (checkPlayerX >= otherPlayerX) {
+          PlayerHelpers.SetPlayerPosition(
+            checkPlayer,
+            checkPlayerX + moveX / 2,
+            checkPlayerY
+          );
+          PlayerHelpers.SetPlayerPosition(
+            otherPlayer,
+            otherPlayerX - moveX / 2,
+            otherPlayerY
+          );
+          continue;
+        }
+
+        PlayerHelpers.SetPlayerPosition(
+          checkPlayer,
+          checkPlayerX - moveX / 2,
+          checkPlayerY
+        );
+        PlayerHelpers.SetPlayerPosition(
+          otherPlayer,
+          otherPlayerX + moveX / 2,
+          otherPlayerY
+        );
+      }
+    }
+  }
+}
+
 export function Gravity(world: World) {
   const playerCount = world.PlayerCount;
   const stage = world.Stage!;

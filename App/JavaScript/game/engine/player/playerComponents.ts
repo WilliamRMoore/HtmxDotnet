@@ -447,6 +447,10 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     return CreateConvexHull(this.allVerts);
   }
 
+  public GetActiveVerts(): FlatVec[] {
+    return this.curVerts;
+  }
+
   public UpdatePreviousECB(): void {
     this.prevX = this.x;
     this.prevY = this.y;

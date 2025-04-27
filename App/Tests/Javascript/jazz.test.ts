@@ -27,17 +27,17 @@ test('test', () => {
     Start: false,
     Select: false,
   };
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
 
   const groundedFunc = PlayerHelpers.IsPlayerGroundedOnStage;
@@ -66,26 +66,26 @@ test('test fast fall to ground', () => {
     Start: false,
     Select: false,
   };
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
 
   ia.Action = GAME_EVENTS.DOWN_GE;
 
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
-  engine.UpdateLocalInputForCurrentFrame(ia, 0);
+  engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
 
   const groundedFunc = PlayerHelpers.IsPlayerGroundedOnStage;

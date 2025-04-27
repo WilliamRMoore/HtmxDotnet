@@ -37,6 +37,12 @@ export class PooledVector implements IPooledVector, IPooledObject {
     return this;
   }
 
+  public AddNumber(x: number, y: number): PooledVector {
+    this.x += x;
+    this.y += y;
+    return this;
+  }
+
   public Subtract(vec: PooledVector): PooledVector {
     this.x -= vec.X;
     this.y -= vec.Y;

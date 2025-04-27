@@ -1,11 +1,13 @@
 import { InputAction } from '../loops/Input';
-import { Player } from './player/playerOrchestrator';
+import { FlatVec } from './physics/vector';
+import { Player, PlayerHelpers } from './player/playerOrchestrator';
 import { defaultStage } from './stage/stageComponents';
 import {
   ApplyVelocty,
   Gravity,
   LedgeGrabDetection,
   OutOfBoundsCheck,
+  PlayerCollisionDetection,
   PlayerInput,
   RecordHistory,
   StageCollisionDetection,
@@ -14,9 +16,9 @@ import { World } from './world/world';
 
 export interface IJazz {
   get World(): World | undefined;
-  Init(numberOfPlayers: number): void;
+  Init(numberOfPlayers: number, positions: Array<FlatVec>): void;
   Tick(): void;
-  UpdateLocalInputForCurrentFrame(ia: InputAction, pIndex: number): void;
+  UpdateInputForCurrentFrame(ia: InputAction, pIndex: number): void;
 }
 
 export class Jazz implements IJazz {
@@ -30,10 +32,12 @@ export class Jazz implements IJazz {
     return this.world;
   }
 
-  public Init(numberOfPlayers: number): void {
+  public Init(numberOfPlayers: number, positions: Array<FlatVec>): void {
     for (let i = 0; i < numberOfPlayers; i++) {
+      const pos = positions[i];
       const p = new Player(i);
       this.world.SetPlayer(p);
+      PlayerHelpers.SetPlayerInitialPosition(p, pos.X, pos.Y);
     }
     const s = defaultStage();
     this.world.SetStage(s);
@@ -54,7 +58,7 @@ export class Jazz implements IJazz {
     world.localFrame++;
   }
 
-  public UpdateLocalInputForCurrentFrame(ia: InputAction, pIndex: number) {
+  public UpdateInputForCurrentFrame(ia: InputAction, pIndex: number) {
     this.UpdateLocalInput(pIndex, ia, this.localFrame);
   }
 
@@ -81,6 +85,7 @@ export class Jazz implements IJazz {
     PlayerInput(world);
     Gravity(world);
     ApplyVelocty(world);
+    PlayerCollisionDetection(world);
     LedgeGrabDetection(world);
     StageCollisionDetection(world);
     OutOfBoundsCheck(world);
@@ -106,24 +111,24 @@ export class JazzDebugger implements IJazz {
     this.jazz = new Jazz();
   }
 
-  UpdateLocalInputForCurrentFrame(ia: InputAction, pIndex: number): void {
+  UpdateInputForCurrentFrame(ia: InputAction, pIndex: number): void {
     this.togglePause(ia);
 
     if (this.paused) {
       if (this.advanceOneFrame(ia)) {
         this.advanceFrame = true;
-        this.jazz.UpdateLocalInputForCurrentFrame(ia, pIndex);
+        this.jazz.UpdateInputForCurrentFrame(ia, pIndex);
       }
       this.previousInput = ia;
       return;
     }
 
-    this.jazz.UpdateLocalInputForCurrentFrame(ia, pIndex);
+    this.jazz.UpdateInputForCurrentFrame(ia, pIndex);
     this.previousInput = ia;
   }
 
-  public Init(numberOfPlayers: number): void {
-    this.jazz.Init(numberOfPlayers);
+  public Init(numberOfPlayers: number, positions: Array<FlatVec>): void {
+    this.jazz.Init(numberOfPlayers, positions);
   }
 
   public Tick(): void {

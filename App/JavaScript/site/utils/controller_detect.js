@@ -33,11 +33,13 @@ function GetConnectedGamePads() {
      */
     const gpOptions = new Map();
 
+    let i = 0;
     for (const gp of gamePads)
     {
+        i++;
         if(gp)
         {
-            gpOptions.set(gp.id, gp.index);
+            gpOptions.set(`${gp.id} -${i}`, gp.index);
         }
     }
 
