@@ -59,10 +59,10 @@ export class Jazz implements IJazz {
   }
 
   public UpdateInputForCurrentFrame(ia: InputAction, pIndex: number) {
-    this.UpdateLocalInput(pIndex, ia, this.localFrame);
+    this.UpdateInput(pIndex, ia, this.localFrame);
   }
 
-  private UpdateLocalInput(
+  private UpdateInput(
     pIndex: number,
     inputAction: InputAction,
     frameNumber: number
@@ -80,6 +80,7 @@ export class Jazz implements IJazz {
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
       const player = world.GetPlayer(playerIndex);
       player?.ECB.UpdatePreviousECB();
+      player?.Flags.UpdateTimedFlags();
     }
 
     PlayerInput(world);

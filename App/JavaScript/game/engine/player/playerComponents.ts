@@ -37,6 +37,7 @@ export class ComponentHistory {
   public readonly StaticPlayerHistory = new StaticHistory();
   readonly PositionHistory: Array<FlatVec> = [];
   readonly FsmInfoHistory: Array<FSMInfoSnapShot> = [];
+  readonly PlayerPointsHistory: Array<PlayerPointsSnapShot> = [];
   readonly VelocityHistory: Array<FlatVec> = [];
   readonly FlagsHistory: Array<FlagsSnapShot> = [];
   readonly FrameLengthHistory: Array<StateFrameLengthsSnapShot> = [];
@@ -48,6 +49,7 @@ export class ComponentHistory {
   public SetPlayerToFrame(p: Player, frameNumber: number) {
     p.Postion.SetFromSnapShot(this.PositionHistory[frameNumber]);
     p.FSMInfo.SetFromSnapShot(this.FsmInfoHistory[frameNumber]);
+    p;
     p.Velocity.SetFromSnapShot(this.VelocityHistory[frameNumber]);
     p.Flags.SetFromSnapShot(this.FlagsHistory[frameNumber]);
     p.StateFrameLengths.SetFromSnapShot(this.FrameLengthHistory[frameNumber]);
@@ -353,14 +355,80 @@ export class SpeedsComponent {
   }
 }
 
+type PlayerPointsSnapShot = {
+  damagePoints: number;
+  matchPoints: number;
+};
+
+export class PlayerPointsComponent
+  implements IHistoryEnabled<PlayerPointsSnapShot>
+{
+  private damagePoints: number = 0;
+  private matchPoints: number = 0;
+  private defaultMatchPoints: number;
+
+  public constructor(defaultMatchPoints: number = 4) {
+    this.defaultMatchPoints = defaultMatchPoints;
+  }
+
+  public AddDamage(number: number): void {
+    this.damagePoints += number;
+  }
+
+  public SubtrackDamage(number: number): void {
+    this.damagePoints -= number;
+  }
+
+  public addMatchPoints(number: number): void {
+    this.matchPoints += number;
+  }
+
+  public SubtractMatchPoints(number: number): void {
+    this.matchPoints -= number;
+  }
+
+  public ResetMatchPoints(): void {
+    this.matchPoints = this.defaultMatchPoints;
+  }
+
+  public ResetDamagePoints(): void {
+    this.damagePoints = 0;
+  }
+
+  public SnapShot(): PlayerPointsSnapShot {
+    return {
+      damagePoints: this.damagePoints,
+      matchPoints: this.matchPoints,
+    } as PlayerPointsSnapShot;
+  }
+
+  public SetFromSnapShot(snapShot: PlayerPointsSnapShot): void {
+    this.damagePoints = snapShot.damagePoints;
+    this.matchPoints = snapShot.matchPoints;
+  }
+}
+
+type timedFlag = {
+  frameLength: number;
+  frameNumber: number;
+};
+
 export type FlagsSnapShot = {
   FacingRight: boolean;
   FastFalling: boolean;
+  IntangibleFrameLength: number;
+  IntangibleFrameNumber: number;
 };
 
 export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
   private facingRight: boolean = false;
   private fastFalling: boolean = false;
+  private intangible: timedFlag = { frameLength: 0, frameNumber: 0 };
+
+  public SetIntangible(frameLength: number) {
+    this.intangible.frameLength = frameLength;
+    this.intangible.frameNumber = 0;
+  }
 
   public FaceRight(): void {
     this.facingRight = true;
@@ -390,20 +458,32 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
     return this.fastFalling;
   }
 
+  public IsIntangible(): boolean {
+    return this.intangible.frameLength > this.intangible.frameNumber;
+  }
+
   public ChangeDirections() {
     this.facingRight = !this.facingRight;
+  }
+
+  public UpdateTimedFlags(): void {
+    this.intangible.frameNumber++;
   }
 
   public SnapShot(): FlagsSnapShot {
     return {
       FacingRight: this.facingRight,
       FastFalling: this.fastFalling,
+      IntangibleFrameLength: this.intangible.frameLength,
+      IntangibleFrameNumber: this.intangible.frameNumber,
     } as FlagsSnapShot;
   }
 
   public SetFromSnapShot(snapShot: FlagsSnapShot): void {
     this.fastFalling = snapShot.FastFalling;
     this.facingRight = snapShot.FacingRight;
+    this.intangible.frameLength = snapShot.IntangibleFrameLength;
+    this.intangible.frameNumber = snapShot.IntangibleFrameNumber;
   }
 }
 

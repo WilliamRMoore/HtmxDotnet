@@ -37,8 +37,8 @@ export function StageCollisionDetection(world: World): void {
         CurrentPlayerStateId === STATES.STOP_RUN_S
       ) {
         const stageGround = s.StageVerticies.GetGround();
-        const leftStagePoint = stageGround[0]; //s.StageVerticies.GetGround()[0];
-        const rightStagePoint = stageGround[1]; //s.StageVerticies.GetGround()[1];
+        const leftStagePoint = stageGround[0];
+        const rightStagePoint = stageGround[1];
         const flags = p.Flags;
         const position = p.Postion;
 
@@ -281,7 +281,6 @@ export function PlayerCollisionDetection(world: World) {
       );
 
       if (collision.Collision) {
-        //const dpeth = collision.Depth;
         const checkPlayerPos = checkPlayer.Postion;
         const otherPlayerPos = otherPlayer.Postion;
         const checkPlayerX = checkPlayerPos.X;
@@ -289,7 +288,7 @@ export function PlayerCollisionDetection(world: World) {
         const otherPlayerX = otherPlayerPos.X;
         const otherPlayerY = otherPlayerPos.Y;
 
-        const moveX = 1.5; //(1 * dpeth) / 60;
+        const moveX = 1.5;
 
         if (checkPlayerX >= otherPlayerX) {
           PlayerHelpers.SetPlayerPosition(
@@ -458,6 +457,7 @@ export function RecordHistory(w: World) {
     const history = w.GetComponentHistory(playerIndex)!;
     history.PositionHistory[frameNumber] = p.Postion.SnapShot();
     history.FsmInfoHistory[frameNumber] = p.FSMInfo.SnapShot();
+    history.PlayerPointsHistory[frameNumber] = p.Points.SnapShot();
     history.VelocityHistory[frameNumber] = p.Velocity.SnapShot();
     history.FlagsHistory[frameNumber] = p.Flags.SnapShot();
     history.FrameLengthHistory[frameNumber] = p.StateFrameLengths.SnapShot();

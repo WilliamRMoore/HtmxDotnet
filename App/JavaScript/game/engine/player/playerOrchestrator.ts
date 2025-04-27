@@ -6,6 +6,7 @@ import {
   JumpComponent,
   LedgeDetectorComponent,
   PlayerFlagsComponent,
+  PlayerPointsComponent,
   PositionComponent,
   SpeedsComponent,
   SpeedsComponentBuilder,
@@ -31,6 +32,7 @@ export class Player {
   private readonly position: PositionComponent;
   private readonly velocity: VelocityComponent;
   private readonly flags: PlayerFlagsComponent;
+  private readonly points: PlayerPointsComponent;
   private readonly frameLengths: StateFrameLengthsComponent;
   private readonly speeds: SpeedsComponent;
   private readonly ecb: ECBComponent;
@@ -52,6 +54,7 @@ export class Player {
     this.velocity = new VelocityComponent();
     this.speeds = speedsBuilder.Build();
     this.flags = new PlayerFlagsComponent();
+    this.points = new PlayerPointsComponent();
     this.frameLengths = new StateFrameLengthsComponent();
     this.ecb = new ECBComponent();
     this.hurtCircles = new HurtCircles();
@@ -75,6 +78,10 @@ export class Player {
 
   public get Flags(): PlayerFlagsComponent {
     return this.flags;
+  }
+
+  public get Points(): PlayerPointsComponent {
+    return this.points;
   }
 
   public get StateFrameLengths(): StateFrameLengthsComponent {
