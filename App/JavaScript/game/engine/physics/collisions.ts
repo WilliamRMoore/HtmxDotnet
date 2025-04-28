@@ -68,7 +68,6 @@ export function IntersectsPolygons(
       const res = colResPool.Rent();
       res._setCollisionFalse();
       return res;
-      //return { collision: false, normal: null, depth: null } as collisionResult;
     }
     const axisDepth = Math.min(
       vbProj.Max - vaProj.Min,
@@ -92,7 +91,6 @@ export function IntersectsPolygons(
   const res = colResPool.Rent();
   res._setCollisionTrue(normal.X, normal.Y, depth);
   return res;
-  //return { collision: true, normal, depth } as collisionResult;
 }
 
 // suplimental functions ====================================

@@ -218,7 +218,7 @@ function transcribeInput(input: GamePadInput) {
 }
 
 function setDeadzone(v: number) {
-  const DEADZONE = 0.5;
+  const DEADZONE = 0.3;
 
   if (Math.abs(v) < DEADZONE) {
     v = 0;

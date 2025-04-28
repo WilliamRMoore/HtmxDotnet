@@ -1,4 +1,5 @@
 import { Stage } from '../stage/stageComponents';
+import { CharacterConfig } from '../../character/default';
 import {
   ECBComponent,
   FSMInfoComponent,
@@ -10,11 +11,10 @@ import {
   PositionComponent,
   SpeedsComponent,
   SpeedsComponentBuilder,
-  StateFrameLengthsComponent,
   VelocityComponent,
 } from './playerComponents';
 
-type speedBuilderOptions = (scb: SpeedsComponentBuilder) => void;
+export type speedBuilderOptions = (scb: SpeedsComponentBuilder) => void;
 
 const defaultSpeedsBuilderOptions: speedBuilderOptions = (
   scb: SpeedsComponentBuilder
@@ -33,7 +33,6 @@ export class Player {
   private readonly velocity: VelocityComponent;
   private readonly flags: PlayerFlagsComponent;
   private readonly points: PlayerPointsComponent;
-  private readonly frameLengths: StateFrameLengthsComponent;
   private readonly speeds: SpeedsComponent;
   private readonly ecb: ECBComponent;
   private readonly hurtCircles: HurtCircles;
@@ -42,29 +41,31 @@ export class Player {
   private readonly ledgeDetector: LedgeDetectorComponent;
   public readonly ID: number = 0;
 
-  constructor(
-    Id: number,
-    sbo: speedBuilderOptions = defaultSpeedsBuilderOptions
-  ) {
-    const speedsBuilder = new SpeedsComponentBuilder();
-    sbo(speedsBuilder);
-
+  constructor(Id: number, CharacterConfig: CharacterConfig) {
+    const speedsBuilder = CharacterConfig.SCB;
     this.ID = Id;
     this.position = new PositionComponent();
     this.velocity = new VelocityComponent();
     this.speeds = speedsBuilder.Build();
     this.flags = new PlayerFlagsComponent();
     this.points = new PlayerPointsComponent();
-    this.frameLengths = new StateFrameLengthsComponent();
-    this.ecb = new ECBComponent();
-    this.hurtCircles = new HurtCircles();
-    this.jump = new JumpComponent(18, 2);
+    this.ecb = new ECBComponent(
+      CharacterConfig.ECBHeight,
+      CharacterConfig.ECBWidth,
+      CharacterConfig.ECBOffset
+    );
+    this.hurtCircles = new HurtCircles(CharacterConfig.HurtCircles);
+    this.jump = new JumpComponent(
+      CharacterConfig.JumpVelocity,
+      CharacterConfig.NumberOfJumps
+    );
     this.fsmInfo = new FSMInfoComponent();
     this.ledgeDetector = new LedgeDetectorComponent(
       this.position.X,
       this.position.Y,
-      70,
-      30
+      CharacterConfig.LedgeBoxWidth,
+      CharacterConfig.LedgeBoxHeight,
+      CharacterConfig.ledgeBoxYOffset
     );
   }
 
@@ -82,10 +83,6 @@ export class Player {
 
   public get Points(): PlayerPointsComponent {
     return this.points;
-  }
-
-  public get StateFrameLengths(): StateFrameLengthsComponent {
-    return this.frameLengths;
   }
 
   public get Jump(): JumpComponent {

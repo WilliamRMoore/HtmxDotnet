@@ -26,13 +26,13 @@ export class World {
   private readonly FrameTimes: Array<number> = [];
 
   constructor() {
-    this.VecPool = new Pool<PooledVector>(500, () => new PooledVector());
+    this.VecPool = new Pool<PooledVector>(300, () => new PooledVector());
     this.ColResPool = new Pool<CollisionResult>(
-      200,
+      100,
       () => new CollisionResult()
     );
     this.ProjResPool = new Pool<ProjectionResult>(
-      500,
+      200,
       () => new ProjectionResult()
     );
   }

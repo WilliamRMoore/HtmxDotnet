@@ -40,7 +40,6 @@ export class ComponentHistory {
   readonly PlayerPointsHistory: Array<PlayerPointsSnapShot> = [];
   readonly VelocityHistory: Array<FlatVec> = [];
   readonly FlagsHistory: Array<FlagsSnapShot> = [];
-  readonly FrameLengthHistory: Array<StateFrameLengthsSnapShot> = [];
   readonly EcbHistory: Array<ECBSnapShot> = [];
   readonly HurtCirclesHistory: Array<HurtCirclesSnapShot> = [];
   readonly JumpHistroy: Array<number> = [];
@@ -49,10 +48,8 @@ export class ComponentHistory {
   public SetPlayerToFrame(p: Player, frameNumber: number) {
     p.Postion.SetFromSnapShot(this.PositionHistory[frameNumber]);
     p.FSMInfo.SetFromSnapShot(this.FsmInfoHistory[frameNumber]);
-    p;
     p.Velocity.SetFromSnapShot(this.VelocityHistory[frameNumber]);
     p.Flags.SetFromSnapShot(this.FlagsHistory[frameNumber]);
-    p.StateFrameLengths.SetFromSnapShot(this.FrameLengthHistory[frameNumber]);
     p.ECB.SetFromSnapShot(this.EcbHistory[frameNumber]);
     p.HurtCircles.SetFromSnapShot(this.HurtCirclesHistory[frameNumber]);
     p.LedgeDetector.SetFromSnapShot(this.LedgeDetectorHistory[frameNumber]);
@@ -222,16 +219,18 @@ export class VelocityComponent implements IHistoryEnabled<FlatVec> {
   }
 }
 
-export type StateFrameLengthsSnapShot = {
+export type FSMInfoSnapShot = {
+  State: FSMState;
+  StateFrame: number;
   frameLengths: Map<stateId, number>;
 };
 
-export class StateFrameLengthsComponent
-  implements IHistoryEnabled<StateFrameLengthsSnapShot>
-{
+export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
+  private currentState: FSMState = Idle;
+  private currentStateFrame: number = 0;
   private readonly frameLengths = new Map<stateId, number>();
 
-  constructor() {
+  public constructor() {
     this.frameLengths
       .set(STATES.START_WALK_S, 5)
       .set(STATES.JUMP_SQUAT_S, 5)
@@ -245,32 +244,6 @@ export class StateFrameLengthsComponent
       .set(STATES.LAND_S, 5)
       .set(STATES.SOFT_LAND_S, 1);
   }
-
-  public GetFrameLengthOrUndefined(stateId: stateId): number | undefined {
-    return this.frameLengths.get(stateId);
-  }
-
-  public SnapShot(): StateFrameLengthsSnapShot {
-    return {
-      frameLengths: new Map(this.frameLengths),
-    } as StateFrameLengthsSnapShot;
-  }
-
-  public SetFromSnapShot(snapShot: StateFrameLengthsSnapShot): void {
-    for (const [key, value] of snapShot.frameLengths.entries()) {
-      this.frameLengths.set(key, value);
-    }
-  }
-}
-
-export type FSMInfoSnapShot = {
-  State: FSMState;
-  StateFrame: number;
-};
-
-export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
-  private currentState: FSMState = Idle;
-  private currentStateFrame: number = 0;
 
   public get CurrentStateFrame() {
     return this.currentStateFrame;
@@ -292,16 +265,28 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
     this.currentStateFrame = 0;
   }
 
+  public GetFrameLengthOrUndefined(stateId: stateId): number | undefined {
+    return this.frameLengths.get(stateId);
+  }
+
+  public SetFrameLength(stateId: stateId, frameLength: number): void {
+    this.frameLengths.set(stateId, frameLength);
+  }
+
   public SnapShot(): FSMInfoSnapShot {
     return {
       State: this.currentState,
       StateFrame: this.currentStateFrame,
+      frameLengths: new Map(this.frameLengths),
     } as FSMInfoSnapShot;
   }
 
   public SetFromSnapShot(snapShot: FSMInfoSnapShot): void {
     this.currentState = snapShot.State;
     this.currentStateFrame = snapShot.StateFrame;
+    for (const [key, value] of snapShot.frameLengths.entries()) {
+      this.frameLengths.set(key, value);
+    }
   }
 }
 
@@ -810,15 +795,11 @@ export class HurtCircles implements IHistoryEnabled<HurtCirclesSnapShot> {
   private x: number = 0;
   private y: number = 0;
 
-  constructor() {
-    const body = new Circle(40);
-    const head = new Circle(14);
-    const bodyOffset = new FlatVec(0, -50);
-    const headOffset = new FlatVec(0, -108);
-    this.circles.push(body);
-    this.circles.push(head);
-    this.offSets.push(bodyOffset);
-    this.offSets.push(headOffset);
+  constructor(circs: Array<{ circle: Circle; offset: FlatVec }>) {
+    for (let i = 0; i < circs.length; i++) {
+      this.circles.push(circs[i].circle);
+      this.offSets.push(circs[i].offset);
+    }
   }
 
   private update(): void {

@@ -3,12 +3,12 @@ import { EaseIn } from '../utils';
 import { World } from '../world/world';
 import { FSMState } from './PlayerStateMachine';
 
-// Aliases =====================================
+// Aliases =========================================================================
 
 export type gameEventId = number;
 export type stateId = number;
 
-// Constants ===================================
+// Constants =======================================================================
 
 //Postfixed with _GE for game event. So you know you are looking at game event Ids.
 class _GameEvents {
@@ -62,7 +62,7 @@ class _STATES {
 
 export const STATES = new _STATES();
 
-//Conditional functions =================================================
+// Conditionals ====================================================================
 
 type conditionFunc = (world: World, playerIndex: number) => boolean;
 
@@ -431,10 +431,10 @@ const RunStopToTurn: condition = {
   StateId: STATES.RUN_TURN_S,
 };
 
-// =======================================================
+// State mapping classes ===========================================================
 
 class StateRelation {
-  readonly stateId: stateId = STATES.IDLE_S;
+  readonly stateId: stateId;
   readonly mappings: ActionStateMappings;
 
   constructor(stateId: stateId, actionStateTranslations: ActionStateMappings) {
@@ -446,24 +446,24 @@ class StateRelation {
 export class ActionStateMappings {
   private readonly mappings = new Map<gameEventId, stateId>();
   private defaultConditions?: Array<condition>;
-  private Condtions?: Array<condition>;
+  private condtions?: Array<condition>;
+
+  public GetMapping(geId: gameEventId): stateId | undefined {
+    return this.mappings.get(geId);
+  }
+
+  public GetDefaults(): Array<condition> | undefined {
+    return this.defaultConditions;
+  }
+
+  public GetConditions() {
+    return this.condtions;
+  }
 
   _setMappings(mappingsArray: { geId: gameEventId; sId: stateId }[]) {
     mappingsArray.forEach((actSt) => {
       this.mappings.set(actSt.geId, actSt.sId);
     });
-  }
-
-  public getMapping(geId: gameEventId): stateId | undefined {
-    return this.mappings.get(geId);
-  }
-
-  public getDefaults(): Array<condition> | undefined {
-    return this.defaultConditions;
-  }
-
-  public GetConditions() {
-    return this.Condtions;
   }
 
   _setDefault(conditions: Array<condition>) {
@@ -473,11 +473,11 @@ export class ActionStateMappings {
   }
 
   _setConditions(conditions: Array<condition>) {
-    this.Condtions = conditions;
+    this.condtions = conditions;
   }
 }
 
-// STATE RELATIONS ===================================================
+// STATE RELATIONS =====================================================================
 
 export const IDLE_STATE_RELATIONS = InitIdleRelations();
 export const START_WALK_RELATIONS = InitStartWalkRelations();
@@ -498,7 +498,7 @@ export const LEDGE_GRAB_RELATIONS = InitLedgeGrabRelations();
 export const AIR_DODGE_RELATIONS = InitAirDodgeRelations();
 export const HELPESS_RELATIONS = InitHelpessRelations();
 
-// ====================================================================
+// Init functions ====================================================================
 
 function InitIdleRelations(): StateRelation {
   const idle = new StateRelation(STATES.IDLE_S, InitIdleTranslations());
@@ -651,7 +651,7 @@ function InitHelpessRelations(): StateRelation {
   return HelplessRelations;
 }
 
-// ================================================================================
+// Action State Mapping functions ===================================================
 
 function InitIdleTranslations() {
   const idleTranslations = new ActionStateMappings();
@@ -1093,7 +1093,7 @@ export const AirDodge: FSMState = {
     pVel.Y = -Math.sin(angle) * speed;
   },
   OnUpdate: (p, w) => {
-    const frameLength = p.StateFrameLengths.GetFrameLengthOrUndefined(
+    const frameLength = p.FSMInfo.GetFrameLengthOrUndefined(
       STATES.AIR_DODGE_S
     )!;
     const currentFrameForState = p.FSMInfo.CurrentStateFrame;

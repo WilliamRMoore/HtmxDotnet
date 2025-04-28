@@ -137,17 +137,17 @@ export class StateMachine {
 
   public UpdateFromInput(inputAction: InputAction, world: World): void {
     // if we have a conditional on the state, check it
-    if (this.RunConditional(world)) {
+    if (this.runConditional(world)) {
       return;
     }
 
     // if our input is a valid transition, run it
-    if (this.RunNext(inputAction)) {
+    if (this.runNext(inputAction)) {
       return;
     }
 
     // if we have a default state, run it
-    if (this.RunDefault(world)) {
+    if (this.runDefault(world)) {
       return;
     }
 
@@ -155,7 +155,7 @@ export class StateMachine {
     this.updateState();
   }
 
-  private RunNext(inputAction: InputAction): boolean {
+  private runNext(inputAction: InputAction): boolean {
     const state = this.GetTranslation(inputAction.Action);
 
     if (state != undefined) {
@@ -167,10 +167,10 @@ export class StateMachine {
     return false;
   }
 
-  private RunDefault(w: World): boolean {
+  private runDefault(w: World): boolean {
     // Check to see if we are on a default frame
     // If not, return false
-    if (!this.IsDefaultFrame()) {
+    if (this.IsDefaultFrame() == false) {
       return false;
     }
 
@@ -191,7 +191,7 @@ export class StateMachine {
     return true;
   }
 
-  private RunConditional(world: World): boolean {
+  private runConditional(world: World): boolean {
     const conditions = this.stateMappings
       .get(this.player.FSMInfo.CurrentState.StateId)!
       .GetConditions();
@@ -232,7 +232,7 @@ export class StateMachine {
     const stateMappings = this.stateMappings.get(
       this.player.FSMInfo.CurrentState.StateId
     );
-    const nextStateId = stateMappings?.getMapping(gameEventId);
+    const nextStateId = stateMappings?.GetMapping(gameEventId);
 
     if (nextStateId !== undefined) {
       const state = this.states.get(nextStateId);
@@ -249,7 +249,7 @@ export class StateMachine {
       return undefined;
     }
 
-    const defaultStateConditions = stateMapping.getDefaults();
+    const defaultStateConditions = stateMapping.GetDefaults();
 
     if (defaultStateConditions === undefined) {
       return undefined;
@@ -285,9 +285,7 @@ export class StateMachine {
 
   private IsDefaultFrame(): boolean {
     const fsmInfo = this.player.FSMInfo;
-    const fl = this.player.StateFrameLengths.GetFrameLengthOrUndefined(
-      fsmInfo.CurrentState.StateId
-    );
+    const fl = fsmInfo.GetFrameLengthOrUndefined(fsmInfo.CurrentState.StateId);
 
     if (fl === undefined) {
       return false;

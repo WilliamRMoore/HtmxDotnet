@@ -87,8 +87,6 @@ export function StageCollisionDetection(world: World): void {
       continue;
     }
   }
-
-  return;
 }
 
 function stageCollision(world: World, playerIndex: number): number {
@@ -240,38 +238,35 @@ export function LedgeGrabDetection(w: World) {
 }
 
 export function PlayerCollisionDetection(world: World) {
-  const playerCount = world.PlayerCount;
-  if (playerCount < 2) {
+  const pCount = world.PlayerCount;
+  if (pCount < 2) {
     return;
   }
 
-  for (
-    let playerIndexOuter = 0;
-    playerIndexOuter < playerCount;
-    playerIndexOuter++
-  ) {
-    const checkPlayer = world.GetPlayer(playerIndexOuter)!;
+  const vecPool = world.VecPool;
+  const colResPool = world.ColResPool;
+  const projResPool = world.ProjResPool;
 
-    if (checkPlayer.FSMInfo.CurrentState.StateId == STATES.LEDGE_GRAB_S) {
+  for (let pIOuter = 0; pIOuter < pCount; pIOuter++) {
+    const checkPlayer = world.GetPlayer(pIOuter)!;
+    const checkPlayerStateId = checkPlayer.FSMInfo.CurrentState.StateId;
+
+    if (checkPlayerStateId == STATES.LEDGE_GRAB_S) {
       continue;
     }
 
-    const vecPool = world.VecPool;
-    const colResPool = world.ColResPool;
-    const projResPool = world.ProjResPool;
+    const checkPlayerEcb = checkPlayer.ECB.GetActiveVerts();
 
-    for (
-      let playerIndexInner = playerIndexOuter + 1;
-      playerIndexInner < playerCount;
-      playerIndexInner++
-    ) {
-      if (playerIndexInner == playerIndexOuter) {
+    for (let pIInner = pIOuter + 1; pIInner < pCount; pIInner++) {
+      const otherPlayer = world.GetPlayer(pIInner)!;
+      const otherPlayerStateId = otherPlayer.FSMInfo.CurrentState.StateId;
+
+      if (otherPlayerStateId == STATES.LEDGE_GRAB_S) {
         continue;
       }
 
-      const otherPlayer = world.GetPlayer(playerIndexInner)!;
-      const checkPlayerEcb = checkPlayer.ECB.GetActiveVerts();
       const otherPlayerEcb = otherPlayer.ECB.GetActiveVerts();
+
       const collision = IntersectsPolygons(
         checkPlayerEcb,
         otherPlayerEcb,
@@ -338,9 +333,8 @@ export function Gravity(world: World) {
 export function PlayerInput(world: World) {
   const playerCount = world.PlayerCount;
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
-    world
-      .GetStateMachine(playerIndex)
-      ?.UpdateFromInput(world.GetPlayerCurrentInput(playerIndex)!, world);
+    const input = world.GetPlayerCurrentInput(playerIndex)!;
+    world.GetStateMachine(playerIndex)?.UpdateFromInput(input, world);
   }
 }
 
@@ -460,7 +454,6 @@ export function RecordHistory(w: World) {
     history.PlayerPointsHistory[frameNumber] = p.Points.SnapShot();
     history.VelocityHistory[frameNumber] = p.Velocity.SnapShot();
     history.FlagsHistory[frameNumber] = p.Flags.SnapShot();
-    history.FrameLengthHistory[frameNumber] = p.StateFrameLengths.SnapShot();
     history.LedgeDetectorHistory[frameNumber] = p.LedgeDetector.SnapShot();
     history.EcbHistory[frameNumber] = p.ECB.SnapShot();
     history.HurtCirclesHistory[frameNumber] = p.HurtCircles.SnapShot();
