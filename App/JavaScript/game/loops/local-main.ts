@@ -51,8 +51,8 @@ function RENDER_LOOP(world: World) {
   const canvas = document.getElementById('game') as HTMLCanvasElement;
   const resolution: resolution = { x: 1920, y: 1080 };
   const dbRenderer = new DebugRenderer(canvas, resolution);
-  RENDERFPS60Loop((alpha: number) => {
-    dbRenderer.render(world, alpha);
+  RENDERFPS60Loop((timeStamp: number) => {
+    dbRenderer.render(world, timeStamp);
   });
 }
 

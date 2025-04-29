@@ -3,7 +3,10 @@ import {
   ComponentHistory,
   ECBSnapShot,
   HurtCirclesSnapShot,
+  LedgeDetectorSnapShot,
+  StaticHistory,
 } from '../engine/player/playerComponents';
+import { Lerp } from '../engine/utils';
 import { World } from '../engine/world/world';
 
 export class DebugRenderer {
@@ -11,6 +14,7 @@ export class DebugRenderer {
   private ctx: CanvasRenderingContext2D;
   private xRes: number;
   private yRes: number;
+  private lastFrame: number = 0;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -25,8 +29,27 @@ export class DebugRenderer {
     this.canvas.height = this.yRes;
   }
 
-  render(world: World, alpha: number) {
+  render(world: World, timeStampNow: number) {
+    const perviousTimeStamp = world.GetFrameTimeStampForFrame(
+      world.localFrame - 2
+    );
+    const currentFrameTimeStamp = world.GetFrameTimeStampForFrame(
+      world.localFrame - 1
+    );
+
+    const preClampAlpha =
+      (timeStampNow - perviousTimeStamp) /
+      (currentFrameTimeStamp - perviousTimeStamp);
+    const postClampalpha = Math.max(0, Math.min(1, preClampAlpha));
+
+    let alpha = preClampAlpha - postClampalpha;
+
     let localFrame = world.localFrame - 1 < 0 ? 0 : world.localFrame - 1;
+
+    if (localFrame == this.lastFrame || alpha > 1) {
+      alpha = 1;
+    }
+
     const playerStateHistory = world.GetComponentHistory(0); // hard coded to player 1 right now
     const playerFacingRight =
       playerStateHistory?.FlagsHistory[localFrame]?.FacingRight ?? true;
@@ -37,13 +60,12 @@ export class DebugRenderer {
       return;
     }
 
-    localFrame--;
     const ctx = this.ctx;
     ctx.fillStyle = 'grey';
     ctx.fillRect(0, 0, this.xRes, this.yRes); // Fill the entire canvas with grey
 
     drawStage(ctx, world);
-    drawPlayer(ctx, world);
+    drawPlayer(ctx, world, alpha);
 
     const frameTime = world.GetFrameTimeForFrame(localFrame);
 
@@ -68,6 +90,8 @@ export class DebugRenderer {
       10,
       210
     );
+
+    this.lastFrame = localFrame;
   }
 }
 
@@ -112,104 +136,267 @@ function drawStage(ctx: CanvasRenderingContext2D, world: World) {
   ctx.fill();
 }
 
-function drawPlayer(ctx: CanvasRenderingContext2D, world: World) {
+function drawPlayer(
+  ctx: CanvasRenderingContext2D,
+  world: World,
+  alpha: number
+) {
   const playerCount = world.PlayerCount;
   const currentFrame = world.localFrame - 1;
+  const lastFrame = currentFrame < 1 ? 0 : currentFrame - 1;
   for (let i = 0; i < playerCount; i++) {
     const playerHistory = world.GetComponentHistory(i);
     const pos = playerHistory!.PositionHistory[currentFrame];
-    const circleHistory = playerHistory!.HurtCirclesHistory[currentFrame];
+    const lastPos = playerHistory!.PositionHistory[lastFrame];
+    const circles = playerHistory!.HurtCirclesHistory[currentFrame];
+    const lastCirclse = playerHistory!.HurtCirclesHistory[lastFrame];
     const flags = playerHistory!.FlagsHistory[currentFrame];
+    const lastFlags = playerHistory!.FlagsHistory[lastFrame];
     const ecb = playerHistory!.EcbHistory[currentFrame];
+    const lastEcb = playerHistory!.EcbHistory[lastFrame];
     const lD = playerHistory!.LedgeDetectorHistory[currentFrame];
+    const lastLd = playerHistory!.LedgeDetectorHistory[lastFrame];
     const facingRight = flags.FacingRight;
+    const lastFacingRight = lastFlags?.FacingRight;
 
     //drawHull(ctx, player);
-    drawPrevEcb(ctx, ecb);
-    drawCurrentECB(ctx, ecb);
-    drawHurtCircles(ctx, circleHistory);
-    drawPositionMarker(ctx, pos);
+    drawPrevEcb(ctx, ecb, lastEcb, alpha);
+    drawCurrentECB(ctx, ecb, lastEcb, alpha);
+    drawHurtCircles(ctx, circles, lastCirclse, alpha);
+    drawPositionMarker(ctx, pos, lastPos, alpha);
+    const lerpDirection = alpha > 0.5 ? facingRight : lastFacingRight;
+    drawDirectionMarker(ctx, lerpDirection, ecb, lastEcb, alpha);
+    drawLedgeDetectors(
+      ctx,
+      facingRight,
+      playerHistory!.StaticPlayerHistory,
+      lD,
+      lastLd,
+      alpha
+    );
 
     // draw direction marker
-    ctx.strokeStyle = 'white';
-    if (facingRight) {
-      const rightX = ComponentHistory.GetRightXFromEcbHistory(ecb);
-      const rightY = ComponentHistory.GetRightYFromEcbHistory(ecb);
-      ctx.beginPath();
-      ctx.moveTo(rightX, rightY);
-      ctx.lineTo(rightX + 10, rightY);
-      ctx.stroke();
-      ctx.closePath();
-    } else {
-      const leftX = ComponentHistory.GetLeftXFromEcbHistory(ecb);
-      const leftY = ComponentHistory.GetLeftYFromEcbHistory(ecb);
-      ctx.beginPath();
-      ctx.moveTo(leftX, leftY);
-      ctx.lineTo(leftX - 10, leftY);
-      ctx.stroke();
-      ctx.closePath();
-    }
+    // ctx.strokeStyle = 'white';
+    // if (facingRight) {
+    //   const rightX = ComponentHistory.GetRightXFromEcbHistory(ecb);
+    //   const rightY = ComponentHistory.GetRightYFromEcbHistory(ecb);
+    //   ctx.beginPath();
+    //   ctx.moveTo(rightX, rightY);
+    //   ctx.lineTo(rightX + 10, rightY);
+    //   ctx.stroke();
+    //   ctx.closePath();
+    // } else {
+    //   const leftX = ComponentHistory.GetLeftXFromEcbHistory(ecb);
+    //   const leftY = ComponentHistory.GetLeftYFromEcbHistory(ecb);
+    //   ctx.beginPath();
+    //   ctx.moveTo(leftX, leftY);
+    //   ctx.lineTo(leftX - 10, leftY);
+    //   ctx.stroke();
+    //   ctx.closePath();
+    // }
 
-    const ldHeight = playerHistory!.StaticPlayerHistory.ledgDetecorHeight;
-    const ldWidth = playerHistory!.StaticPlayerHistory.LedgeDetectorWidth;
-    const middleTopX = lD.middleX;
-    const middleTopY = lD.middleY;
-    const TopRightX = lD.middleX + ldWidth;
-    const TopRightY = lD.middleY;
-    const BottomRightX = lD.middleX + ldWidth;
-    const BottomRightY = lD.middleY + ldHeight;
-    const middleBottomx = lD.middleX;
-    const middleBottomY = lD.middleY + ldHeight;
-    const topLeftX = lD.middleX - ldWidth;
-    const topLeftY = lD.middleY;
-    const bottomLeftX = lD.middleX - ldWidth;
-    const bottomLeftY = lD.middleY + ldHeight;
+    // const ldHeight = playerHistory!.StaticPlayerHistory.ledgDetecorHeight;
+    // const ldWidth = playerHistory!.StaticPlayerHistory.LedgeDetectorWidth;
+    // const middleTopX = lD.middleX;
+    // const middleTopY = lD.middleY;
+    // const TopRightX = lD.middleX + ldWidth;
+    // const TopRightY = lD.middleY;
+    // const BottomRightX = lD.middleX + ldWidth;
+    // const BottomRightY = lD.middleY + ldHeight;
+    // const middleBottomx = lD.middleX;
+    // const middleBottomY = lD.middleY + ldHeight;
+    // const topLeftX = lD.middleX - ldWidth;
+    // const topLeftY = lD.middleY;
+    // const bottomLeftX = lD.middleX - ldWidth;
+    // const bottomLeftY = lD.middleY + ldHeight;
 
-    // Draw right detector
-    ctx.strokeStyle = 'blue';
+    // // Draw right detector
+    // ctx.strokeStyle = 'blue';
 
-    if (!facingRight) {
-      ctx.strokeStyle = 'red';
-    }
+    // if (!facingRight) {
+    //   ctx.strokeStyle = 'red';
+    // }
 
-    ctx.beginPath();
-    ctx.moveTo(middleTopX, middleTopY);
-    ctx.lineTo(TopRightX, TopRightY);
-    ctx.lineTo(BottomRightX, BottomRightY);
-    ctx.lineTo(middleBottomx, middleBottomY);
-    ctx.closePath();
-    ctx.stroke();
+    // ctx.beginPath();
+    // ctx.moveTo(middleTopX, middleTopY);
+    // ctx.lineTo(TopRightX, TopRightY);
+    // ctx.lineTo(BottomRightX, BottomRightY);
+    // ctx.lineTo(middleBottomx, middleBottomY);
+    // ctx.closePath();
+    // ctx.stroke();
 
-    // Draw left detector
-    ctx.strokeStyle = 'red';
+    // // Draw left detector
+    // ctx.strokeStyle = 'red';
 
-    if (!facingRight) {
-      ctx.strokeStyle = 'blue';
-    }
+    // if (!facingRight) {
+    //   ctx.strokeStyle = 'blue';
+    // }
 
-    ctx.beginPath();
-    ctx.moveTo(topLeftX, topLeftY);
-    ctx.lineTo(middleTopX, middleTopY);
-    ctx.lineTo(middleBottomx, middleBottomY);
-    ctx.lineTo(bottomLeftX, bottomLeftY);
-    ctx.closePath();
-    ctx.stroke();
+    // ctx.beginPath();
+    // ctx.moveTo(topLeftX, topLeftY);
+    // ctx.lineTo(middleTopX, middleTopY);
+    // ctx.lineTo(middleBottomx, middleBottomY);
+    // ctx.lineTo(bottomLeftX, bottomLeftY);
+    // ctx.closePath();
+    // ctx.stroke();
   }
   //const player = renderData;
 }
 
-function drawPrevEcb(ctx: CanvasRenderingContext2D, ecb: ECBSnapShot) {
+function drawLedgeDetectors(
+  ctx: CanvasRenderingContext2D,
+  facingRight: boolean,
+  staticHistory: StaticHistory,
+  ledgeDetectorHistory: LedgeDetectorSnapShot,
+  lastLedgeDetectorHistory: LedgeDetectorSnapShot,
+  alpha: number
+) {
+  const ldHeight = staticHistory.ledgDetecorHeight;
+  const ldWidth = staticHistory.LedgeDetectorWidth;
+  const curMiddleTopX = ledgeDetectorHistory.middleX;
+  const curMiddleTopY = ledgeDetectorHistory.middleY;
+  const curTopRightX = ledgeDetectorHistory.middleX + ldWidth;
+  const curTopRightY = ledgeDetectorHistory.middleY;
+  const curBottomRightX = ledgeDetectorHistory.middleX + ldWidth;
+  const curBottomRightY = ledgeDetectorHistory.middleY + ldHeight;
+  const curMiddleBottomx = ledgeDetectorHistory.middleX;
+  const curMiddleBottomY = ledgeDetectorHistory.middleY + ldHeight;
+  const curTopLeftX = ledgeDetectorHistory.middleX - ldWidth;
+  const curTopLeftY = ledgeDetectorHistory.middleY;
+  const curBottomLeftX = ledgeDetectorHistory.middleX - ldWidth;
+  const curBottomLeftY = ledgeDetectorHistory.middleY + ldHeight;
+
+  const lastMiddleTopX = lastLedgeDetectorHistory.middleX;
+  const lastMiddleTopY = lastLedgeDetectorHistory.middleY;
+  const lastTopRightX = lastLedgeDetectorHistory.middleX + ldWidth;
+  const lastTopRightY = lastLedgeDetectorHistory.middleY;
+  const lastBottomRightX = lastLedgeDetectorHistory.middleX + ldWidth;
+  const lastBottomRightY = lastLedgeDetectorHistory.middleY + ldHeight;
+  const lastMiddleBottomx = lastLedgeDetectorHistory.middleX;
+  const lastMiddleBottomY = lastLedgeDetectorHistory.middleY + ldHeight;
+  const lastTopLeftX = lastLedgeDetectorHistory.middleX - ldWidth;
+  const lastTopLeftY = lastLedgeDetectorHistory.middleY;
+  const lastBottomLeftX = lastLedgeDetectorHistory.middleX - ldWidth;
+  const lastBottomLeftY = lastLedgeDetectorHistory.middleY + ldHeight;
+
+  const middleTopX = Lerp(lastMiddleTopX, curMiddleTopX, alpha);
+  const middleTopY = Lerp(lastMiddleTopY, curMiddleTopY, alpha);
+  const TopRightX = Lerp(lastTopRightX, curTopRightX, alpha);
+  const TopRightY = Lerp(lastTopRightY, curTopRightY, alpha);
+  const BottomRightX = Lerp(lastBottomRightX, curBottomRightX, alpha);
+  const BottomRightY = Lerp(lastBottomRightY, curBottomRightY, alpha);
+  const middleBottomx = Lerp(lastMiddleBottomx, curMiddleBottomx, alpha);
+  const middleBottomY = Lerp(lastMiddleBottomY, curMiddleBottomY, alpha);
+  const topLeftX = Lerp(lastTopLeftX, curTopLeftX, alpha);
+  const topLeftY = Lerp(lastTopLeftY, curTopLeftY, alpha);
+  const bottomLeftX = Lerp(lastBottomLeftX, curBottomLeftX, alpha);
+  const bottomLeftY = Lerp(lastBottomLeftY, curBottomLeftY, alpha);
+
+  // Draw right detector
+  ctx.strokeStyle = 'blue';
+
+  if (!facingRight) {
+    ctx.strokeStyle = 'red';
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(middleTopX, middleTopY);
+  ctx.lineTo(TopRightX, TopRightY);
+  ctx.lineTo(BottomRightX, BottomRightY);
+  ctx.lineTo(middleBottomx, middleBottomY);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Draw left detector
+  ctx.strokeStyle = 'red';
+
+  if (!facingRight) {
+    ctx.strokeStyle = 'blue';
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(topLeftX, topLeftY);
+  ctx.lineTo(middleTopX, middleTopY);
+  ctx.lineTo(middleBottomx, middleBottomY);
+  ctx.lineTo(bottomLeftX, bottomLeftY);
+  ctx.closePath();
+  ctx.stroke();
+}
+
+function drawDirectionMarker(
+  ctx: CanvasRenderingContext2D,
+  facingRight: boolean,
+  ecb: ECBSnapShot,
+  lastEcb: ECBSnapShot,
+  alpha: number
+) {
+  ctx.strokeStyle = 'white';
+  if (facingRight) {
+    const curRightX = ComponentHistory.GetRightXFromEcbHistory(ecb);
+    const curRightY = ComponentHistory.GetRightYFromEcbHistory(ecb);
+    const lastRightX = ComponentHistory.GetRightXFromEcbHistory(lastEcb);
+    const lastRightY = ComponentHistory.GetRightYFromEcbHistory(lastEcb);
+
+    const rightX = Lerp(lastRightX, curRightX, alpha);
+    const rightY = Lerp(lastRightY, curRightY, alpha);
+
+    ctx.beginPath();
+    ctx.moveTo(rightX, rightY);
+    ctx.lineTo(rightX + 10, rightY);
+    ctx.stroke();
+    ctx.closePath();
+  } else {
+    const curLeftX = ComponentHistory.GetLeftXFromEcbHistory(ecb);
+    const curLeftY = ComponentHistory.GetLeftYFromEcbHistory(ecb);
+    const lastLeftX = ComponentHistory.GetLeftXFromEcbHistory(lastEcb);
+    const lastLeftY = ComponentHistory.GetLeftYFromEcbHistory(lastEcb);
+
+    const leftX = Lerp(lastLeftX, curLeftX, alpha);
+    const leftY = Lerp(lastLeftY, curLeftY, alpha);
+
+    ctx.beginPath();
+    ctx.moveTo(leftX, leftY);
+    ctx.lineTo(leftX - 10, leftY);
+    ctx.stroke();
+    ctx.closePath();
+  }
+}
+
+function drawPrevEcb(
+  ctx: CanvasRenderingContext2D,
+  curEcb: ECBSnapShot,
+  lastEcb: ECBSnapShot,
+  alpha: number
+) {
   ctx.fillStyle = 'red';
   ctx.lineWidth = 3;
 
-  const leftX = ComponentHistory.GetPrevLeftXFromEcbHistory(ecb);
-  const leftY = ComponentHistory.GetPrevLeftYFromEcbHistory(ecb);
-  const topX = ComponentHistory.GetPrevTopXFromEcbHistory(ecb);
-  const topY = ComponentHistory.GetPrevTopYFromEcbHistory(ecb);
-  const rightX = ComponentHistory.GetPrevRightXFromEcbHistory(ecb);
-  const rightY = ComponentHistory.GetPrevRightYFromEcbHistory(ecb);
-  const bottomX = ComponentHistory.GetPrevBottomXFromEcbHistory(ecb);
-  const bottomY = ComponentHistory.GetPrevBottomYFromEcbHistory(ecb);
+  const curLeftX = ComponentHistory.GetPrevLeftXFromEcbHistory(curEcb);
+  const curLeftY = ComponentHistory.GetPrevLeftYFromEcbHistory(curEcb);
+  const curTopX = ComponentHistory.GetPrevTopXFromEcbHistory(curEcb);
+  const curTopY = ComponentHistory.GetPrevTopYFromEcbHistory(curEcb);
+  const curRightX = ComponentHistory.GetPrevRightXFromEcbHistory(curEcb);
+  const curRightY = ComponentHistory.GetPrevRightYFromEcbHistory(curEcb);
+  const curBottomX = ComponentHistory.GetPrevBottomXFromEcbHistory(curEcb);
+  const curBottomY = ComponentHistory.GetPrevBottomYFromEcbHistory(curEcb);
+
+  const lastLeftX = ComponentHistory.GetPrevLeftXFromEcbHistory(lastEcb);
+  const lastLeftY = ComponentHistory.GetPrevLeftYFromEcbHistory(lastEcb);
+  const lastTopX = ComponentHistory.GetPrevTopXFromEcbHistory(lastEcb);
+  const lastTopY = ComponentHistory.GetPrevTopYFromEcbHistory(lastEcb);
+  const lastRightX = ComponentHistory.GetPrevRightXFromEcbHistory(lastEcb);
+  const lastRightY = ComponentHistory.GetPrevRightYFromEcbHistory(lastEcb);
+  const LastBottomX = ComponentHistory.GetPrevBottomXFromEcbHistory(lastEcb);
+  const LastBottomY = ComponentHistory.GetPrevBottomYFromEcbHistory(lastEcb);
+
+  const leftX = Lerp(lastLeftX, curLeftX, alpha);
+  const leftY = Lerp(lastLeftY, curLeftY, alpha);
+  const topX = Lerp(lastTopX, curTopX, alpha);
+  const topY = Lerp(lastTopY, curTopY, alpha);
+  const rightX = Lerp(lastRightX, curRightX, alpha);
+  const rightY = Lerp(lastRightY, curRightY, alpha);
+  const bottomX = Lerp(LastBottomX, curBottomX, alpha);
+  const bottomY = Lerp(LastBottomY, curBottomY, alpha);
 
   // draw previous ECB
   ctx.strokeStyle = 'black';
@@ -235,15 +422,38 @@ function drawPrevEcb(ctx: CanvasRenderingContext2D, ecb: ECBSnapShot) {
 //   ctx.fill();
 // }
 
-function drawCurrentECB(ctx: CanvasRenderingContext2D, ecb: ECBSnapShot) {
-  const leftX = ComponentHistory.GetLeftXFromEcbHistory(ecb);
-  const leftY = ComponentHistory.GetLeftYFromEcbHistory(ecb);
-  const topX = ComponentHistory.GetTopXFromEcbHistory(ecb);
-  const topY = ComponentHistory.GetTopYFromEcbHistory(ecb);
-  const rightX = ComponentHistory.GetRightXFromEcbHistory(ecb);
-  const rightY = ComponentHistory.GetRightYFromEcbHistory(ecb);
-  const bottomX = ComponentHistory.GetBottomXFromEcbHistory(ecb);
-  const bottomY = ComponentHistory.GetBottomYFromEcbHistory(ecb);
+function drawCurrentECB(
+  ctx: CanvasRenderingContext2D,
+  ecb: ECBSnapShot,
+  lastEcb: ECBSnapShot,
+  alpha: number
+) {
+  const curLeftX = ComponentHistory.GetLeftXFromEcbHistory(ecb);
+  const curLeftY = ComponentHistory.GetLeftYFromEcbHistory(ecb);
+  const curTopX = ComponentHistory.GetTopXFromEcbHistory(ecb);
+  const curTopY = ComponentHistory.GetTopYFromEcbHistory(ecb);
+  const curRightX = ComponentHistory.GetRightXFromEcbHistory(ecb);
+  const curRightY = ComponentHistory.GetRightYFromEcbHistory(ecb);
+  const curBottomX = ComponentHistory.GetBottomXFromEcbHistory(ecb);
+  const curBottomY = ComponentHistory.GetBottomYFromEcbHistory(ecb);
+
+  const lastLeftX = ComponentHistory.GetLeftXFromEcbHistory(lastEcb);
+  const lastLeftY = ComponentHistory.GetLeftYFromEcbHistory(lastEcb);
+  const lastTopX = ComponentHistory.GetTopXFromEcbHistory(lastEcb);
+  const lastTopY = ComponentHistory.GetTopYFromEcbHistory(lastEcb);
+  const lastRightX = ComponentHistory.GetRightXFromEcbHistory(lastEcb);
+  const lastRightY = ComponentHistory.GetRightYFromEcbHistory(lastEcb);
+  const lastBottomX = ComponentHistory.GetBottomXFromEcbHistory(lastEcb);
+  const lastBottomY = ComponentHistory.GetBottomYFromEcbHistory(lastEcb);
+
+  const leftX = Lerp(lastLeftX, curLeftX, alpha);
+  const leftY = Lerp(lastLeftY, curLeftY, alpha);
+  const topX = Lerp(lastTopX, curTopX, alpha);
+  const topY = Lerp(lastTopY, curTopY, alpha);
+  const rightX = Lerp(lastRightX, curRightX, alpha);
+  const rightY = Lerp(lastRightY, curRightY, alpha);
+  const bottomX = Lerp(lastBottomX, curBottomX, alpha);
+  const bottomY = Lerp(lastBottomY, curBottomY, alpha);
 
   ctx.fillStyle = 'orange';
   ctx.strokeStyle = 'purple';
@@ -259,9 +469,12 @@ function drawCurrentECB(ctx: CanvasRenderingContext2D, ecb: ECBSnapShot) {
 
 function drawHurtCircles(
   ctx: CanvasRenderingContext2D,
-  hurtCircles: HurtCirclesSnapShot
+  hurtCircles: HurtCirclesSnapShot,
+  lastHurtCircles: HurtCirclesSnapShot,
+  alpha: number
 ) {
   const circles = hurtCircles.circls;
+  const lastCircles = lastHurtCircles.circls;
   const circlesLength = circles.length;
 
   ctx.strokeStyle = 'yellow'; // Set the stroke color for the circles
@@ -271,8 +484,12 @@ function drawHurtCircles(
 
   for (let i = 0; i < circlesLength; i++) {
     const circle = circles[i];
+    const lastHurtCircle = lastCircles[i];
+    const x = Lerp(lastHurtCircle.X, circle.X, alpha);
+    const y = Lerp(lastHurtCircle.Y, circle.Y, alpha);
+
     ctx.beginPath();
-    ctx.arc(circle.X, circle.Y, circle.Radius, 0, Math.PI * 2); // Draw the circle
+    ctx.arc(x, y, circle.Radius, 0, Math.PI * 2); // Draw the circle
     ctx.fill(); // Fill the circle with yellow
     ctx.stroke(); // Draw the circle outline
     ctx.closePath();
@@ -283,10 +500,12 @@ function drawHurtCircles(
 
 function drawPositionMarker(
   ctx: CanvasRenderingContext2D,
-  posHistory: FlatVec
+  posHistory: FlatVec,
+  lastPosHistory: FlatVec,
+  alpha: number
 ) {
-  const playerPosX = posHistory.X;
-  const playerPosY = posHistory.Y;
+  const playerPosX = Lerp(lastPosHistory.X, posHistory.X, alpha);
+  const playerPosY = Lerp(lastPosHistory.Y, posHistory.Y, alpha);
 
   ctx.lineWidth = 1;
   ctx.strokeStyle = 'blue';

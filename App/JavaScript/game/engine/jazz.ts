@@ -54,6 +54,7 @@ export class Jazz implements IJazz {
 
     const world = this.World;
     world.SetFrameTimeForFrame(world.localFrame, frameTimeDelta);
+    world.SetFrameTimeStampForFrame(world.localFrame, frameTimeStart);
     world?.VecPool.Zero();
     world?.ColResPool.Zero();
     world?.ProjResPool.Zero();

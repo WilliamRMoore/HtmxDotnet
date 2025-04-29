@@ -1,27 +1,16 @@
-const FPS = 60; // Target simulation FPS
-const SIMULATION_INTERVAL = 1000 / FPS; // Time per simulation tick (in ms)
-
-let previousTime = performance.now();
-let accumulator = 0;
-
 export function RENDERFPS60Loop(
-  renderFunc: (alpha: number) => void // Render function with interpolation
+  renderFunc: (now: number) => void,
+  previousTime = performance.now()
 ) {
-  const currentTime = performance.now();
-  const deltaTime = currentTime - previousTime;
-  previousTime = currentTime;
+  function loop(now: number) {
+    renderFunc(now);
 
-  // Accumulate time for interpolation
-  accumulator += deltaTime;
+    // Call the loop again with the latest time
+    requestAnimationFrame(loop);
+  }
 
-  // Calculate the interpolation factor (alpha)
-  const alpha = Math.min(accumulator / SIMULATION_INTERVAL, 1);
-
-  // Render the frame with interpolation
-  renderFunc(alpha);
-
-  // Request the next frame
-  window.requestAnimationFrame(() => RENDERFPS60Loop(renderFunc));
+  // Start the loop
+  requestAnimationFrame(loop);
 }
 
 class AnimationFrame60FPSExecutor {

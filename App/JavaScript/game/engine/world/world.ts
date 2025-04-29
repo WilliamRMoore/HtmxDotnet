@@ -24,6 +24,7 @@ export class World {
   private readonly RentedColResHsitory: Array<number> = [];
   private readonly RentedProjResHistory: Array<number> = [];
   private readonly FrameTimes: Array<number> = [];
+  private readonly FrameTimeStamps: Array<number> = [];
 
   constructor() {
     this.VecPool = new Pool<PooledVector>(300, () => new PooledVector());
@@ -69,6 +70,14 @@ export class World {
 
   public SetFrameTimeForFrame(frame: number, frameTime: number): void {
     this.FrameTimes[frame] = frameTime;
+  }
+
+  public SetFrameTimeStampForFrame(frame: number, timeStamp: number): void {
+    this.FrameTimeStamps[frame] = timeStamp;
+  }
+
+  public GetFrameTimeStampForFrame(frame: number): number {
+    return this.FrameTimeStamps[frame];
   }
 
   public GetRentedVecsForFrame(frame: number): number {

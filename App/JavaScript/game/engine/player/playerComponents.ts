@@ -28,7 +28,7 @@ import { Circle } from '../physics/circle';
  * This is necessary for rollback.
  */
 
-class StaticHistory {
+export class StaticHistory {
   public ledgDetecorHeight: number = 0;
   public LedgeDetectorWidth: number = 0;
 }
