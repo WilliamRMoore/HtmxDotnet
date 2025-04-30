@@ -82,7 +82,7 @@ export function StageCollisionDetection(world: World): void {
     if (collision !== NO_COLLISION && grnd === true) {
       const playerVelY = p.Velocity.Y;
       const landState =
-        playerVelY > 2 ? GAME_EVENTS.LAND_GE : GAME_EVENTS.SOFT_LAND_GE;
+        playerVelY > 10 ? GAME_EVENTS.LAND_GE : GAME_EVENTS.SOFT_LAND_GE;
       sm.UpdateFromWorld(landState);
       continue;
     }

@@ -227,6 +227,7 @@ export type FSMInfoSnapShot = {
 
 export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
   private currentState: FSMState = Idle;
+  private currentStateId: stateId = STATES.IDLE_S;
   private currentStateFrame: number = 0;
   private readonly frameLengths = new Map<stateId, number>();
 
@@ -253,8 +254,13 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
     return this.currentState;
   }
 
+  public get CurrentSatetId(): stateId {
+    return this.currentStateId;
+  }
+
   public SetCurrentState(s: FSMState) {
     this.currentState = s;
+    this.currentStateId = s.StateId;
   }
 
   public IncrementStateFrame(): void {

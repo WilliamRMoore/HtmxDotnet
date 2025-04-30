@@ -9,6 +9,27 @@ import {
 import { Lerp } from '../engine/utils';
 import { World } from '../engine/world/world';
 
+function getAlpha(
+  timeStampNow: number,
+  lastFrame: number,
+  localFrame: number,
+  previousFrameTimeStamp: number,
+  currentFrameTimeStamp: number
+): number {
+  const preClampAlpha =
+    (timeStampNow - previousFrameTimeStamp) /
+    (currentFrameTimeStamp - previousFrameTimeStamp);
+  const postClampalpha = Math.max(0, Math.min(1, preClampAlpha));
+
+  let alpha = preClampAlpha - postClampalpha;
+
+  if (localFrame == lastFrame || alpha > 1) {
+    alpha = 1;
+  }
+
+  return alpha;
+}
+
 export class DebugRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -30,25 +51,19 @@ export class DebugRenderer {
   }
 
   render(world: World, timeStampNow: number) {
-    const perviousTimeStamp = world.GetFrameTimeStampForFrame(
-      world.localFrame - 2
+    const localFrame = world.localFrame - 1 < 0 ? 0 : world.localFrame - 1; // world frame is incremented at the end of the loop, so we actually need to get the previous frame, as that is the frame with the most current render artifact.
+    const previousFrameTimeStamp = world.GetFrameTimeStampForFrame(
+      localFrame == 0 ? 0 : localFrame - 1
     );
-    const currentFrameTimeStamp = world.GetFrameTimeStampForFrame(
-      world.localFrame - 1
+    const currentFrameTimeStamp = world.GetFrameTimeStampForFrame(localFrame);
+
+    const alpha = getAlpha(
+      timeStampNow,
+      this.lastFrame,
+      localFrame,
+      previousFrameTimeStamp,
+      currentFrameTimeStamp
     );
-
-    const preClampAlpha =
-      (timeStampNow - perviousTimeStamp) /
-      (currentFrameTimeStamp - perviousTimeStamp);
-    const postClampalpha = Math.max(0, Math.min(1, preClampAlpha));
-
-    let alpha = preClampAlpha - postClampalpha;
-
-    let localFrame = world.localFrame - 1 < 0 ? 0 : world.localFrame - 1;
-
-    if (localFrame == this.lastFrame || alpha > 1) {
-      alpha = 1;
-    }
 
     const playerStateHistory = world.GetComponentHistory(0); // hard coded to player 1 right now
     const playerFacingRight =
@@ -174,73 +189,7 @@ function drawPlayer(
       lastLd,
       alpha
     );
-
-    // draw direction marker
-    // ctx.strokeStyle = 'white';
-    // if (facingRight) {
-    //   const rightX = ComponentHistory.GetRightXFromEcbHistory(ecb);
-    //   const rightY = ComponentHistory.GetRightYFromEcbHistory(ecb);
-    //   ctx.beginPath();
-    //   ctx.moveTo(rightX, rightY);
-    //   ctx.lineTo(rightX + 10, rightY);
-    //   ctx.stroke();
-    //   ctx.closePath();
-    // } else {
-    //   const leftX = ComponentHistory.GetLeftXFromEcbHistory(ecb);
-    //   const leftY = ComponentHistory.GetLeftYFromEcbHistory(ecb);
-    //   ctx.beginPath();
-    //   ctx.moveTo(leftX, leftY);
-    //   ctx.lineTo(leftX - 10, leftY);
-    //   ctx.stroke();
-    //   ctx.closePath();
-    // }
-
-    // const ldHeight = playerHistory!.StaticPlayerHistory.ledgDetecorHeight;
-    // const ldWidth = playerHistory!.StaticPlayerHistory.LedgeDetectorWidth;
-    // const middleTopX = lD.middleX;
-    // const middleTopY = lD.middleY;
-    // const TopRightX = lD.middleX + ldWidth;
-    // const TopRightY = lD.middleY;
-    // const BottomRightX = lD.middleX + ldWidth;
-    // const BottomRightY = lD.middleY + ldHeight;
-    // const middleBottomx = lD.middleX;
-    // const middleBottomY = lD.middleY + ldHeight;
-    // const topLeftX = lD.middleX - ldWidth;
-    // const topLeftY = lD.middleY;
-    // const bottomLeftX = lD.middleX - ldWidth;
-    // const bottomLeftY = lD.middleY + ldHeight;
-
-    // // Draw right detector
-    // ctx.strokeStyle = 'blue';
-
-    // if (!facingRight) {
-    //   ctx.strokeStyle = 'red';
-    // }
-
-    // ctx.beginPath();
-    // ctx.moveTo(middleTopX, middleTopY);
-    // ctx.lineTo(TopRightX, TopRightY);
-    // ctx.lineTo(BottomRightX, BottomRightY);
-    // ctx.lineTo(middleBottomx, middleBottomY);
-    // ctx.closePath();
-    // ctx.stroke();
-
-    // // Draw left detector
-    // ctx.strokeStyle = 'red';
-
-    // if (!facingRight) {
-    //   ctx.strokeStyle = 'blue';
-    // }
-
-    // ctx.beginPath();
-    // ctx.moveTo(topLeftX, topLeftY);
-    // ctx.lineTo(middleTopX, middleTopY);
-    // ctx.lineTo(middleBottomx, middleBottomY);
-    // ctx.lineTo(bottomLeftX, bottomLeftY);
-    // ctx.closePath();
-    // ctx.stroke();
   }
-  //const player = renderData;
 }
 
 function drawLedgeDetectors(

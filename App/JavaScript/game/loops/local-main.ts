@@ -30,8 +30,6 @@ export function start(playerInfo: Array<playerControllerInfo>) {
 
   engine.Init(playerCount, positions);
 
-  //PlayerHelpers.SetPlayerInitialPosition(engine.World?.GetPlayer(0)!, 610, 100);
-
   for (let i = 0; i < playerCount; i++) {
     const sm = engine.World.GetStateMachine(i);
     sm?.SetInitialState(STATES.N_FALL_S);
