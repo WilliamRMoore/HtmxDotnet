@@ -1,5 +1,4 @@
 import { IJazz, JazzDebugger } from '../engine/jazz';
-import { PlayerHelpers } from '../engine/player/playerOrchestrator';
 import { STATES } from '../engine/finite-state-machine/PlayerStates';
 import { DebugRenderer, resolution } from '../render/debug-2d';
 import { RENDERFPS60Loop } from './FPS60LoopExecutor';

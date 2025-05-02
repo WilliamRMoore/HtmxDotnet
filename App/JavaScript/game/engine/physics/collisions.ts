@@ -1,7 +1,7 @@
-import { CollisionResult, ICollisionResult } from '../../pools/CollisionResult';
-import { Pool } from '../../pools/Pool';
-import { IProjectionResult, ProjectionResult } from '../../pools/ProjectResult';
-import { PooledVector } from '../../pools/PooledVector';
+import { CollisionResult, ICollisionResult } from '../pools/CollisionResult';
+import { Pool } from '../pools/Pool';
+import { IProjectionResult, ProjectionResult } from '../pools/ProjectResult';
+import { PooledVector } from '../pools/PooledVector';
 import { FlatVec } from './vector';
 
 export function IntersectsPolygons(

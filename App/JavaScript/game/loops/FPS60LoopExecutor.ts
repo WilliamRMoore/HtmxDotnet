@@ -1,7 +1,4 @@
-export function RENDERFPS60Loop(
-  renderFunc: (now: number) => void,
-  previousTime = performance.now()
-) {
+export function RENDERFPS60Loop(renderFunc: (now: number) => void) {
   function loop(now: number) {
     renderFunc(now);
 

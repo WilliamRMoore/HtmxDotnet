@@ -275,6 +275,10 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
     return this.frameLengths.get(stateId);
   }
 
+  public GetFrameLenthOrUndefinedForCurrentState(): number | undefined {
+    return this.frameLengths.get(this.currentStateId);
+  }
+
   public SetFrameLength(stateId: stateId, frameLength: number): void {
     this.frameLengths.set(stateId, frameLength);
   }

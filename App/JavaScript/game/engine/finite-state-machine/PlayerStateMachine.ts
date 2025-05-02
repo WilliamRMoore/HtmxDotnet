@@ -47,10 +47,9 @@ import {
 export type FSMState = {
   StateName: string;
   StateId: number;
-  InteruptFrame?: number;
-  OnEnter?: (p: Player, world: World) => void;
-  OnUpdate?: (p: Player, world: World) => void;
-  OnExit?: (p: Player, world: World) => void;
+  OnEnter: (p: Player, world: World) => void;
+  OnUpdate: (p: Player, world: World) => void;
+  OnExit: (p: Player, world: World) => void;
 };
 
 export class StateMachine {
@@ -175,7 +174,7 @@ export class StateMachine {
     }
 
     const defaultTransition = this.GetDefaultState(
-      this.player.FSMInfo.CurrentState.StateId,
+      this.player.FSMInfo.CurrentSatetId,
       w
     );
 
@@ -193,7 +192,7 @@ export class StateMachine {
 
   private runConditional(world: World): boolean {
     const conditions = this.stateMappings
-      .get(this.player.FSMInfo.CurrentState.StateId)!
+      .get(this.player.FSMInfo.CurrentSatetId)!
       .GetConditions();
 
     // We have no conditionals, return
@@ -213,6 +212,7 @@ export class StateMachine {
 
         // stateId did not resolve, return false
         if (state == undefined) {
+          console.error('StateId not found in state machine: ', res);
           return false;
         }
 
@@ -230,7 +230,7 @@ export class StateMachine {
 
   private GetTranslation(gameEventId: gameEventId): FSMState | undefined {
     const stateMappings = this.stateMappings.get(
-      this.player.FSMInfo.CurrentState.StateId
+      this.player.FSMInfo.CurrentSatetId
     );
     const nextStateId = stateMappings?.GetMapping(gameEventId);
 
@@ -272,20 +272,20 @@ export class StateMachine {
     const p = this.player;
     const fsmInfo = p.FSMInfo;
     fsmInfo.SetStateFrameToZero();
-    fsmInfo.CurrentState.OnExit?.(this.player, this.world);
+    fsmInfo.CurrentState.OnExit(this.player, this.world);
     fsmInfo.SetCurrentState(state);
-    fsmInfo.CurrentState.OnEnter?.(this.player, this.world);
+    fsmInfo.CurrentState.OnEnter(this.player, this.world);
   }
 
   private updateState() {
     const fsmInfo = this.player.FSMInfo;
-    fsmInfo.CurrentState.OnUpdate?.(this.player, this.world);
+    fsmInfo.CurrentState.OnUpdate(this.player, this.world);
     fsmInfo.IncrementStateFrame();
   }
 
   private IsDefaultFrame(): boolean {
     const fsmInfo = this.player.FSMInfo;
-    const fl = fsmInfo.GetFrameLengthOrUndefined(fsmInfo.CurrentState.StateId);
+    const fl = fsmInfo.GetFrameLenthOrUndefinedForCurrentState();
 
     if (fl === undefined) {
       return false;
@@ -296,9 +296,5 @@ export class StateMachine {
     }
 
     return false;
-  }
-
-  public get CurrentStateName(): string {
-    return this.player.FSMInfo.CurrentState.StateName ?? 'N/A';
   }
 }

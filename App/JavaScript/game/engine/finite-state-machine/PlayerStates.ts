@@ -62,6 +62,52 @@ class _STATES {
 
 export const STATES = new _STATES();
 
+// State mapping classes ===========================================================
+
+class StateRelation {
+  readonly stateId: stateId;
+  readonly mappings: ActionStateMappings;
+
+  constructor(stateId: stateId, actionStateTranslations: ActionStateMappings) {
+    this.stateId = stateId;
+    this.mappings = actionStateTranslations;
+  }
+}
+
+export class ActionStateMappings {
+  private readonly mappings = new Map<gameEventId, stateId>();
+  private defaultConditions?: Array<condition>;
+  private condtions?: Array<condition>;
+
+  public GetMapping(geId: gameEventId): stateId | undefined {
+    return this.mappings.get(geId);
+  }
+
+  public GetDefaults(): Array<condition> | undefined {
+    return this.defaultConditions;
+  }
+
+  public GetConditions() {
+    return this.condtions;
+  }
+
+  _setMappings(mappingsArray: { geId: gameEventId; sId: stateId }[]) {
+    mappingsArray.forEach((actSt) => {
+      this.mappings.set(actSt.geId, actSt.sId);
+    });
+  }
+
+  _setDefault(conditions: Array<condition>) {
+    if (!this.defaultConditions) {
+      this.defaultConditions = conditions;
+    }
+  }
+
+  _setConditions(conditions: Array<condition>) {
+    this.condtions = conditions;
+  }
+}
+
 // Conditionals ====================================================================
 
 type conditionFunc = (world: World, playerIndex: number) => boolean;
@@ -430,52 +476,6 @@ const RunStopToTurn: condition = {
   },
   StateId: STATES.RUN_TURN_S,
 };
-
-// State mapping classes ===========================================================
-
-class StateRelation {
-  readonly stateId: stateId;
-  readonly mappings: ActionStateMappings;
-
-  constructor(stateId: stateId, actionStateTranslations: ActionStateMappings) {
-    this.stateId = stateId;
-    this.mappings = actionStateTranslations;
-  }
-}
-
-export class ActionStateMappings {
-  private readonly mappings = new Map<gameEventId, stateId>();
-  private defaultConditions?: Array<condition>;
-  private condtions?: Array<condition>;
-
-  public GetMapping(geId: gameEventId): stateId | undefined {
-    return this.mappings.get(geId);
-  }
-
-  public GetDefaults(): Array<condition> | undefined {
-    return this.defaultConditions;
-  }
-
-  public GetConditions() {
-    return this.condtions;
-  }
-
-  _setMappings(mappingsArray: { geId: gameEventId; sId: stateId }[]) {
-    mappingsArray.forEach((actSt) => {
-      this.mappings.set(actSt.geId, actSt.sId);
-    });
-  }
-
-  _setDefault(conditions: Array<condition>) {
-    if (!this.defaultConditions) {
-      this.defaultConditions = conditions;
-    }
-  }
-
-  _setConditions(conditions: Array<condition>) {
-    this.condtions = conditions;
-  }
-}
 
 // STATE RELATIONS =====================================================================
 
@@ -883,10 +883,13 @@ function InitHelpessTranslations(): ActionStateMappings {
 
 // STATES ==================================================================
 
-export const Idle = {
+export const Idle: FSMState = {
   StateName: 'IDLE',
   StateId: STATES.IDLE_S,
-} as FSMState;
+  OnEnter: (p: Player, w: World) => {},
+  OnUpdate: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {},
+};
 
 export const StartWalk: FSMState = {
   StateName: 'START_WALK',
@@ -910,27 +913,28 @@ export const StartWalk: FSMState = {
       PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
     }
   },
-  OnExit: (p: Player) => {},
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const Walk: FSMState = {
   StateName: 'WALK',
   StateId: STATES.WALK_S,
-  OnEnter: (p: Player) => {},
+  OnEnter: (p: Player, w: World) => {},
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     if (ia != undefined) {
       PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
     }
   },
-  OnExit: (p: Player) => {},
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const Turn: FSMState = {
   StateName: 'TURN',
   StateId: STATES.TURN_S,
-  OnEnter: (p: Player) => {},
-  OnExit: (p: Player) => {
+  OnEnter: (p: Player, W: World) => {},
+  OnUpdate: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {
     p.Flags.ChangeDirections();
   },
 };
@@ -938,7 +942,7 @@ export const Turn: FSMState = {
 export const Dash: FSMState = {
   StateName: 'DASH',
   StateId: STATES.DASH_S,
-  OnEnter: (p: Player) => {
+  OnEnter: (p: Player, w: World) => {
     const flags = p.Flags;
     const MaxDashSpeed = p.Speeds.MaxDashSpeed;
     const impulse = flags.IsFacingRight()
@@ -954,39 +958,39 @@ export const Dash: FSMState = {
     const impulse = (ia?.LXAxsis ?? 0) * dashSpeedMultiplier;
     p.Velocity.AddClampedXImpulse(speedsComp.MaxDashSpeed, impulse);
   },
-  OnExit: (p: Player) => {},
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const DashTurn: FSMState = {
   StateName: 'DASH_TURN',
   StateId: STATES.DASH_TURN_S,
-  OnEnter: (p: Player) => {
+  OnEnter: (p: Player, w: World) => {
     p.Velocity.X = 0;
     p.Flags.ChangeDirections();
   },
-  OnUpdate() {},
-  OnExit: (p: Player) => {},
+  OnUpdate: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const Run: FSMState = {
   StateName: 'RUN',
   StateId: STATES.RUN_S,
-  OnEnter: (p: Player) => {},
+  OnEnter: (p: Player, w: World) => {},
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     if (ia != undefined) {
       PlayerHelpers.AddRunImpulseToPlayer(p, ia.LXAxsis);
     }
   },
-  OnExit: (p: Player) => {},
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const RunTurn: FSMState = {
   StateName: 'RUN_TURN',
   StateId: STATES.RUN_TURN_S,
-  OnEnter: (p: Player) => {},
-  OnUpdate: (p: Player) => {},
-  OnExit: (p: Player) => {
+  OnEnter: (p: Player, w: World) => {},
+  OnUpdate: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {
     p.Flags.ChangeDirections();
   },
 };
@@ -994,23 +998,23 @@ export const RunTurn: FSMState = {
 export const RunStop: FSMState = {
   StateName: 'RUN_STOP',
   StateId: STATES.STOP_RUN_S,
-  OnEnter: (p: Player) => {},
-  OnExit: (p: Player) => {},
+  OnEnter: (p: Player, w: World) => {},
+  OnUpdate: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const JumpSquat: FSMState = {
   StateName: 'JUMPSQUAT',
   StateId: STATES.JUMP_SQUAT_S,
-  OnEnter: (p: Player) => {
-    console.log('Jump Squat');
-  },
-  OnExit: (p: Player) => {},
+  OnEnter: (p: Player, w: World) => {},
+  OnUpdate: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const Jump: FSMState = {
   StateName: 'JUMP',
   StateId: STATES.JUMP_S,
-  OnEnter: (p: Player) => {
+  OnEnter: (p: Player, w: World) => {
     const jumpComp = p.Jump;
     if (jumpComp.HasJumps()) {
       PlayerHelpers.AddToPlayerYPosition(p, -0.5);
@@ -1026,12 +1030,13 @@ export const Jump: FSMState = {
       (inputAction?.LXAxsis ?? 0) * speedsComp.ArielVelocityMultiplier
     );
   },
-  OnExit: (p: Player) => {},
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const NeutralFall: FSMState = {
   StateName: 'NFALL',
   StateId: STATES.N_FALL_S,
+  OnEnter: (p: Player, w: World) => {},
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     const speedsComp = p.Speeds;
@@ -1040,15 +1045,17 @@ export const NeutralFall: FSMState = {
       (ia?.LXAxsis ?? 0) * speedsComp.ArielVelocityMultiplier
     );
   },
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const FastFall: FSMState = {
   StateName: 'FastFall',
   StateId: STATES.F_FALL_S,
-  OnEnter: (p: Player) => {
+  OnEnter: (p: Player, w: World) => {
     p.Flags.FastFallOn();
   },
-  OnExit: (p: Player) => {
+  OnUpdate: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {
     p.Flags.FastFallOff();
   },
 };
@@ -1056,35 +1063,41 @@ export const FastFall: FSMState = {
 export const Land: FSMState = {
   StateName: 'Land',
   StateId: STATES.LAND_S,
-  OnEnter: (p: Player) => {
+  OnEnter: (p: Player, w: World) => {
     p.Jump.ResetJumps();
     p.Velocity.Y = 0;
   },
+  OnUpdate: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const SoftLand: FSMState = {
   StateName: 'SoftLand',
   StateId: STATES.SOFT_LAND_S,
-  OnEnter: (p: Player) => {
+  OnEnter: (p: Player, w: World) => {
     p.Jump.ResetJumps();
     p.Velocity.Y = 0;
   },
+  OnUpdate: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const LedgeGrab: FSMState = {
   StateName: 'LedgeGrab',
   StateId: STATES.LEDGE_GRAB_S,
-  OnEnter: (p: Player) => {
+  OnEnter: (p: Player, w: World) => {
     const jumpComp = p.Jump;
     jumpComp.ResetJumps();
     jumpComp.IncrementJumps();
   },
+  OnUpdate: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const AirDodge: FSMState = {
   StateName: 'AirDodge',
   StateId: STATES.AIR_DODGE_S,
-  OnEnter: (p, w) => {
+  OnEnter: (p: Player, w: World) => {
     const pVel = p.Velocity;
     const ia = w.GetPlayerCurrentInput(p.ID)!;
     const angle = Math.atan2(ia?.LYAxsis, ia?.LXAxsis);
@@ -1092,7 +1105,7 @@ export const AirDodge: FSMState = {
     pVel.X = Math.cos(angle) * speed;
     pVel.Y = -Math.sin(angle) * speed;
   },
-  OnUpdate: (p, w) => {
+  OnUpdate: (p: Player, w: World) => {
     const frameLength = p.FSMInfo.GetFrameLengthOrUndefined(
       STATES.AIR_DODGE_S
     )!;
@@ -1103,9 +1116,13 @@ export const AirDodge: FSMState = {
     pVel.X *= 1 - ease;
     pVel.Y *= 1 - ease;
   },
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const Helpess: FSMState = {
   StateName: 'Helpess',
   StateId: STATES.HELPESS_S,
+  OnEnter: (p: Player, w: World) => {},
+  OnUpdate: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {},
 };
