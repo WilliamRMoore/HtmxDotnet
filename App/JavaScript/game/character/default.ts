@@ -1,7 +1,67 @@
-import { stateId, STATES } from '../engine/finite-state-machine/PlayerStates';
+import {
+  attackId,
+  ATTACKS,
+  stateId,
+  STATES,
+} from '../engine/finite-state-machine/PlayerStates';
 import { Circle } from '../engine/physics/circle';
 import { FlatVec } from '../engine/physics/vector';
-import { SpeedsComponentBuilder } from '../engine/player/playerComponents';
+import {
+  Attack,
+  HitBubble,
+  SpeedsComponentBuilder,
+} from '../engine/player/playerComponents';
+
+type frameNumber = number;
+
+const hb1OffSets = new Map<frameNumber, FlatVec>();
+const hb1ActiveFrame = [3, 4, 5, 6, 7];
+const hb1Frame3Offset = new FlatVec(30, -50);
+const hb1Frame4Offset = new FlatVec(40, -50);
+const hb1Frame5Offset = new FlatVec(70, -50);
+const hb1Frame6Offset = new FlatVec(70, -50);
+const hb1Frame7Offset = new FlatVec(70, -50);
+
+hb1OffSets.set(3, hb1Frame3Offset);
+hb1OffSets.set(4, hb1Frame4Offset);
+hb1OffSets.set(5, hb1Frame5Offset);
+hb1OffSets.set(6, hb1Frame6Offset);
+hb1OffSets.set(7, hb1Frame7Offset);
+
+const hb2ActiveFrame = [3, 4, 5, 6, 7];
+const hb2OffSets = new Map<frameNumber, FlatVec>();
+const hb2Frame3Offset = new FlatVec(15, -50);
+const hb2Frame4Offset = new FlatVec(25, -50);
+const hb2Frame5Offset = new FlatVec(55, -50);
+const hb2Frame6Offset = new FlatVec(55, -50);
+const hb2Frame7Offset = new FlatVec(55, -50);
+
+hb2OffSets.set(3, hb2Frame3Offset);
+hb2OffSets.set(4, hb2Frame4Offset);
+hb2OffSets.set(5, hb2Frame5Offset);
+hb2OffSets.set(6, hb2Frame6Offset);
+hb2OffSets.set(7, hb2Frame7Offset);
+
+const defaultNeutralAttackHitBubble1 = new HitBubble(
+  0,
+  7,
+  0,
+  10,
+  hb1OffSets,
+  hb1ActiveFrame
+);
+const defaultNeutralAttackHitBubble2 = new HitBubble(
+  1,
+  6,
+  1,
+  8,
+  hb2OffSets,
+  hb2ActiveFrame
+);
+
+const hbs = [defaultNeutralAttackHitBubble1, defaultNeutralAttackHitBubble2];
+
+const DefaultNeutralAttack = new Attack('ThunderPalm', hbs);
 
 export type CharacterConfig = {
   FrameLengths: Map<stateId, number>;
@@ -15,6 +75,7 @@ export type CharacterConfig = {
   LedgeBoxHeight: number;
   LedgeBoxWidth: number;
   ledgeBoxYOffset: number;
+  attacks: Map<attackId, Attack>;
 };
 
 export class DefaultCharacterConfig {
@@ -29,6 +90,7 @@ export class DefaultCharacterConfig {
   public LedgeBoxHeight: number;
   public LedgeBoxWidth: number;
   public ledgeBoxYOffset: number;
+  public attacks: Map<attackId, Attack> = new Map<attackId, Attack>();
 
   constructor() {
     this.FrameLengths.set(STATES.START_WALK_S, 5)
@@ -64,6 +126,7 @@ export class DefaultCharacterConfig {
     this.LedgeBoxHeight = 35;
     this.LedgeBoxWidth = 80;
     this.ledgeBoxYOffset = -130;
+    this.attacks.set(ATTACKS.NUETRAL_ATTACK, DefaultNeutralAttack);
   }
 
   private populateHurtCircles() {

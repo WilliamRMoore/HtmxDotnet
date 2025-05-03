@@ -7,6 +7,7 @@ import { FSMState } from './PlayerStateMachine';
 
 export type gameEventId = number;
 export type stateId = number;
+export type attackId = number;
 
 // Constants =======================================================================
 
@@ -58,9 +59,15 @@ class _STATES {
   public readonly LEDGE_GRAB_S = 16 as stateId;
   public readonly AIR_DODGE_S = 17 as stateId;
   public readonly HELPESS_S = 18 as stateId;
+  public readonly ATTACK_S = 19 as stateId;
 }
 
 export const STATES = new _STATES();
+class _ATTACKS {
+  public readonly NUETRAL_ATTACK = 0 as attackId;
+}
+
+export const ATTACKS = new _ATTACKS();
 
 // State mapping classes ===========================================================
 
@@ -1122,6 +1129,14 @@ export const AirDodge: FSMState = {
 export const Helpess: FSMState = {
   StateName: 'Helpess',
   StateId: STATES.HELPESS_S,
+  OnEnter: (p: Player, w: World) => {},
+  OnUpdate: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {},
+};
+
+export const Attack: FSMState = {
+  StateName: 'Attack',
+  StateId: STATES.ATTACK_S,
   OnEnter: (p: Player, w: World) => {},
   OnUpdate: (p: Player, w: World) => {},
   OnExit: (p: Player, w: World) => {},

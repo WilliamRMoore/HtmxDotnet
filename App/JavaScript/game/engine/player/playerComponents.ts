@@ -1,4 +1,11 @@
-import { Idle, stateId, STATES } from '../finite-state-machine/PlayerStates';
+import {
+  attackId,
+  ATTACKS,
+  GAME_EVENTS,
+  Idle,
+  stateId,
+  STATES,
+} from '../finite-state-machine/PlayerStates';
 import { FSMState } from '../finite-state-machine/PlayerStateMachine';
 import {
   CreateConvexHull,
@@ -9,6 +16,7 @@ import { FillArrayWithFlatVec } from '../utils';
 import { Player } from './playerOrchestrator';
 import { Clamp } from '../utils';
 import { Circle } from '../physics/circle';
+import { InputAction } from '../../loops/Input';
 
 /**
  * This file contains everything pertaining to player components.
@@ -254,7 +262,7 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
     return this.currentState;
   }
 
-  public get CurrentSatetId(): stateId {
+  public get CurrentStatetId(): stateId {
     return this.currentStateId;
   }
 
@@ -980,6 +988,106 @@ export class JumpComponent implements IHistoryEnabled<number> {
 
   public SetFromSnapShot(snapShot: number): void {
     this.jumpCount = snapShot;
+  }
+}
+
+type bubbleId = number;
+type frameNumber = number;
+
+export class HitBubble {
+  public readonly BubbleId: bubbleId;
+  public readonly Damage: number;
+  public readonly Priority: number;
+  public readonly Radius: number;
+  public readonly ActiveFrames: Array<frameNumber>;
+  private readonly frameOffsets: Map<frameNumber, FlatVec>;
+
+  constructor(
+    id: bubbleId,
+    damage: number,
+    priority: number,
+    radius: number,
+    frameOffsets: Map<frameNumber, FlatVec>,
+    activeFrames: Array<frameNumber>
+  ) {
+    this.BubbleId = id;
+    this.Damage = damage;
+    this.Priority = priority;
+    this.Radius = radius;
+    this.frameOffsets = frameOffsets;
+    this.ActiveFrames = activeFrames;
+  }
+
+  public GetOffSetForFrame(frameNumber: number): FlatVec | undefined {
+    return this.frameOffsets.get(frameNumber);
+  }
+}
+
+export class Attack {
+  public readonly Name: string;
+  private hitBubbles: Map<frameNumber, Array<HitBubble>>;
+  private impulses: Map<frameNumber, FlatVec>;
+
+  constructor(
+    name: string,
+    hitBubbles: Array<HitBubble>,
+    impulses: Map<frameNumber, FlatVec> = new Map<frameNumber, FlatVec>()
+  ) {
+    this.impulses = impulses;
+    this.Name = name;
+
+    let attack = new Map<frameNumber, Array<HitBubble>>();
+    hitBubbles.forEach((hb) => {
+      const activeFrames = hb.ActiveFrames;
+      for (let i = 0; i < activeFrames.length; i++) {
+        const frame = activeFrames[i];
+        if (attack.has(frame)) {
+          attack!.get(frame)!.push(hb);
+        } else {
+          attack.set(frame, [hb]);
+        }
+      }
+    });
+
+    this.hitBubbles = attack;
+  }
+
+  public GetHitBubblesForFrame(
+    frameNumber: number
+  ): Array<HitBubble> | undefined {
+    return this.hitBubbles.get(frameNumber);
+  }
+
+  public GetImpulseForFrame(frameNumber: number): FlatVec | undefined {
+    return this.impulses.get(frameNumber);
+  }
+}
+
+export class AttackComponment {
+  private attacks: Map<attackId, Attack>;
+  private currentAttack: Attack | undefined;
+
+  public constructor(attacks: Map<attackId, Attack>) {
+    this.attacks = attacks;
+  }
+
+  public GetAttack(p: Player, ia: InputAction): Attack | undefined {
+    if (this.currentAttack != undefined) {
+      return this.currentAttack;
+    }
+    const gameEventID = ia.Action;
+    const playerStateId = p.FSMInfo.CurrentStatetId;
+
+    if (
+      playerStateId == STATES.IDLE_S &&
+      gameEventID == GAME_EVENTS.ATTACK_GE
+    ) {
+      return this.attacks.get(ATTACKS.NUETRAL_ATTACK);
+    }
+  }
+
+  public ZeroCurrentAttack(): void {
+    this.currentAttack = undefined;
   }
 }
 

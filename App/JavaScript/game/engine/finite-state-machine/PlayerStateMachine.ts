@@ -174,7 +174,7 @@ export class StateMachine {
     }
 
     const defaultTransition = this.GetDefaultState(
-      this.player.FSMInfo.CurrentSatetId,
+      this.player.FSMInfo.CurrentStatetId,
       w
     );
 
@@ -192,7 +192,7 @@ export class StateMachine {
 
   private runConditional(world: World): boolean {
     const conditions = this.stateMappings
-      .get(this.player.FSMInfo.CurrentSatetId)!
+      .get(this.player.FSMInfo.CurrentStatetId)!
       .GetConditions();
 
     // We have no conditionals, return
@@ -230,7 +230,7 @@ export class StateMachine {
 
   private GetTranslation(gameEventId: gameEventId): FSMState | undefined {
     const stateMappings = this.stateMappings.get(
-      this.player.FSMInfo.CurrentSatetId
+      this.player.FSMInfo.CurrentStatetId
     );
     const nextStateId = stateMappings?.GetMapping(gameEventId);
 

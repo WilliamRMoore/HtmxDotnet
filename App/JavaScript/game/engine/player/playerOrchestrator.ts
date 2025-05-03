@@ -1,6 +1,7 @@
 import { Stage } from '../stage/stageComponents';
 import { CharacterConfig } from '../../character/default';
 import {
+  AttackComponment,
   ECBComponent,
   FSMInfoComponent,
   HurtCircles,
@@ -13,6 +14,12 @@ import {
   SpeedsComponentBuilder,
   VelocityComponent,
 } from './playerComponents';
+import {
+  ATTACKS,
+  GAME_EVENTS,
+  gameEventId,
+  STATES,
+} from '../finite-state-machine/PlayerStates';
 
 export type speedBuilderOptions = (scb: SpeedsComponentBuilder) => void;
 
@@ -39,6 +46,7 @@ export class Player {
   private readonly jump: JumpComponent;
   private readonly fsmInfo: FSMInfoComponent;
   private readonly ledgeDetector: LedgeDetectorComponent;
+  private readonly attacks: AttackComponment;
   public readonly ID: number = 0;
 
   constructor(Id: number, CharacterConfig: CharacterConfig) {
@@ -67,6 +75,7 @@ export class Player {
       CharacterConfig.LedgeBoxHeight,
       CharacterConfig.ledgeBoxYOffset
     );
+    this.attacks = new AttackComponment(CharacterConfig.attacks);
   }
 
   public get ECB(): ECBComponent {
@@ -108,6 +117,10 @@ export class Player {
   public get LedgeDetector(): LedgeDetectorComponent {
     return this.ledgeDetector;
   }
+
+  public get Attacks(): AttackComponment {
+    return this.attacks;
+  }
 }
 
 export class PlayerHelpers {
@@ -119,6 +132,16 @@ export class PlayerHelpers {
       impulse * speeds.WalkSpeedMulitplier
     );
   }
+
+  // public static GetMappedAttackId(p: Player, geId: gameEventId): number {
+  //   const fsmStateId = p.FSMInfo.CurrentStatetId;
+
+  //   if (geId == GAME_EVENTS.ATTACK_GE && fsmStateId == STATES.IDLE_S) {
+  //     return ATTACKS.NUETRAL_ATTACK;
+  //   }
+
+  //   return -1;
+  // }
 
   public static AddRunImpulseToPlayer(p: Player, impulse: number): void {
     const velocity = p.Velocity;
