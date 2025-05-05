@@ -5,10 +5,14 @@ import {
   ActionStateMappings,
   AIR_DODGE_RELATIONS,
   AirDodge,
+  Attack,
+  ATTACK_RELATIONS,
   Dash,
   DASH_RELATIONS,
   DASH_TURN_RELATIONS,
   DashTurn,
+  DOWN_SPECIAL_RELATIONS,
+  DownSpecial,
   FastFall,
   FFALL_RELATIONS,
   gameEventId,
@@ -80,7 +84,9 @@ export class StateMachine {
       .set(SOFT_LAND_RELATIONS.stateId, SOFT_LAND_RELATIONS.mappings)
       .set(LEDGE_GRAB_RELATIONS.stateId, LEDGE_GRAB_RELATIONS.mappings)
       .set(AIR_DODGE_RELATIONS.stateId, AIR_DODGE_RELATIONS.mappings)
-      .set(HELPESS_RELATIONS.stateId, HELPESS_RELATIONS.mappings);
+      .set(HELPESS_RELATIONS.stateId, HELPESS_RELATIONS.mappings)
+      .set(ATTACK_RELATIONS.stateId, ATTACK_RELATIONS.mappings)
+      .set(DOWN_SPECIAL_RELATIONS.stateId, DOWN_SPECIAL_RELATIONS.mappings);
 
     this.states
       .set(Idle.StateId, Idle)
@@ -100,7 +106,9 @@ export class StateMachine {
       .set(SoftLand.StateId, SoftLand)
       .set(LedgeGrab.StateId, LedgeGrab)
       .set(AirDodge.StateId, AirDodge)
-      .set(Helpess.StateId, Helpess);
+      .set(Helpess.StateId, Helpess)
+      .set(Attack.StateId, Attack)
+      .set(DownSpecial.StateId, DownSpecial);
   }
 
   public SetInitialState(stateId: stateId) {

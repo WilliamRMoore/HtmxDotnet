@@ -1,8 +1,12 @@
 import {
+  AttackDecisions,
   attackId,
   ATTACKS,
+  DownSpecialConditions,
   GAME_EVENTS,
   Idle,
+  RunAttackCondition,
+  RunCondition,
   stateId,
   STATES,
 } from '../finite-state-machine/PlayerStates';
@@ -13,10 +17,11 @@ import {
   LineSegmentIntersection,
 } from '../physics/vector';
 import { FillArrayWithFlatVec } from '../utils';
-import { Player } from './playerOrchestrator';
+import { Player, PlayerHelpers } from './playerOrchestrator';
 import { Clamp } from '../utils';
 import { Circle } from '../physics/circle';
 import { InputAction } from '../../loops/Input';
+import { World } from '../world/world';
 
 /**
  * This file contains everything pertaining to player components.
@@ -52,6 +57,7 @@ export class ComponentHistory {
   readonly HurtCirclesHistory: Array<HurtCirclesSnapShot> = [];
   readonly JumpHistroy: Array<number> = [];
   readonly LedgeDetectorHistory: Array<LedgeDetectorSnapShot> = [];
+  readonly AttackHistory: Array<AttackSnapShot> = [];
 
   public SetPlayerToFrame(p: Player, frameNumber: number) {
     p.Postion.SetFromSnapShot(this.PositionHistory[frameNumber]);
@@ -62,6 +68,7 @@ export class ComponentHistory {
     p.HurtCircles.SetFromSnapShot(this.HurtCirclesHistory[frameNumber]);
     p.LedgeDetector.SetFromSnapShot(this.LedgeDetectorHistory[frameNumber]);
     p.Jump.SetFromSnapShot(this.JumpHistroy[frameNumber]);
+    p.Attacks.SetFromSnapShot(this.AttackHistory[frameNumber]);
   }
 
   public static GetRightXFromEcbHistory(ecb: ECBSnapShot) {
@@ -237,21 +244,10 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
   private currentState: FSMState = Idle;
   private currentStateId: stateId = STATES.IDLE_S;
   private currentStateFrame: number = 0;
-  private readonly frameLengths = new Map<stateId, number>();
+  private readonly frameLengths: Map<stateId, number>;
 
-  public constructor() {
-    this.frameLengths
-      .set(STATES.START_WALK_S, 5)
-      .set(STATES.JUMP_SQUAT_S, 5)
-      .set(STATES.TURN_S, 3)
-      .set(STATES.DASH_S, 20)
-      .set(STATES.DASH_TURN_S, 1)
-      .set(STATES.RUN_TURN_S, 20)
-      .set(STATES.STOP_RUN_S, 15)
-      .set(STATES.JUMP_S, 15)
-      .set(STATES.AIR_DODGE_S, 25)
-      .set(STATES.LAND_S, 5)
-      .set(STATES.SOFT_LAND_S, 1);
+  public constructor(frameLengths: Map<stateId, number>) {
+    this.frameLengths = frameLengths;
   }
 
   public get CurrentStateFrame() {
@@ -1018,23 +1014,29 @@ export class HitBubble {
     this.ActiveFrames = activeFrames;
   }
 
-  public GetOffSetForFrame(frameNumber: number): FlatVec | undefined {
+  public GetOffSetForFrame(frameNumber: number) {
     return this.frameOffsets.get(frameNumber);
   }
 }
 
 export class Attack {
   public readonly Name: string;
+  public readonly TotalFrameLength: number;
   private hitBubbles: Map<frameNumber, Array<HitBubble>>;
   private impulses: Map<frameNumber, FlatVec>;
+  public readonly ImpulseClamp: number | undefined;
 
   constructor(
     name: string,
+    totalFrameLength: number,
     hitBubbles: Array<HitBubble>,
+    impulseClamp = 0,
     impulses: Map<frameNumber, FlatVec> = new Map<frameNumber, FlatVec>()
   ) {
     this.impulses = impulses;
+    this.ImpulseClamp = impulseClamp;
     this.Name = name;
+    this.TotalFrameLength = totalFrameLength;
 
     let attack = new Map<frameNumber, Array<HitBubble>>();
     hitBubbles.forEach((hb) => {
@@ -1063,31 +1065,62 @@ export class Attack {
   }
 }
 
-export class AttackComponment {
+export type AttackSnapShot = Attack | undefined;
+export class AttackComponment implements IHistoryEnabled<AttackSnapShot> {
   private attacks: Map<attackId, Attack>;
-  private currentAttack: Attack | undefined;
+  private currentAttack: Attack | undefined = undefined;
 
   public constructor(attacks: Map<attackId, Attack>) {
     this.attacks = attacks;
   }
 
-  public GetAttack(p: Player, ia: InputAction): Attack | undefined {
-    if (this.currentAttack != undefined) {
-      return this.currentAttack;
-    }
-    const gameEventID = ia.Action;
-    const playerStateId = p.FSMInfo.CurrentStatetId;
+  public GetAttack(): Attack | undefined {
+    return this.currentAttack;
+  }
 
-    if (
-      playerStateId == STATES.IDLE_S &&
-      gameEventID == GAME_EVENTS.ATTACK_GE
-    ) {
-      return this.attacks.get(ATTACKS.NUETRAL_ATTACK);
+  public SetCurrentAttack(p: Player, w: World, ia: InputAction): void {
+    const gameEventID = ia.Action;
+    const grounded = PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage!);
+
+    if (gameEventID === GAME_EVENTS.ATTACK_GE && grounded) {
+      const conditionsLength = AttackDecisions.length;
+      for (let i = 0; i < conditionsLength; i++) {
+        const cond = AttackDecisions[i];
+        const attackId = RunAttackCondition(cond, w, p.ID);
+        if (attackId !== undefined) {
+          this.currentAttack = this.attacks.get(attackId);
+          return;
+        }
+      }
+      //this.currentAttack = this.attacks.get(ATTACKS.NUETRAL_ATTACK);
+      return;
+    }
+
+    if (gameEventID === GAME_EVENTS.DOWN_SPECIAL_GE && grounded) {
+      const conditionalsLength = DownSpecialConditions.length;
+      for (let i = 0; i < conditionalsLength; i++) {
+        const cond = DownSpecialConditions[i];
+        const attackId = RunAttackCondition(cond, w, p.ID);
+        if (attackId !== undefined) {
+          this.currentAttack = this.attacks.get(attackId);
+          return;
+        }
+      }
+      return;
+      //this.currentAttack = this.attacks.get(ATTACKS.DOWN_SPECIAL_ATTACK);
     }
   }
 
   public ZeroCurrentAttack(): void {
     this.currentAttack = undefined;
+  }
+
+  public SnapShot(): Attack | undefined {
+    return this.currentAttack;
+  }
+
+  public SetFromSnapShot(snapShot: Attack | undefined): void {
+    this.currentAttack = snapShot;
   }
 }
 

@@ -8,6 +8,7 @@ import {
   Gravity,
   LedgeGrabDetection,
   OutOfBoundsCheck,
+  PlayerAttacks,
   PlayerCollisionDetection,
   PlayerInput,
   RecordHistory,
@@ -34,9 +35,10 @@ export class Jazz implements IJazz {
   }
 
   public Init(numberOfPlayers: number, positions: Array<FlatVec>): void {
-    const charConfig = new DefaultCharacterConfig();
+    //const charConfig = new DefaultCharacterConfig();
     for (let i = 0; i < numberOfPlayers; i++) {
       const pos = positions[i];
+      const charConfig = new DefaultCharacterConfig();
       const p = new Player(i, charConfig);
       this.world.SetPlayer(p);
       PlayerHelpers.SetPlayerInitialPosition(p, pos.X, pos.Y);
@@ -92,6 +94,7 @@ export class Jazz implements IJazz {
     PlayerCollisionDetection(world);
     LedgeGrabDetection(world);
     StageCollisionDetection(world);
+    PlayerAttacks(world);
     OutOfBoundsCheck(world);
     RecordHistory(world);
   }

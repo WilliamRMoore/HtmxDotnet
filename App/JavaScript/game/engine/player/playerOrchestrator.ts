@@ -14,12 +14,6 @@ import {
   SpeedsComponentBuilder,
   VelocityComponent,
 } from './playerComponents';
-import {
-  ATTACKS,
-  GAME_EVENTS,
-  gameEventId,
-  STATES,
-} from '../finite-state-machine/PlayerStates';
 
 export type speedBuilderOptions = (scb: SpeedsComponentBuilder) => void;
 
@@ -67,7 +61,7 @@ export class Player {
       CharacterConfig.JumpVelocity,
       CharacterConfig.NumberOfJumps
     );
-    this.fsmInfo = new FSMInfoComponent();
+    this.fsmInfo = new FSMInfoComponent(CharacterConfig.FrameLengths);
     this.ledgeDetector = new LedgeDetectorComponent(
       this.position.X,
       this.position.Y,

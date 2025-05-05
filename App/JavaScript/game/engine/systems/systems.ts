@@ -338,6 +338,24 @@ export function PlayerInput(world: World) {
   }
 }
 
+export function PlayerAttacks(world: World) {
+  const playerCount = world.PlayerCount;
+  for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
+    const p = world.GetPlayer(playerIndex)!;
+    const attackComp = p.Attacks;
+    const attack = attackComp.GetAttack();
+    if (attack === undefined) {
+      continue;
+    }
+    const stateFrame = p.FSMInfo.CurrentStateFrame;
+    const hb = attack.GetHitBubblesForFrame(stateFrame);
+    if (hb === undefined) {
+      continue;
+    }
+    // detect if other players are hit
+  }
+}
+
 export function ApplyVelocty(world: World) {
   const playerCount = world.PlayerCount;
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
@@ -458,6 +476,7 @@ export function RecordHistory(w: World) {
     history.EcbHistory[frameNumber] = p.ECB.SnapShot();
     history.HurtCirclesHistory[frameNumber] = p.HurtCircles.SnapShot();
     history.JumpHistroy[frameNumber] = p.Jump.SnapShot();
+    history.AttackHistory[frameNumber] = p.Attacks.SnapShot();
   }
   w.SetPoolHistory(
     frameNumber,

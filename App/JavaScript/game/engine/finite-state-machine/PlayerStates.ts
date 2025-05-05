@@ -60,11 +60,13 @@ class _STATES {
   public readonly AIR_DODGE_S = 17 as stateId;
   public readonly HELPESS_S = 18 as stateId;
   public readonly ATTACK_S = 19 as stateId;
+  public readonly DOWN_SPECIAL_S = 20 as stateId;
 }
 
 export const STATES = new _STATES();
 class _ATTACKS {
   public readonly NUETRAL_ATTACK = 0 as attackId;
+  public readonly DOWN_SPECIAL_ATTACK = 1 as attackId;
 }
 
 export const ATTACKS = new _ATTACKS();
@@ -125,6 +127,12 @@ type condition = {
   StateId: stateId;
 };
 
+type attackCondition = {
+  Name: string;
+  ConditionFunc: conditionFunc;
+  AttackId: attackId;
+};
+
 export function RunCondition(
   c: condition,
   w: World,
@@ -133,6 +141,18 @@ export function RunCondition(
   if (c.ConditionFunc(w, playerIndex)) {
     return c.StateId;
   }
+  return undefined;
+}
+
+export function RunAttackCondition(
+  c: attackCondition,
+  w: World,
+  playerIndex: number
+): attackId | undefined {
+  if (c.ConditionFunc(w, playerIndex)) {
+    return c.AttackId;
+  }
+
   return undefined;
 }
 
@@ -484,6 +504,77 @@ const RunStopToTurn: condition = {
   StateId: STATES.RUN_TURN_S,
 };
 
+const IdleToAttack: condition = {
+  Name: 'IdleToAttack',
+  ConditionFunc: (w, playerIndex) => {
+    const ia = w.GetPlayerCurrentInput(playerIndex);
+    const lastIa = w.GetPlayerPreviousInput(playerIndex);
+
+    if (
+      ia!.Action === GAME_EVENTS.ATTACK_GE &&
+      lastIa!.Action != GAME_EVENTS.ATTACK_GE
+    ) {
+      return true;
+    }
+
+    return false;
+  },
+  StateId: STATES.ATTACK_S,
+};
+
+const IdleToDownSpecial: condition = {
+  Name: 'IdleToDownSpecial',
+  ConditionFunc: (w, playerIndex) => {
+    const ia = w.GetPlayerCurrentInput(playerIndex);
+    const lastIa = w.GetPlayerPreviousInput(playerIndex);
+
+    if (
+      ia!.Action === GAME_EVENTS.DOWN_SPECIAL_GE &&
+      (lastIa?.Action === undefined ||
+        lastIa!.Action !== GAME_EVENTS.DOWN_SPECIAL_GE)
+    ) {
+      return true;
+    }
+
+    return false;
+  },
+  StateId: STATES.DOWN_SPECIAL_S,
+};
+// Attack Conditionals =================================================================
+const AttackToNeutral: attackCondition = {
+  Name: 'AttackToNurtal',
+  ConditionFunc: (w, playerIndex) => {
+    const ia = w.GetPlayerCurrentInput(playerIndex)!;
+    const p = w.GetPlayer(playerIndex)!;
+    const grounded = PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage!);
+
+    if (ia?.Action === GAME_EVENTS.ATTACK_GE && grounded) {
+      return true;
+    }
+
+    return false;
+  },
+  AttackId: ATTACKS.NUETRAL_ATTACK,
+};
+
+export const AttackDecisions = [AttackToNeutral];
+
+const downSpecialToDownSpecialGrounded: attackCondition = {
+  Name: 'DownSpecialToDownSpeacialGrounded',
+  ConditionFunc: (w, playerIndex) => {
+    const ia = w.GetPlayerCurrentInput(playerIndex)!;
+    const p = w.GetPlayer(playerIndex)!;
+    const grounded = PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage!);
+
+    if (ia.Action === GAME_EVENTS.DOWN_SPECIAL_GE && grounded) {
+      return true;
+    }
+    return false;
+  },
+  AttackId: ATTACKS.DOWN_SPECIAL_ATTACK,
+};
+
+export const DownSpecialConditions = [downSpecialToDownSpecialGrounded];
 // STATE RELATIONS =====================================================================
 
 export const IDLE_STATE_RELATIONS = InitIdleRelations();
@@ -504,6 +595,8 @@ export const SOFT_LAND_RELATIONS = InitSoftLandRelations();
 export const LEDGE_GRAB_RELATIONS = InitLedgeGrabRelations();
 export const AIR_DODGE_RELATIONS = InitAirDodgeRelations();
 export const HELPESS_RELATIONS = InitHelpessRelations();
+export const ATTACK_RELATIONS = InitAttackRelations();
+export const DOWN_SPECIAL_RELATIONS = InitDownSpecialRelations();
 
 // Init functions ====================================================================
 
@@ -658,6 +751,24 @@ function InitHelpessRelations(): StateRelation {
   return HelplessRelations;
 }
 
+function InitAttackRelations(): StateRelation {
+  const attackRelations = new StateRelation(
+    STATES.ATTACK_S,
+    InitAttackTranslations()
+  );
+
+  return attackRelations;
+}
+
+function InitDownSpecialRelations(): StateRelation {
+  const downSpecRelations = new StateRelation(
+    STATES.DOWN_SPECIAL_S,
+    InitDownSpecialTrnaslations()
+  );
+
+  return downSpecRelations;
+}
+
 // Action State Mapping functions ===================================================
 
 function InitIdleTranslations() {
@@ -670,7 +781,12 @@ function InitIdleTranslations() {
     { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
   ]);
 
-  const condtions: Array<condition> = [IdleToDashturn, IdleToTurn];
+  const condtions: Array<condition> = [
+    IdleToDashturn,
+    IdleToTurn,
+    IdleToAttack,
+    IdleToDownSpecial,
+  ];
 
   idleTranslations._setConditions(condtions);
 
@@ -886,6 +1002,21 @@ function InitHelpessTranslations(): ActionStateMappings {
   ]);
 
   return helpessTranslations;
+}
+
+function InitAttackTranslations(): ActionStateMappings {
+  const attackTranslations = new ActionStateMappings();
+  attackTranslations._setDefault([defaultIdle]);
+
+  return attackTranslations;
+}
+
+function InitDownSpecialTrnaslations(): ActionStateMappings {
+  const downSpecialTranslations = new ActionStateMappings();
+
+  downSpecialTranslations._setDefault([defaultIdle]);
+
+  return downSpecialTranslations;
 }
 
 // STATES ==================================================================
@@ -1137,7 +1268,65 @@ export const Helpess: FSMState = {
 export const Attack: FSMState = {
   StateName: 'Attack',
   StateId: STATES.ATTACK_S,
-  OnEnter: (p: Player, w: World) => {},
-  OnUpdate: (p: Player, w: World) => {},
-  OnExit: (p: Player, w: World) => {},
+  OnEnter: (p: Player, w: World) => {
+    const attackComp = p.Attacks;
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
+    attackComp.SetCurrentAttack(p, w, ia);
+  },
+  OnUpdate: (p: Player, w: World) => {
+    const attackComp = p.Attacks;
+    const attack = attackComp.GetAttack();
+    const impulse = attack?.GetImpulseForFrame(p.FSMInfo.CurrentStateFrame);
+
+    if (impulse === undefined) {
+      return;
+    }
+
+    const x = p.Flags.IsFacingRight() ? impulse.X : -impulse.X;
+    const y = impulse.Y;
+    const clamp = attack?.ImpulseClamp;
+    const pVel = p.Velocity;
+    if (clamp !== undefined) {
+      pVel.AddClampedXImpulse(clamp, x);
+      pVel.AddClampedYImpulse(clamp, y);
+    }
+    // pVel.X += x;
+    // pVel.Y += y;
+  },
+  OnExit: (p: Player, w: World) => {
+    const attackComp = p.Attacks;
+    attackComp.ZeroCurrentAttack();
+  },
+};
+
+export const DownSpecial: FSMState = {
+  StateName: 'DownSpecial',
+  StateId: STATES.DOWN_SPECIAL_S,
+  OnEnter: (p: Player, w: World) => {
+    const attackComp = p.Attacks;
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
+    attackComp.SetCurrentAttack(p, w, ia);
+  },
+  OnUpdate(p: Player, world: World) {
+    const attackComp = p.Attacks;
+    const attack = attackComp.GetAttack();
+    const impulse = attack?.GetImpulseForFrame(p.FSMInfo.CurrentStateFrame);
+
+    if (impulse === undefined) {
+      return;
+    }
+
+    const x = p.Flags.IsFacingRight() ? impulse.X : -impulse.X;
+    const y = impulse.Y;
+    const clamp = attack?.ImpulseClamp;
+    const pVel = p.Velocity;
+    if (clamp !== undefined) {
+      pVel.AddClampedXImpulse(clamp, x);
+      pVel.AddClampedYImpulse(clamp, y);
+    }
+  },
+  OnExit(p: Player, world: World) {
+    const attackComp = p.Attacks;
+    attackComp.ZeroCurrentAttack();
+  },
 };

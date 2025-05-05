@@ -1,7 +1,11 @@
 import { FlatVec } from '../engine/physics/vector';
 import {
+  Attack,
+  AttackSnapShot,
   ComponentHistory,
   ECBSnapShot,
+  FlagsSnapShot,
+  FSMInfoSnapShot,
   HurtCirclesSnapShot,
   LedgeDetectorSnapShot,
   StaticHistory,
@@ -70,6 +74,8 @@ export class DebugRenderer {
       playerStateHistory?.FlagsHistory[localFrame]?.FacingRight ?? true;
     const playerFsmState =
       playerStateHistory?.FsmInfoHistory[localFrame]?.State?.StateName ?? 'N/A';
+    const currentAttack = playerStateHistory?.AttackHistory[localFrame];
+    const currentAttackString = currentAttack?.Name;
 
     if (localFrame == 0) {
       return;
@@ -105,6 +111,10 @@ export class DebugRenderer {
       10,
       210
     );
+
+    if (currentAttackString !== undefined) {
+      ctx.fillText(`Attack Name: ${currentAttackString}`, 10, 240);
+    }
 
     this.lastFrame = localFrame;
   }
@@ -173,11 +183,14 @@ function drawPlayer(
     const lastLd = playerHistory!.LedgeDetectorHistory[lastFrame];
     const facingRight = flags.FacingRight;
     const lastFacingRight = lastFlags?.FacingRight;
+    const attack = playerHistory!.AttackHistory[currentFrame];
+    const fsm = playerHistory!.FsmInfoHistory[currentFrame];
 
     //drawHull(ctx, player);
     drawPrevEcb(ctx, ecb, lastEcb, alpha);
     drawCurrentECB(ctx, ecb, lastEcb, alpha);
     drawHurtCircles(ctx, circles, lastCirclse, alpha);
+    drawHitCircles(ctx, attack, fsm, flags, pos, lastPos, alpha);
     drawPositionMarker(ctx, pos, lastPos, alpha);
     const lerpDirection = alpha > 0.5 ? facingRight : lastFacingRight;
     drawDirectionMarker(ctx, lerpDirection, ecb, lastEcb, alpha);
@@ -414,6 +427,52 @@ function drawCurrentECB(
   ctx.closePath();
   ctx.stroke();
   ctx.fill();
+}
+
+function drawHitCircles(
+  ctx: CanvasRenderingContext2D,
+  attack: AttackSnapShot,
+  fsmInfo: FSMInfoSnapShot,
+  flags: FlagsSnapShot,
+  currentPosition: FlatVec,
+  lastPosition: FlatVec,
+  alpha: number
+) {
+  if (attack === undefined) {
+    return;
+  }
+
+  const currentSateFrame = fsmInfo.StateFrame;
+  const circles = attack.GetHitBubblesForFrame(currentSateFrame);
+
+  if (circles == undefined) {
+    return;
+  }
+
+  ctx.strokeStyle = 'red';
+  ctx.fillStyle = 'red';
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.4;
+  const length = circles.length;
+
+  const interpolatedX = Lerp(lastPosition.X, currentPosition.X, alpha);
+  const interpolatedY = Lerp(lastPosition.Y, currentPosition.Y, alpha);
+
+  for (let i = 0; i < length; i++) {
+    const circle = circles[i];
+    const offSet = circle.GetOffSetForFrame(currentSateFrame)!;
+    const offsetX = flags.FacingRight
+      ? interpolatedX + offSet.X
+      : interpolatedX - offSet.X;
+    const offsetY = interpolatedY + offSet.Y;
+
+    ctx.beginPath();
+    ctx.arc(offsetX, offsetY, circle.Radius, 0, Math.PI * 2);
+    ctx.fill(); // Fill the circle with yellow
+    ctx.stroke(); // Draw the circle outline
+    ctx.closePath();
+  }
+  ctx.globalAlpha = 1.0;
 }
 
 function drawHurtCircles(
