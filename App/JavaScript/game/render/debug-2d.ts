@@ -460,7 +460,10 @@ function drawHitCircles(
 
   for (let i = 0; i < length; i++) {
     const circle = circles[i];
-    const offSet = circle.GetOffSetForFrame(currentSateFrame)!;
+    const offSet = circle.GetOffSetForFrame(currentSateFrame);
+    if (offSet === undefined) {
+      continue;
+    }
     const offsetX = flags.FacingRight
       ? interpolatedX + offSet.X
       : interpolatedX - offSet.X;

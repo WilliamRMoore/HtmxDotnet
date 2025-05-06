@@ -103,17 +103,22 @@ function GetDownSpecial(): Attack {
   //lendgth 35
   const activeFrames = [
     15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
-    34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+    34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52,
+    53, 54, 55, 56, 57, 58, 59, 60,
   ];
   const impulses = new Map<frameNumber, FlatVec>();
   const hb1OffSets = new Map<frameNumber, FlatVec>();
   const hb2OffSets = new Map<frameNumber, FlatVec>();
   const hb3offSets = new Map<frameNumber, FlatVec>();
+  const hb4OffSets = new Map<frameNumber, FlatVec>();
 
   activeFrames.forEach((fr) => {
     hb1OffSets.set(fr, new FlatVec(100, -25));
     hb2OffSets.set(fr, new FlatVec(70, -25));
     hb3offSets.set(fr, new FlatVec(40, -25));
+    if (fr > 50) {
+      hb4OffSets.set(fr, new FlatVec(120, -25));
+    }
     impulses.set(fr, new FlatVec(3, 0));
   });
 
@@ -144,10 +149,20 @@ function GetDownSpecial(): Attack {
     activeFrames
   );
 
+  const downSpecialHitBox4 = new HitBubble(
+    3,
+    16,
+    3,
+    25,
+    hb4OffSets,
+    activeFrames
+  );
+
   const hitBubles = [
     downSpecialHitBox1,
     downSpecialHitBox2,
     downSpecialHitBox3,
+    downSpecialHitBox4,
   ];
 
   return new Attack('WizardsRod', 90, hitBubles, 13, impulses);
