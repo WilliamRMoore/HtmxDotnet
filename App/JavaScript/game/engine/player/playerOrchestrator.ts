@@ -127,16 +127,6 @@ export class PlayerHelpers {
     );
   }
 
-  // public static GetMappedAttackId(p: Player, geId: gameEventId): number {
-  //   const fsmStateId = p.FSMInfo.CurrentStatetId;
-
-  //   if (geId == GAME_EVENTS.ATTACK_GE && fsmStateId == STATES.IDLE_S) {
-  //     return ATTACKS.NUETRAL_ATTACK;
-  //   }
-
-  //   return -1;
-  // }
-
   public static AddRunImpulseToPlayer(p: Player, impulse: number): void {
     const velocity = p.Velocity;
     const speeds = p.Speeds;

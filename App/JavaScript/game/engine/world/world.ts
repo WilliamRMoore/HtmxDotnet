@@ -8,6 +8,7 @@ import { PooledVector } from '../pools/PooledVector';
 import { Pool } from '../pools/Pool';
 import { CollisionResult } from '../pools/CollisionResult';
 import { ProjectionResult } from '../pools/ProjectResult';
+import { AttackResult } from '../pools/AttackResult';
 
 export class World {
   private players: Array<Player> = [];
@@ -16,6 +17,7 @@ export class World {
   public readonly VecPool: Pool<PooledVector>;
   public readonly ColResPool: Pool<CollisionResult>;
   public readonly ProjResPool: Pool<ProjectionResult>;
+  public readonly AtkResPool: Pool<AttackResult>;
   public localFrame = 0;
   private readonly InputStorage: Array<InputStorageManagerLocal<InputAction>> =
     [];
@@ -36,6 +38,7 @@ export class World {
       200,
       () => new ProjectionResult()
     );
+    this.AtkResPool = new Pool<AttackResult>(100, () => new AttackResult());
   }
 
   public SetPlayer(p: Player): void {

@@ -1224,18 +1224,22 @@ export const LedgeGrab: FSMState = {
   StateName: 'LedgeGrab',
   StateId: STATES.LEDGE_GRAB_S,
   OnEnter: (p: Player, w: World) => {
+    p.Flags.GravityOff();
     const jumpComp = p.Jump;
     jumpComp.ResetJumps();
     jumpComp.IncrementJumps();
   },
   OnUpdate: (p: Player, w: World) => {},
-  OnExit: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {
+    p.Flags.GravityOn();
+  },
 };
 
 export const AirDodge: FSMState = {
   StateName: 'AirDodge',
   StateId: STATES.AIR_DODGE_S,
   OnEnter: (p: Player, w: World) => {
+    p.Flags.GravityOff();
     const pVel = p.Velocity;
     const ia = w.GetPlayerCurrentInput(p.ID)!;
     const angle = Math.atan2(ia?.LYAxsis, ia?.LXAxsis);
@@ -1254,7 +1258,9 @@ export const AirDodge: FSMState = {
     pVel.X *= 1 - ease;
     pVel.Y *= 1 - ease;
   },
-  OnExit: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {
+    p.Flags.GravityOn();
+  },
 };
 
 export const Helpess: FSMState = {

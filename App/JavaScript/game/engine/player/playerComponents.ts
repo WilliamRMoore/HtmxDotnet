@@ -1,12 +1,10 @@
 import {
   AttackDecisions,
   attackId,
-  ATTACKS,
   DownSpecialConditions,
   GAME_EVENTS,
   Idle,
   RunAttackCondition,
-  RunCondition,
   stateId,
   STATES,
 } from '../finite-state-machine/PlayerStates';
@@ -415,6 +413,7 @@ type timedFlag = {
 export type FlagsSnapShot = {
   FacingRight: boolean;
   FastFalling: boolean;
+  Gravity: boolean;
   IntangibleFrameLength: number;
   IntangibleFrameNumber: number;
 };
@@ -422,6 +421,7 @@ export type FlagsSnapShot = {
 export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
   private facingRight: boolean = false;
   private fastFalling: boolean = false;
+  private gravityOn: boolean = true;
   private intangible: timedFlag = { frameLength: 0, frameNumber: 0 };
 
   public SetIntangible(frameLength: number) {
@@ -465,6 +465,18 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
     this.facingRight = !this.facingRight;
   }
 
+  public get HasGravity(): boolean {
+    return this.gravityOn;
+  }
+
+  public GravityOn() {
+    this.gravityOn = true;
+  }
+
+  public GravityOff() {
+    this.gravityOn = false;
+  }
+
   public UpdateTimedFlags(): void {
     this.intangible.frameNumber++;
   }
@@ -473,6 +485,7 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
     return {
       FacingRight: this.facingRight,
       FastFalling: this.fastFalling,
+      Gravity: this.gravityOn,
       IntangibleFrameLength: this.intangible.frameLength,
       IntangibleFrameNumber: this.intangible.frameNumber,
     } as FlagsSnapShot;
@@ -481,6 +494,7 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
   public SetFromSnapShot(snapShot: FlagsSnapShot): void {
     this.fastFalling = snapShot.FastFalling;
     this.facingRight = snapShot.FacingRight;
+    this.gravityOn = snapShot.Gravity;
     this.intangible.frameLength = snapShot.IntangibleFrameLength;
     this.intangible.frameNumber = snapShot.IntangibleFrameNumber;
   }
@@ -832,7 +846,11 @@ export class HurtCircles implements IHistoryEnabled<HurtCirclesSnapShot> {
     this.update();
   }
 
-  SnapShot(): HurtCirclesSnapShot {
+  public get HurtBubbles(): Array<Circle> {
+    return this.circles;
+  }
+
+  public SnapShot(): HurtCirclesSnapShot {
     const pos = new FlatVec(this.x, this.y);
     const arr = new Array<Circle>();
     const circlesLength = this.circles.length;
@@ -847,7 +865,7 @@ export class HurtCircles implements IHistoryEnabled<HurtCirclesSnapShot> {
     return { position: pos, circls: arr } as HurtCirclesSnapShot;
   }
 
-  SetFromSnapShot(snapShot: HurtCirclesSnapShot): void {
+  public SetFromSnapShot(snapShot: HurtCirclesSnapShot): void {
     this.x = snapShot.position.X;
     this.y = snapShot.position.Y;
     this.update();
@@ -1050,6 +1068,10 @@ export class Attack {
         }
       }
     });
+
+    for (let [k, v] of attack) {
+      v.sort((a, b) => a.Priority - b.Priority);
+    }
 
     this.hitBubbles = attack;
   }

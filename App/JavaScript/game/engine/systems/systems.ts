@@ -1,4 +1,4 @@
-import { IntersectsPolygons } from '../physics/collisions';
+import { IntersectsCircles, IntersectsPolygons } from '../physics/collisions';
 import { GAME_EVENTS, STATES } from '../finite-state-machine/PlayerStates';
 import { World } from '../world/world';
 import { StateMachine } from '../finite-state-machine/PlayerStateMachine';
@@ -14,11 +14,11 @@ export const NO_COLLISION: number = 5;
 
 export function StageCollisionDetection(world: World): void {
   const playerCount = world.PlayerCount;
+  const s = world.Stage!;
 
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = world.GetPlayer(playerIndex)!;
     const sm = world.GetStateMachine(playerIndex)!;
-    const s = world.Stage!;
 
     var collision = stageCollision(world, playerIndex);
 
@@ -319,10 +319,8 @@ export function Gravity(world: World) {
   const stage = world.Stage!;
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = world.GetPlayer(playerIndex)!;
-    const stateId = p.FSMInfo.CurrentState.StateId;
     if (
-      stateId !== STATES.LEDGE_GRAB_S &&
-      stateId !== STATES.AIR_DODGE_S &&
+      p.Flags.HasGravity &&
       !PlayerHelpers.IsPlayerGroundedOnStage(p, stage)
     ) {
       PlayerHelpers.AddGravityToPlayer(p, stage);
@@ -334,26 +332,99 @@ export function PlayerInput(world: World) {
   const playerCount = world.PlayerCount;
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const input = world.GetPlayerCurrentInput(playerIndex)!;
-    world.GetStateMachine(playerIndex)?.UpdateFromInput(input, world);
+    world.GetStateMachine(playerIndex)!.UpdateFromInput(input, world);
   }
 }
 
 export function PlayerAttacks(world: World) {
   const playerCount = world.PlayerCount;
-  for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
-    const p = world.GetPlayer(playerIndex)!;
-    const attackComp = p.Attacks;
-    const attack = attackComp.GetAttack();
-    if (attack === undefined) {
-      continue;
-    }
-    const stateFrame = p.FSMInfo.CurrentStateFrame;
-    const hb = attack.GetHitBubblesForFrame(stateFrame);
-    if (hb === undefined) {
-      continue;
-    }
-    // detect if other players are hit
+  if (playerCount === 1) {
+    return;
   }
+
+  for (let playerIndex = 0; playerIndex < playerCount - 1; playerIndex++) {
+    const p1 = world.GetPlayer(playerIndex)!;
+    const p2 = world.GetPlayer(playerIndex + 1)!;
+
+    const result1 = p1VsP2(world, p1, p2);
+    const result2 = p1VsP2(world, p2, p1);
+  }
+}
+
+function p1VsP2(world: World, p1: Player, p2: Player) {
+  if (p2 === undefined) {
+    return; // will probably need to return something
+  }
+  // p1HitBubbles vs p2HurtBubbles
+  const p1stateFrame = p1.FSMInfo.CurrentStateFrame;
+  const p1Attack = p1.Attacks.GetAttack();
+
+  if (p1Attack === undefined) {
+    return;
+  }
+
+  const p1HitBubbles = p1Attack.GetHitBubblesForFrame(p1stateFrame);
+
+  if (p1HitBubbles === undefined) {
+    return;
+  }
+
+  p1HitBubbles.sort((a, b) => a.Priority - b.Priority);
+
+  const p2HurtBubbles = p2.HurtCircles.HurtBubbles;
+
+  const hurtLength = p2HurtBubbles.length;
+  const hitLength = p1HitBubbles.length;
+
+  const vecPool = world.VecPool;
+
+  for (let hurtIndex = 0; hurtIndex < hurtLength; hurtIndex++) {
+    const p2HurtBubble = p2HurtBubbles[hurtIndex];
+
+    for (let hitIndex = 0; hitIndex < hitLength; hitIndex++) {
+      const p1HitBubble = p1HitBubbles[hitIndex];
+      const p1HitBubblePosition = p1HitBubble.GetOffSetForFrame(p1stateFrame);
+
+      if (p1HitBubblePosition === undefined) {
+        continue;
+      }
+
+      const position = p1.Postion;
+
+      const hitBubX =
+        p1.Flags.IsFacingRight() == true
+          ? position.X + p1HitBubblePosition.X
+          : position.X - p1HitBubblePosition.X;
+
+      const hitBubY = position.Y + p1HitBubblePosition.Y;
+
+      const p1HitDto = vecPool.Rent().SetXY(hitBubX, hitBubY);
+      const p2HurtDto = vecPool.Rent().SetXY(p2HurtBubble.X, p2HurtBubble.Y);
+      const p1Radius = p1HitBubble.Radius;
+      const p2Radius = p2HurtBubble.Radius;
+      const collision = IntersectsCircles(
+        world.ColResPool,
+        p1HitDto,
+        p2HurtDto,
+        p1Radius,
+        p2Radius
+      );
+
+      if (collision.Collision) {
+        let attackResult = world.AtkResPool.Rent();
+        attackResult.SetTrue(
+          p2.ID,
+          p1HitBubble.Damage,
+          p1HitBubble.Priority,
+          collision.NormX,
+          collision.NormY,
+          collision.Depth
+        );
+        return attackResult;
+      }
+    }
+  }
+  return world.AtkResPool.Rent();
 }
 
 export function ApplyVelocty(world: World) {

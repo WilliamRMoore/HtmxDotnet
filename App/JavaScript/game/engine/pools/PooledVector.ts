@@ -1,4 +1,4 @@
-import { FlatVec } from '../engine/physics/vector';
+import { FlatVec } from '../physics/vector';
 import { IPooledObject } from './Pool';
 
 export interface IPooledVector {

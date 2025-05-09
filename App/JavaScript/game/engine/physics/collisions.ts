@@ -93,6 +93,30 @@ export function IntersectsPolygons(
   return res;
 }
 
+export function IntersectsCircles(
+  colResPool: Pool<CollisionResult>,
+  v1: PooledVector,
+  v2: PooledVector,
+  r1: number,
+  r2: number
+): CollisionResult {
+  let dist = v1.Distance(v2);
+  let raddi = r1 + r2;
+
+  if (dist > raddi) {
+    // false, comes from pool in zeroed state.
+    return colResPool.Rent();
+  }
+
+  const norm = v2.Subtract(v1).Normalize();
+  const depth = raddi - dist;
+  const returnValue = colResPool.Rent();
+
+  returnValue._setCollisionTrue(norm.X, norm.Y, depth);
+
+  return returnValue;
+}
+
 // suplimental functions ====================================
 
 function findArithemticMean(
