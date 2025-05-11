@@ -9,6 +9,7 @@ import { Pool } from '../pools/Pool';
 import { CollisionResult } from '../pools/CollisionResult';
 import { ProjectionResult } from '../pools/ProjectResult';
 import { AttackResult } from '../pools/AttackResult';
+import { ClosestPointsResult } from '../pools/ClosestPointsResult';
 
 export class World {
   private players: Array<Player> = [];
@@ -18,6 +19,7 @@ export class World {
   public readonly ColResPool: Pool<CollisionResult>;
   public readonly ProjResPool: Pool<ProjectionResult>;
   public readonly AtkResPool: Pool<AttackResult>;
+  public readonly ClstsPntsResPool: Pool<ClosestPointsResult>;
   public localFrame = 0;
   private readonly InputStorage: Array<InputStorageManagerLocal<InputAction>> =
     [];
@@ -29,7 +31,7 @@ export class World {
   private readonly FrameTimeStamps: Array<number> = [];
 
   constructor() {
-    this.VecPool = new Pool<PooledVector>(300, () => new PooledVector());
+    this.VecPool = new Pool<PooledVector>(500, () => new PooledVector());
     this.ColResPool = new Pool<CollisionResult>(
       100,
       () => new CollisionResult()
@@ -39,6 +41,10 @@ export class World {
       () => new ProjectionResult()
     );
     this.AtkResPool = new Pool<AttackResult>(100, () => new AttackResult());
+    this.ClstsPntsResPool = new Pool<ClosestPointsResult>(
+      200,
+      () => new ClosestPointsResult()
+    );
   }
 
   public SetPlayer(p: Player): void {
@@ -48,6 +54,9 @@ export class World {
     const compHist = new ComponentHistory();
     compHist.StaticPlayerHistory.LedgeDetectorWidth = p.LedgeDetector.Width;
     compHist.StaticPlayerHistory.ledgDetecorHeight = p.LedgeDetector.Height;
+    p.HurtBubbles.HurtCapsules.forEach((hc) =>
+      compHist.StaticPlayerHistory.HurtCapsules.push(hc)
+    );
     this.PlayerComponentHistories.push(compHist);
   }
 

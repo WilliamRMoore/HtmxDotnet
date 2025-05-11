@@ -1,8 +1,13 @@
-import { IntersectsCircles, IntersectsPolygons } from '../physics/collisions';
+import {
+  closestPointsBetweenSegments,
+  IntersectsCircles,
+  IntersectsPolygons,
+} from '../physics/collisions';
 import { GAME_EVENTS, STATES } from '../finite-state-machine/PlayerStates';
 import { World } from '../world/world';
 import { StateMachine } from '../finite-state-machine/PlayerStateMachine';
 import { Player, PlayerHelpers } from '../player/playerOrchestrator';
+import { AttackResult } from '../pools/AttackResult';
 
 const correctionDepth: number = 0.01;
 export const GROUND_COLLISION: number = 0;
@@ -348,64 +353,129 @@ export function PlayerAttacks(world: World) {
 
     const result1 = p1VsP2(world, p1, p2);
     const result2 = p1VsP2(world, p2, p1);
+
+    if (result1.Hit && result2.Hit) {
+      //check for clang
+      const clang = Math.abs(result1.Damage - result2.Damage) < 3;
+    }
+
+    if (result1.Hit) {
+      // Apply damage
+      // calculate hit-stun
+      // calculate launch;
+      const damage = result1.Damage;
+    }
+
+    if (result2.Hit) {
+      const damage = result2.Damage;
+    }
   }
 }
 
-function p1VsP2(world: World, p1: Player, p2: Player) {
-  if (p2 === undefined) {
-    return; // will probably need to return something
-  }
+function p1VsP2(world: World, p1: Player, p2: Player): AttackResult {
   // p1HitBubbles vs p2HurtBubbles
   const p1stateFrame = p1.FSMInfo.CurrentStateFrame;
   const p1Attack = p1.Attacks.GetAttack();
 
   if (p1Attack === undefined) {
-    return;
+    return world.AtkResPool.Rent();
   }
 
   const p1HitBubbles = p1Attack.GetHitBubblesForFrame(p1stateFrame);
 
   if (p1HitBubbles === undefined) {
-    return;
+    return world.AtkResPool.Rent();
   }
 
   p1HitBubbles.sort((a, b) => a.Priority - b.Priority);
 
-  const p2HurtBubbles = p2.HurtCircles.HurtBubbles;
+  const p2HurtBubbles = p2.HurtBubbles.HurtCapsules;
+  const p2Position = p2.Postion;
 
   const hurtLength = p2HurtBubbles.length;
   const hitLength = p1HitBubbles.length;
 
   const vecPool = world.VecPool;
+  const clossestPointsPool = world.ClstsPntsResPool;
 
   for (let hurtIndex = 0; hurtIndex < hurtLength; hurtIndex++) {
     const p2HurtBubble = p2HurtBubbles[hurtIndex];
 
     for (let hitIndex = 0; hitIndex < hitLength; hitIndex++) {
       const p1HitBubble = p1HitBubbles[hitIndex];
-      const p1HitBubblePosition = p1HitBubble.GetOffSetForFrame(p1stateFrame);
+      const p1HitBubbleOffset = p1HitBubble.GetOffSetForFrame(p1stateFrame);
+      const p1HitBubblePreviousOffset = p1HitBubble.GetOffSetForFrame(
+        p1stateFrame === 0 ? 0 : p1stateFrame - 1
+      );
 
-      if (p1HitBubblePosition === undefined) {
+      if (p1HitBubbleOffset === undefined) {
         continue;
       }
 
-      const position = p1.Postion;
+      const p1PositionHistory = world.GetComponentHistory(p1.ID)
+        ?.PositionHistory!;
+      const previousWorldFrame =
+        world.localFrame - 1 < 0 ? 0 : world.localFrame - 1;
+      const previousPosition = p1PositionHistory[previousWorldFrame];
+      const p1Position = p1.Postion;
+
+      let prevOffsetX = p1HitBubbleOffset.X;
+      let prevOffsetY = p1HitBubbleOffset.Y;
+
+      if (p1HitBubblePreviousOffset !== undefined) {
+        prevOffsetX = p1HitBubblePreviousOffset.X;
+        prevOffsetY = p1HitBubblePreviousOffset.Y;
+      }
+
+      const prevHitBubX =
+        p1.Flags.IsFacingRight() === true
+          ? previousPosition.X + prevOffsetX
+          : previousPosition.X - prevOffsetX;
+
+      const prevHitBubY = previousPosition.Y + prevOffsetY;
 
       const hitBubX =
-        p1.Flags.IsFacingRight() == true
-          ? position.X + p1HitBubblePosition.X
-          : position.X - p1HitBubblePosition.X;
+        p1.Flags.IsFacingRight() === true
+          ? p1Position.X + p1HitBubbleOffset.X
+          : p1Position.X - p1HitBubbleOffset.X;
 
-      const hitBubY = position.Y + p1HitBubblePosition.Y;
+      const hitBubY = p1Position.Y + p1HitBubbleOffset.Y;
 
-      const p1HitDto = vecPool.Rent().SetXY(hitBubX, hitBubY);
-      const p2HurtDto = vecPool.Rent().SetXY(p2HurtBubble.X, p2HurtBubble.Y);
+      const p1PrevHitDto = vecPool.Rent().SetXY(prevHitBubX, prevHitBubY);
+      const p1CurHitDto = vecPool.Rent().SetXY(hitBubX, hitBubY);
+      const p2StartHurtDto = p2HurtBubble.GetStartPosition(
+        p2Position.X,
+        p2Position.Y,
+        vecPool
+      );
+      const p2EndHurtDto = p2HurtBubble.GetEndPosition(
+        p2Position.X,
+        p2Position.Y,
+        vecPool
+      );
+
+      const pointsToTest = closestPointsBetweenSegments(
+        p1PrevHitDto,
+        p1CurHitDto,
+        p2StartHurtDto,
+        p2EndHurtDto,
+        vecPool,
+        clossestPointsPool
+      );
+
       const p1Radius = p1HitBubble.Radius;
       const p2Radius = p2HurtBubble.Radius;
+      const testPoint1 = vecPool
+        .Rent()
+        .SetXY(pointsToTest.C1X, pointsToTest.C1Y);
+      const testPoint2 = vecPool
+        .Rent()
+        .SetXY(pointsToTest.C2X, pointsToTest.C2Y);
+
       const collision = IntersectsCircles(
         world.ColResPool,
-        p1HitDto,
-        p2HurtDto,
+        testPoint1,
+        testPoint2,
         p1Radius,
         p2Radius
       );
@@ -545,7 +615,7 @@ export function RecordHistory(w: World) {
     history.FlagsHistory[frameNumber] = p.Flags.SnapShot();
     history.LedgeDetectorHistory[frameNumber] = p.LedgeDetector.SnapShot();
     history.EcbHistory[frameNumber] = p.ECB.SnapShot();
-    history.HurtCirclesHistory[frameNumber] = p.HurtCircles.SnapShot();
+    //history.HurtCirclesHistory[frameNumber] = p.HurtBubbles.SnapShot();
     history.JumpHistroy[frameNumber] = p.Jump.SnapShot();
     history.AttackHistory[frameNumber] = p.Attacks.SnapShot();
   }

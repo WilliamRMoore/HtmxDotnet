@@ -61,6 +61,7 @@ export class Jazz implements IJazz {
     world?.ColResPool.Zero();
     world?.ProjResPool.Zero();
     world?.AtkResPool.Zero();
+    world.ClstsPntsResPool.Zero();
     world.localFrame++;
   }
 

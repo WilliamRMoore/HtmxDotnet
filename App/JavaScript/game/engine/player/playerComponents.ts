@@ -20,6 +20,8 @@ import { Clamp } from '../utils';
 import { Circle } from '../physics/circle';
 import { InputAction } from '../../loops/Input';
 import { World } from '../world/world';
+import { PooledVector } from '../pools/PooledVector';
+import { Pool } from '../pools/Pool';
 
 /**
  * This file contains everything pertaining to player components.
@@ -42,6 +44,7 @@ import { World } from '../world/world';
 export class StaticHistory {
   public ledgDetecorHeight: number = 0;
   public LedgeDetectorWidth: number = 0;
+  public HurtCapsules: Array<HurtCapsule> = [];
 }
 
 export class ComponentHistory {
@@ -52,7 +55,7 @@ export class ComponentHistory {
   readonly VelocityHistory: Array<FlatVec> = [];
   readonly FlagsHistory: Array<FlagsSnapShot> = [];
   readonly EcbHistory: Array<ECBSnapShot> = [];
-  readonly HurtCirclesHistory: Array<HurtCirclesSnapShot> = [];
+  //readonly HurtCirclesHistory: Array<HurtCirclesSnapShot> = [];
   readonly JumpHistroy: Array<number> = [];
   readonly LedgeDetectorHistory: Array<LedgeDetectorSnapShot> = [];
   readonly AttackHistory: Array<AttackSnapShot> = [];
@@ -63,7 +66,6 @@ export class ComponentHistory {
     p.Velocity.SetFromSnapShot(this.VelocityHistory[frameNumber]);
     p.Flags.SetFromSnapShot(this.FlagsHistory[frameNumber]);
     p.ECB.SetFromSnapShot(this.EcbHistory[frameNumber]);
-    p.HurtCircles.SetFromSnapShot(this.HurtCirclesHistory[frameNumber]);
     p.LedgeDetector.SetFromSnapShot(this.LedgeDetectorHistory[frameNumber]);
     p.Jump.SetFromSnapShot(this.JumpHistroy[frameNumber]);
     p.Attacks.SetFromSnapShot(this.AttackHistory[frameNumber]);
@@ -817,58 +819,49 @@ export type HurtCirclesSnapShot = {
   circls: Array<Circle>;
 };
 
-export class HurtCircles implements IHistoryEnabled<HurtCirclesSnapShot> {
-  private offSets: Array<FlatVec> = [];
-  private circles: Array<Circle> = [];
-  private x: number = 0;
-  private y: number = 0;
+export class HurtCapsule {
+  public readonly StartOffsetX: number;
+  public readonly StartOffsetY: number;
+  public readonly EndOffsetX: number;
+  public readonly EndOffsetY: number;
+  public readonly Radius: number;
 
-  constructor(circs: Array<{ circle: Circle; offset: FlatVec }>) {
-    for (let i = 0; i < circs.length; i++) {
-      this.circles.push(circs[i].circle);
-      this.offSets.push(circs[i].offset);
-    }
+  constructor(
+    startOffsetX: number,
+    startOffsetY: number,
+    endOffsetX: number,
+    endOffsetY: number,
+    radius: number
+  ) {
+    this.StartOffsetX = startOffsetX;
+    this.StartOffsetY = startOffsetY;
+    this.EndOffsetX = endOffsetX;
+    this.EndOffsetY = endOffsetY;
+    this.Radius = radius;
   }
 
-  private update(): void {
-    const circlesLength = this.circles.length;
-
-    for (let i = 0; i < circlesLength; i++) {
-      const circ = this.circles[i];
-      const offSet = this.offSets[i];
-      circ.SetXY(this.x + offSet.X, this.y + offSet.Y);
-    }
+  public GetStartPosition(
+    x: number,
+    y: number,
+    vecPool: Pool<PooledVector>
+  ): PooledVector {
+    return vecPool.Rent().SetXY(this.StartOffsetX + x, this.StartOffsetY + y);
   }
 
-  public MoveTo(x: number, y: number): void {
-    this.x = x;
-    this.y = y;
-    this.update();
+  public GetEndPosition(
+    x: number,
+    y: number,
+    vecPool: Pool<PooledVector>
+  ): PooledVector {
+    return vecPool.Rent().SetXY(this.EndOffsetX + x, this.EndOffsetY + y);
   }
+}
 
-  public get HurtBubbles(): Array<Circle> {
-    return this.circles;
-  }
+export class HurtCapsules {
+  public readonly HurtCapsules: Array<HurtCapsule>;
 
-  public SnapShot(): HurtCirclesSnapShot {
-    const pos = new FlatVec(this.x, this.y);
-    const arr = new Array<Circle>();
-    const circlesLength = this.circles.length;
-
-    for (let i = 0; i < circlesLength; i++) {
-      const compCirc = this.circles[i];
-      const histCirc = new Circle(compCirc.Radius);
-      histCirc.SetXY(compCirc.X, compCirc.Y);
-      arr.push(histCirc);
-    }
-
-    return { position: pos, circls: arr } as HurtCirclesSnapShot;
-  }
-
-  public SetFromSnapShot(snapShot: HurtCirclesSnapShot): void {
-    this.x = snapShot.position.X;
-    this.y = snapShot.position.Y;
-    this.update();
+  constructor(hurtCapsules: Array<HurtCapsule>) {
+    this.HurtCapsules = hurtCapsules;
   }
 }
 

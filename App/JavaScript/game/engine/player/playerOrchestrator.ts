@@ -4,7 +4,7 @@ import {
   AttackComponment,
   ECBComponent,
   FSMInfoComponent,
-  HurtCircles,
+  HurtCapsules,
   JumpComponent,
   LedgeDetectorComponent,
   PlayerFlagsComponent,
@@ -36,7 +36,7 @@ export class Player {
   private readonly points: PlayerPointsComponent;
   private readonly speeds: SpeedsComponent;
   private readonly ecb: ECBComponent;
-  private readonly hurtCircles: HurtCircles;
+  private readonly hurtCircles: HurtCapsules;
   private readonly jump: JumpComponent;
   private readonly fsmInfo: FSMInfoComponent;
   private readonly ledgeDetector: LedgeDetectorComponent;
@@ -56,7 +56,7 @@ export class Player {
       CharacterConfig.ECBWidth,
       CharacterConfig.ECBOffset
     );
-    this.hurtCircles = new HurtCircles(CharacterConfig.HurtCircles);
+    this.hurtCircles = new HurtCapsules(CharacterConfig.HurtCapsules);
     this.jump = new JumpComponent(
       CharacterConfig.JumpVelocity,
       CharacterConfig.NumberOfJumps
@@ -76,7 +76,7 @@ export class Player {
     return this.ecb;
   }
 
-  public get HurtCircles(): HurtCircles {
+  public get HurtBubbles(): HurtCapsules {
     return this.hurtCircles;
   }
 
@@ -191,7 +191,6 @@ export class PlayerHelpers {
     p.Postion.X = x;
     p.Postion.Y = y;
     p.ECB.MoveToPosition(x, y);
-    p.HurtCircles.MoveTo(x, y);
     p.LedgeDetector.MoveTo(x, y);
   }
 
@@ -203,7 +202,6 @@ export class PlayerHelpers {
     p.Postion.X = x;
     p.Postion.Y = y;
     p.ECB.SetInitialPosition(x, y);
-    p.HurtCircles.MoveTo(x, y);
     p.LedgeDetector.MoveTo(x, y);
   }
 
@@ -211,7 +209,6 @@ export class PlayerHelpers {
     const position = p.Postion;
     position.Y += y;
     p.ECB.MoveToPosition(position.X, position.Y);
-    p.HurtCircles.MoveTo(position.X, position.Y);
     p.LedgeDetector.MoveTo(position.X, position.Y);
   }
 
@@ -220,7 +217,6 @@ export class PlayerHelpers {
     pos.X += x;
     pos.Y += y;
     p.ECB.MoveToPosition(pos.X, pos.Y);
-    p.HurtCircles.MoveTo(pos.X, pos.Y);
     p.LedgeDetector.MoveTo(pos.X, pos.Y);
   }
 }

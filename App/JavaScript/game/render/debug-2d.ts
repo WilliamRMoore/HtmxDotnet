@@ -6,6 +6,7 @@ import {
   ECBSnapShot,
   FlagsSnapShot,
   FSMInfoSnapShot,
+  HurtCapsule,
   HurtCirclesSnapShot,
   LedgeDetectorSnapShot,
   StaticHistory,
@@ -173,8 +174,7 @@ function drawPlayer(
     const playerHistory = world.GetComponentHistory(i);
     const pos = playerHistory!.PositionHistory[currentFrame];
     const lastPos = playerHistory!.PositionHistory[lastFrame];
-    const circles = playerHistory!.HurtCirclesHistory[currentFrame];
-    const lastCirclse = playerHistory!.HurtCirclesHistory[lastFrame];
+    const circlesHistory = playerHistory!.StaticPlayerHistory.HurtCapsules;
     const flags = playerHistory!.FlagsHistory[currentFrame];
     const lastFlags = playerHistory!.FlagsHistory[lastFrame];
     const ecb = playerHistory!.EcbHistory[currentFrame];
@@ -189,7 +189,7 @@ function drawPlayer(
     //drawHull(ctx, player);
     drawPrevEcb(ctx, ecb, lastEcb, alpha);
     drawCurrentECB(ctx, ecb, lastEcb, alpha);
-    drawHurtCircles(ctx, circles, lastCirclse, alpha);
+    drawHurtCircles(ctx, pos, lastPos, circlesHistory, alpha);
     drawHitCircles(ctx, attack, fsm, flags, pos, lastPos, alpha);
     drawPositionMarker(ctx, pos, lastPos, alpha);
     const lerpDirection = alpha > 0.5 ? facingRight : lastFacingRight;
@@ -480,30 +480,33 @@ function drawHitCircles(
 
 function drawHurtCircles(
   ctx: CanvasRenderingContext2D,
-  hurtCircles: HurtCirclesSnapShot,
-  lastHurtCircles: HurtCirclesSnapShot,
+  curPositon: FlatVec,
+  lasPosition: FlatVec,
+  hurtCapsules: Array<HurtCapsule>,
   alpha: number
 ) {
-  const circles = hurtCircles.circls;
-  const lastCircles = lastHurtCircles.circls;
-  const circlesLength = circles.length;
-
   ctx.strokeStyle = 'yellow'; // Set the stroke color for the circles
   ctx.fillStyle = 'yellow'; // Set the fill color for the circles
   ctx.lineWidth = 2; // Set the line width
   ctx.globalAlpha = 0.5; // Set transparency (50%)
 
-  for (let i = 0; i < circlesLength; i++) {
-    const circle = circles[i];
-    const lastHurtCircle = lastCircles[i];
-    const x = Lerp(lastHurtCircle.X, circle.X, alpha);
-    const y = Lerp(lastHurtCircle.Y, circle.Y, alpha);
-
-    ctx.beginPath();
-    ctx.arc(x, y, circle.Radius, 0, Math.PI * 2); // Draw the circle
-    ctx.fill(); // Fill the circle with yellow
-    ctx.stroke(); // Draw the circle outline
-    ctx.closePath();
+  const lerpedPosX = Lerp(lasPosition.X, curPositon.X, alpha);
+  const lerpedPosY = Lerp(lasPosition.Y, curPositon.Y, alpha);
+  const hcLength = hurtCapsules.length;
+  for (let i = 0; i < hcLength; i++) {
+    const hurtCapsule = hurtCapsules[i];
+    const globalStartX = hurtCapsule.StartOffsetX + lerpedPosX;
+    const globalStartY = hurtCapsule.StartOffsetY + lerpedPosY;
+    const globalEndX = hurtCapsule.EndOffsetX + lerpedPosX;
+    const globalEndY = hurtCapsule.EndOffsetY + lerpedPosY;
+    drawCapsule(
+      ctx,
+      globalStartX,
+      globalStartY,
+      globalEndX,
+      globalEndY,
+      hurtCapsule.Radius
+    );
   }
 
   ctx.globalAlpha = 1.0; // Reset transparency to fully opaque
@@ -535,4 +538,37 @@ function drawPositionMarker(
   ctx.lineTo(playerPosX, playerPosY - 10);
   ctx.stroke();
   ctx.closePath();
+}
+
+function drawCapsule(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  radius: number
+) {
+  // Calculate the angle of the capsule
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+
+  // Calculate the perpendicular offset vector for the rectangle
+  const offsetX = Math.sin(angle) * radius; // Perpendicular to the line
+  const offsetY = -Math.cos(angle) * radius; // Perpendicular to the line
+
+  // Start drawing the capsule
+  ctx.beginPath();
+
+  // Draw the first semicircle (start point)
+  ctx.arc(x1, y1, radius, angle + Math.PI / 2, angle - Math.PI / 2, false);
+
+  // Draw the rectangle connecting the two semicircles
+  ctx.lineTo(x2 + offsetX, y2 + offsetY); // Top edge of the rectangle
+  ctx.arc(x2, y2, radius, angle - Math.PI / 2, angle + Math.PI / 2, false); // Second semicircle
+  ctx.lineTo(x1 - offsetX, y1 - offsetY); // Bottom edge of the rectangle
+
+  ctx.closePath();
+
+  // Fill and stroke the capsule
+  ctx.fill();
+  ctx.stroke();
 }

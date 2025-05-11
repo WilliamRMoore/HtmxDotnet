@@ -4,11 +4,11 @@ import {
   stateId,
   STATES,
 } from '../engine/finite-state-machine/PlayerStates';
-import { Circle } from '../engine/physics/circle';
 import { FlatVec } from '../engine/physics/vector';
 import {
   Attack,
   HitBubble,
+  HurtCapsule,
   SpeedsComponentBuilder,
 } from '../engine/player/playerComponents';
 
@@ -20,7 +20,7 @@ export type CharacterConfig = {
   ECBHeight: number;
   ECBWidth: number;
   ECBOffset: number;
-  HurtCircles: Array<{ circle: Circle; offset: FlatVec }>;
+  HurtCapsules: Array<HurtCapsule>;
   JumpVelocity: number;
   NumberOfJumps: number;
   LedgeBoxHeight: number;
@@ -35,7 +35,7 @@ export class DefaultCharacterConfig {
   public ECBHeight: number;
   public ECBWidth: number;
   public ECBOffset: number;
-  public HurtCircles: Array<{ circle: Circle; offset: FlatVec }> = [];
+  public HurtCapsules: Array<HurtCapsule> = [];
   public JumpVelocity: number;
   public NumberOfJumps: number;
   public LedgeBoxHeight: number;
@@ -88,19 +88,16 @@ export class DefaultCharacterConfig {
   }
 
   private populateHurtCircles() {
-    const body = new Circle(40);
-    const head = new Circle(14);
-    const bodyOffset = new FlatVec(0, -50);
-    const headOffset = new FlatVec(0, -108);
-
-    this.HurtCircles.push({ circle: body, offset: bodyOffset });
-    this.HurtCircles.push({ circle: head, offset: headOffset });
+    const body = new HurtCapsule(0, -40, 0, -50, 40);
+    const head = new HurtCapsule(0, -105, 0, -140, 14);
+    this.HurtCapsules.push(head);
+    this.HurtCapsules.push(body);
   }
 }
 
 // total frame 100
 function GetDownSpecial(): Attack {
-  //lendgth 35
+  //length 35
   const activeFrames = [
     15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
     34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52,
