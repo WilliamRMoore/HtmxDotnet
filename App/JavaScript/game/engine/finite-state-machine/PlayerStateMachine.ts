@@ -212,15 +212,15 @@ export class StateMachine {
 
     // Loop through all conditionals, if one returns a stateId, run it and return true, otherwise return false
     for (let i = 0; i < conditionalsLength; i++) {
-      const res = RunCondition(conditions[i], world, this.player.ID);
+      const stateId = RunCondition(conditions[i], world, this.player.ID);
 
       // Condition returned a stateId, check it
-      if (res !== undefined) {
-        const state = this.states.get(res);
+      if (stateId !== undefined) {
+        const state = this.states.get(stateId);
 
         // stateId did not resolve, return false
         if (state == undefined) {
-          console.error('StateId not found in state machine: ', res);
+          console.error('StateId not found in state machine: ', stateId);
           return false;
         }
 
@@ -277,8 +277,7 @@ export class StateMachine {
   }
 
   private changeState(state: FSMState) {
-    const p = this.player;
-    const fsmInfo = p.FSMInfo;
+    const fsmInfo = this.player.FSMInfo;
     fsmInfo.SetStateFrameToZero();
     fsmInfo.CurrentState.OnExit(this.player, this.world);
     fsmInfo.SetCurrentState(state);

@@ -13,6 +13,7 @@ import {
   SpeedsComponent,
   SpeedsComponentBuilder,
   VelocityComponent,
+  WeightComponent,
 } from './playerComponents';
 
 export type speedBuilderOptions = (scb: SpeedsComponentBuilder) => void;
@@ -32,6 +33,7 @@ const defaultSpeedsBuilderOptions: speedBuilderOptions = (
 export class Player {
   private readonly position: PositionComponent;
   private readonly velocity: VelocityComponent;
+  private readonly weight: WeightComponent;
   private readonly flags: PlayerFlagsComponent;
   private readonly points: PlayerPointsComponent;
   private readonly speeds: SpeedsComponent;
@@ -48,6 +50,7 @@ export class Player {
     this.ID = Id;
     this.position = new PositionComponent();
     this.velocity = new VelocityComponent();
+    this.weight = new WeightComponent(CharacterConfig.Weight);
     this.speeds = speedsBuilder.Build();
     this.flags = new PlayerFlagsComponent();
     this.points = new PlayerPointsComponent();
@@ -98,6 +101,10 @@ export class Player {
 
   public get Velocity(): VelocityComponent {
     return this.velocity;
+  }
+
+  public get Weight(): WeightComponent {
+    return this.weight;
   }
 
   public get Speeds(): SpeedsComponent {

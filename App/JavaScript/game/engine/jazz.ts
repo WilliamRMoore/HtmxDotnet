@@ -57,16 +57,16 @@ export class Jazz implements IJazz {
     const world = this.World;
     world.SetFrameTimeForFrame(world.localFrame, frameTimeDelta);
     world.SetFrameTimeStampForFrame(world.localFrame, frameTimeStart);
-    world?.VecPool.Zero();
-    world?.ColResPool.Zero();
-    world?.ProjResPool.Zero();
-    world?.AtkResPool.Zero();
+    world.VecPool.Zero();
+    world.ColResPool.Zero();
+    world.ProjResPool.Zero();
+    world.AtkResPool.Zero();
     world.ClstsPntsResPool.Zero();
     world.localFrame++;
   }
 
   public UpdateInputForCurrentFrame(ia: InputAction, pIndex: number) {
-    this.UpdateInput(pIndex, ia, this.localFrame);
+    this.UpdateInput(pIndex, ia, this.world.localFrame);
   }
 
   private UpdateInput(
@@ -99,14 +99,6 @@ export class Jazz implements IJazz {
     PlayerAttacks(world);
     OutOfBoundsCheck(world);
     RecordHistory(world);
-  }
-
-  private get localFrame() {
-    return this.world.localFrame;
-  }
-
-  private set localFrame(frame: number) {
-    this.world.localFrame = frame;
   }
 }
 

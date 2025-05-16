@@ -5,6 +5,9 @@ type playerIndex = number;
 export class AttackResult implements IPooledObject {
   private hit: boolean = false;
   private damage: number = 0;
+  private baseKnockBack: number = 0;
+  private knockBackScaling: number = 1;
+  private launchAngle: number = 0;
   private priority: number = Number.MAX_SAFE_INTEGER;
   private normX: number = 0;
   private normY: number = 0;
@@ -14,6 +17,9 @@ export class AttackResult implements IPooledObject {
   public Zero(): void {
     this.hit = false;
     this.damage = 0;
+    this.baseKnockBack = 0;
+    this.knockBackScaling = 1;
+    this.launchAngle = 0;
     this.priority = Number.MAX_SAFE_INTEGER;
     this.normX = 0;
     this.normY = 0;
@@ -27,7 +33,10 @@ export class AttackResult implements IPooledObject {
     priority: number,
     normX: number,
     normY: number,
-    depth: number
+    depth: number,
+    baseKnockBack: number,
+    knockBackScaling: number,
+    launchAngle: number
   ) {
     this.hit = true;
     this.playerIndexOfPlayerHit = playerIndex;
@@ -36,6 +45,9 @@ export class AttackResult implements IPooledObject {
     this.normX = normX;
     this.normY = normY;
     this.depth = depth;
+    this.baseKnockBack = baseKnockBack;
+    this.knockBackScaling = knockBackScaling;
+    this.launchAngle = launchAngle;
   }
 
   public get Hit(): boolean {
@@ -60,6 +72,18 @@ export class AttackResult implements IPooledObject {
 
   public get Depth(): number {
     return this.depth;
+  }
+
+  public get BaseKnockBack(): number {
+    return this.baseKnockBack;
+  }
+
+  public get LaunchAngle(): number {
+    return this.launchAngle;
+  }
+
+  public get KnockBackScaling(): number {
+    return this.knockBackScaling;
   }
 
   public get PlayerIndex(): number {

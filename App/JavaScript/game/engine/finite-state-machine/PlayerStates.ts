@@ -1024,15 +1024,20 @@ function InitDownSpecialTrnaslations(): ActionStateMappings {
 export const Idle: FSMState = {
   StateName: 'IDLE',
   StateId: STATES.IDLE_S,
-  OnEnter: (p: Player, w: World) => {},
+  OnEnter: (p: Player, w: World) => {
+    p.Flags.SetCanWalkOffFalse();
+  },
   OnUpdate: (p: Player, w: World) => {},
-  OnExit: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {
+    p.Flags.SetCanWalkOffTrue();
+  },
 };
 
 export const StartWalk: FSMState = {
   StateName: 'START_WALK',
   StateId: STATES.START_WALK_S,
   OnEnter: (p: Player, w: World) => {
+    p.Flags.SetCanWalkOffFalse();
     const ia = w.GetPlayerCurrentInput(p.ID);
     const axis = ia?.LXAxsis ?? 0;
     if (ia != undefined) {
@@ -1051,20 +1056,26 @@ export const StartWalk: FSMState = {
       PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
     }
   },
-  OnExit: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {
+    p.Flags.SetCanWalkOffTrue();
+  },
 };
 
 export const Walk: FSMState = {
   StateName: 'WALK',
   StateId: STATES.WALK_S,
-  OnEnter: (p: Player, w: World) => {},
+  OnEnter: (p: Player, w: World) => {
+    p.Flags.SetCanWalkOffFalse();
+  },
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     if (ia != undefined) {
       PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
     }
   },
-  OnExit: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {
+    p.Flags.SetCanWalkOffTrue();
+  },
 };
 
 export const Turn: FSMState = {
@@ -1126,19 +1137,26 @@ export const Run: FSMState = {
 export const RunTurn: FSMState = {
   StateName: 'RUN_TURN',
   StateId: STATES.RUN_TURN_S,
-  OnEnter: (p: Player, w: World) => {},
+  OnEnter: (p: Player, w: World) => {
+    p.Flags.SetCanWalkOffFalse();
+  },
   OnUpdate: (p: Player, w: World) => {},
   OnExit: (p: Player, w: World) => {
     p.Flags.ChangeDirections();
+    p.Flags.SetCanWalkOffTrue();
   },
 };
 
 export const RunStop: FSMState = {
   StateName: 'RUN_STOP',
   StateId: STATES.STOP_RUN_S,
-  OnEnter: (p: Player, w: World) => {},
+  OnEnter: (p: Player, w: World) => {
+    p.Flags.SetCanWalkOffFalse();
+  },
   OnUpdate: (p: Player, w: World) => {},
-  OnExit: (p: Player, w: World) => {},
+  OnExit: (p: Player, w: World) => {
+    p.Flags.SetCanWalkOffTrue();
+  },
 };
 
 export const JumpSquat: FSMState = {
@@ -1296,12 +1314,12 @@ export const Attack: FSMState = {
       pVel.AddClampedXImpulse(clamp, x);
       pVel.AddClampedYImpulse(clamp, y);
     }
-    // pVel.X += x;
-    // pVel.Y += y;
   },
   OnExit: (p: Player, w: World) => {
     const attackComp = p.Attacks;
+    p.Attacks.GetAttack()!.ResetPlayeIdHitArray();
     attackComp.ZeroCurrentAttack();
+    p.Flags.GravityOn();
   },
 };
 
@@ -1312,6 +1330,10 @@ export const DownSpecial: FSMState = {
     const attackComp = p.Attacks;
     const ia = w.GetPlayerCurrentInput(p.ID)!;
     attackComp.SetCurrentAttack(p, w, ia);
+    const gravity = attackComp.GetAttack()!.Gravity;
+    if (gravity === false) {
+      p.Flags.GravityOff();
+    }
   },
   OnUpdate(p: Player, world: World) {
     const attackComp = p.Attacks;
@@ -1333,6 +1355,8 @@ export const DownSpecial: FSMState = {
   },
   OnExit(p: Player, world: World) {
     const attackComp = p.Attacks;
+    p.Flags.GravityOn();
     attackComp.ZeroCurrentAttack();
+    p.Attacks.GetAttack()!.ResetPlayeIdHitArray();
   },
 };

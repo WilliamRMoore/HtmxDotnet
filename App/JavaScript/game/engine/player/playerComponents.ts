@@ -177,6 +177,14 @@ export class PositionComponent implements IHistoryEnabled<FlatVec> {
   }
 }
 
+export class WeightComponent {
+  public readonly Weight: number;
+
+  constructor(weight: number) {
+    this.Weight = weight;
+  }
+}
+
 export class VelocityComponent implements IHistoryEnabled<FlatVec> {
   private x: number;
   private y: number;
@@ -304,6 +312,49 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
   }
 }
 
+export class HitStunComponent {
+  private framesOfHitStun: number = 0;
+  private angle: number = 0;
+  private xVelocity: number = 0;
+  private yVelocity: number = 0;
+
+  public set FramesOfHitStun(hitStunFrames: number) {
+    this.framesOfHitStun = hitStunFrames;
+  }
+
+  public set Angle(angle: number) {
+    this.angle = angle;
+  }
+
+  public get Angle(): number {
+    return this.angle;
+  }
+
+  public get VX(): number {
+    return this.xVelocity;
+  }
+
+  public get VY(): number {
+    return this.yVelocity;
+  }
+
+  public SetVelocityXY(vx: number, vy: number) {
+    this.xVelocity = vx;
+    this.yVelocity = vy;
+  }
+
+  public DecrementHitStun() {
+    this.framesOfHitStun--;
+  }
+
+  public Zero() {
+    this.framesOfHitStun = 0;
+    this.angle = 0;
+    this.xVelocity = 0;
+    this.yVelocity = 0;
+  }
+}
+
 export class SpeedsComponent {
   public readonly GroundedVelocityDecay: number;
   public readonly AerialVelocityDecay: number;
@@ -394,6 +445,10 @@ export class PlayerPointsComponent
     this.damagePoints = 0;
   }
 
+  public get Damage(): number {
+    return this.damagePoints;
+  }
+
   public SnapShot(): PlayerPointsSnapShot {
     return {
       damagePoints: this.damagePoints,
@@ -416,6 +471,7 @@ export type FlagsSnapShot = {
   FacingRight: boolean;
   FastFalling: boolean;
   Gravity: boolean;
+  CanWalkOffStage: boolean;
   IntangibleFrameLength: number;
   IntangibleFrameNumber: number;
 };
@@ -424,6 +480,7 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
   private facingRight: boolean = false;
   private fastFalling: boolean = false;
   private gravityOn: boolean = true;
+  private canWalkOffStage: boolean = false;
   private intangible: timedFlag = { frameLength: 0, frameNumber: 0 };
 
   public SetIntangible(frameLength: number) {
@@ -465,6 +522,18 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
 
   public ChangeDirections() {
     this.facingRight = !this.facingRight;
+  }
+
+  public SetCanWalkOffTrue() {
+    this.canWalkOffStage = true;
+  }
+
+  public SetCanWalkOffFalse() {
+    this.canWalkOffStage = false;
+  }
+
+  public get CanWalkOffStage(): boolean {
+    return this.canWalkOffStage;
   }
 
   public get HasGravity(): boolean {
@@ -1006,6 +1075,7 @@ export class HitBubble {
   public readonly Damage: number;
   public readonly Priority: number;
   public readonly Radius: number;
+  public readonly launchAngle: number;
   public readonly ActiveFrames: Array<frameNumber>;
   private readonly frameOffsets: Map<frameNumber, FlatVec>;
 
@@ -1014,6 +1084,7 @@ export class HitBubble {
     damage: number,
     priority: number,
     radius: number,
+    launchAngle: number,
     frameOffsets: Map<frameNumber, FlatVec>,
     activeFrames: Array<frameNumber>
   ) {
@@ -1021,33 +1092,62 @@ export class HitBubble {
     this.Damage = damage;
     this.Priority = priority;
     this.Radius = radius;
+    this.launchAngle = launchAngle;
     this.frameOffsets = frameOffsets;
     this.ActiveFrames = activeFrames;
   }
 
-  public GetOffSetForFrame(frameNumber: number) {
-    return this.frameOffsets.get(frameNumber);
+  public GetLocalOffSetForFrame(stateFrameNumber: number) {
+    return this.frameOffsets.get(stateFrameNumber);
+  }
+
+  public GetOffSetForFrameGlobal(
+    vecPool: Pool<PooledVector>,
+    facingRight: boolean,
+    stateFrameNumber: number,
+    playerGlobalPositon: PooledVector
+  ): PooledVector | undefined {
+    const offSet = this.frameOffsets.get(stateFrameNumber);
+    if (offSet === undefined) {
+      return;
+    }
+    const globalX = facingRight
+      ? playerGlobalPositon.X + offSet.X
+      : playerGlobalPositon.X - offSet.X;
+    const globalY = playerGlobalPositon.Y + offSet.Y;
+
+    return vecPool.Rent().SetXY(globalX, globalY);
   }
 }
 
 export class Attack {
   public readonly Name: string;
+  public readonly Gravity: boolean;
   public readonly TotalFrameLength: number;
+  public readonly BaseKnockBack: number;
+  public readonly KnockBackScaling: number;
   private hitBubbles: Map<frameNumber, Array<HitBubble>>;
   private impulses: Map<frameNumber, FlatVec>;
   public readonly ImpulseClamp: number | undefined;
+  public readonly PlayerIdsHit: Array<number> = [];
 
   constructor(
     name: string,
     totalFrameLength: number,
     hitBubbles: Array<HitBubble>,
+    baseKb: number,
+    kbScaling: number,
     impulseClamp = 0,
-    impulses: Map<frameNumber, FlatVec> = new Map<frameNumber, FlatVec>()
+    impulses: Map<frameNumber, FlatVec> = new Map<frameNumber, FlatVec>(),
+    gravity = true
   ) {
     this.impulses = impulses;
     this.ImpulseClamp = impulseClamp;
     this.Name = name;
     this.TotalFrameLength = totalFrameLength;
+    this.Gravity = gravity;
+    this.BaseKnockBack = baseKb;
+    this.KnockBackScaling = kbScaling;
 
     let attack = new Map<frameNumber, Array<HitBubble>>();
     hitBubbles.forEach((hb) => {
@@ -1077,6 +1177,19 @@ export class Attack {
 
   public GetImpulseForFrame(frameNumber: number): FlatVec | undefined {
     return this.impulses.get(frameNumber);
+  }
+
+  public HitPlayer(playerIndex: number) {
+    this.PlayerIdsHit.push(playerIndex);
+  }
+
+  public HasHitPlayer(playerIndex: number) {
+    return this.PlayerIdsHit.includes(playerIndex);
+  }
+
+  public ResetPlayeIdHitArray() {
+    this.PlayerIdsHit.length = 0;
+    this.PlayerIdsHit[0] = -1;
   }
 }
 

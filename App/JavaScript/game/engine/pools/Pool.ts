@@ -33,6 +33,7 @@ export class Pool<T extends IPooledObject> {
   Zero(): void {
     this.poolIndex = 0;
   }
+
   get ActiveCount(): number {
     return this.poolIndex;
   }

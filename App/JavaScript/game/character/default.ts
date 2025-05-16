@@ -27,6 +27,7 @@ export type CharacterConfig = {
   LedgeBoxWidth: number;
   ledgeBoxYOffset: number;
   attacks: Map<attackId, Attack>;
+  Weight: number;
 };
 
 export class DefaultCharacterConfig {
@@ -42,6 +43,7 @@ export class DefaultCharacterConfig {
   public LedgeBoxWidth: number;
   public ledgeBoxYOffset: number;
   public attacks: Map<attackId, Attack> = new Map<attackId, Attack>();
+  public Weight: number;
 
   constructor() {
     const neutralAttack = GetNeutralAttack();
@@ -75,6 +77,8 @@ export class DefaultCharacterConfig {
     this.ECBWidth = 100;
 
     this.populateHurtCircles();
+
+    this.Weight = 110;
 
     this.JumpVelocity = 18;
     this.NumberOfJumps = 2;
@@ -124,6 +128,7 @@ function GetDownSpecial(): Attack {
     15,
     0,
     20,
+    45,
     hb1OffSets,
     activeFrames
   );
@@ -133,6 +138,7 @@ function GetDownSpecial(): Attack {
     13,
     1,
     19,
+    45,
     hb2OffSets,
     activeFrames
   );
@@ -142,6 +148,7 @@ function GetDownSpecial(): Attack {
     12,
     2,
     18,
+    45,
     hb3offSets,
     activeFrames
   );
@@ -151,6 +158,7 @@ function GetDownSpecial(): Attack {
     16,
     3,
     25,
+    45,
     hb4OffSets,
     activeFrames
   );
@@ -162,7 +170,7 @@ function GetDownSpecial(): Attack {
     downSpecialHitBox4,
   ];
 
-  return new Attack('WizardsRod', 90, hitBubles, 13, impulses);
+  return new Attack('WizardsRod', 77, hitBubles, 15, 81, 13, impulses, false);
 }
 
 function GetNeutralAttack() {
@@ -199,6 +207,7 @@ function GetNeutralAttack() {
     7,
     0,
     14,
+    60,
     hb1OffSets,
     hb1ActiveFrame
   );
@@ -207,13 +216,14 @@ function GetNeutralAttack() {
     6,
     1,
     12,
+    60,
     hb2OffSets,
     hb2ActiveFrame
   );
 
   const hbs = [defaultNeutralAttackHitBubble1, defaultNeutralAttackHitBubble2];
 
-  const DefaultNeutralAttack = new Attack('ThunderPalm', 9, hbs);
+  const DefaultNeutralAttack = new Attack('ThunderPalm', 18, hbs, 30, 100);
 
   return DefaultNeutralAttack;
 }

@@ -120,10 +120,10 @@ export function IntersectsCircles(
 }
 
 export function closestPointsBetweenSegments(
-  p1: FlatVec,
-  q1: FlatVec, // Segment 1 endpoints
-  p2: FlatVec,
-  q2: FlatVec,
+  p1: PooledVector,
+  q1: PooledVector, // Segment 1 endpoints
+  p2: PooledVector,
+  q2: PooledVector,
   vecPool: Pool<PooledVector>,
   ClosestPointsPool: Pool<ClosestPointsResult>
 ): ClosestPointsResult {
@@ -147,13 +147,11 @@ export function closestPointsBetweenSegments(
     return closestPointOnSegmentToPoint(p1, q1, p2, vecPool, ClosestPointsPool);
   }
 
-  const p1Dto = vecPool.Rent().SetFromFlatVec(p1);
-  const p2Dto = vecPool.Rent().SetFromFlatVec(p2);
-  const q1Dto = vecPool.Rent().SetFromFlatVec(q1);
-  const q2Dto = vecPool.Rent().SetFromFlatVec(q2);
+  const p1Dto = vecPool.Rent().SetXY(p1.X, p1.Y);
+  const p2Dto = vecPool.Rent().SetXY(p2.X, p2.Y);
 
-  const d1 = q1Dto.Subtract(p1Dto);
-  const d2 = q2Dto.Subtract(p2Dto);
+  const d1 = q1.Subtract(p1Dto);
+  const d2 = q2.Subtract(p2Dto);
   const r = p1Dto.Subtract(p2Dto);
 
   const a = d1.DotProduct(d1); // Squared length of segment 1
@@ -198,6 +196,25 @@ export function closestPointsBetweenSegments(
   return ret;
 }
 
+// suplimental functions ====================================
+
+function findArithemticMean(
+  verticies: Array<FlatVec>,
+  pooledVec: PooledVector
+): PooledVector {
+  let sumX = 0;
+  let sumY = 0;
+  const vertLength = verticies.length;
+
+  for (let index = 0; index < vertLength; index++) {
+    const v = verticies[index];
+    sumX += v.X;
+    sumY += v.Y;
+  }
+
+  return pooledVec.SetXY(sumX, sumY).Divide(vertLength);
+}
+
 function closestPointOnSegmentToPoint(
   segStart: FlatVec,
   segEnd: FlatVec,
@@ -226,25 +243,6 @@ function closestPointOnSegmentToPoint(
   const ret = ClosestPointsPool.Rent();
   ret.Set(closestX, closestY, point.X, point.Y);
   return ret;
-}
-
-// suplimental functions ====================================
-
-function findArithemticMean(
-  verticies: Array<FlatVec>,
-  pooledVec: PooledVector
-): PooledVector {
-  let sumX = 0;
-  let sumY = 0;
-  const vertLength = verticies.length;
-
-  for (let index = 0; index < vertLength; index++) {
-    const v = verticies[index];
-    sumX += v.X;
-    sumY += v.Y;
-  }
-
-  return pooledVec.SetXY(sumX, sumY).Divide(vertLength);
 }
 
 function projectVerticies(
