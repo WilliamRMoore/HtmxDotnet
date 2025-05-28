@@ -52,6 +52,9 @@ export class ComponentHistory {
   readonly PositionHistory: Array<FlatVec> = [];
   readonly FsmInfoHistory: Array<FSMInfoSnapShot> = [];
   readonly PlayerPointsHistory: Array<PlayerPointsSnapShot> = [];
+  readonly PlayerHitStunHistory: Array<hitStunSnapShot> = [];
+  readonly PlayerHitStopHistory: Array<hitStopSnapShot> = [];
+  readonly PlayerHitPauseHistory: Array<HitPauseSnapShot> = [];
   readonly VelocityHistory: Array<FlatVec> = [];
   readonly FlagsHistory: Array<FlagsSnapShot> = [];
   readonly EcbHistory: Array<ECBSnapShot> = [];
@@ -64,6 +67,10 @@ export class ComponentHistory {
     p.Postion.SetFromSnapShot(this.PositionHistory[frameNumber]);
     p.FSMInfo.SetFromSnapShot(this.FsmInfoHistory[frameNumber]);
     p.Velocity.SetFromSnapShot(this.VelocityHistory[frameNumber]);
+    p.Points.SetFromSnapShot(this.PlayerPointsHistory[frameNumber]);
+    p.HitStop.SetFromSnapShot(this.PlayerHitStopHistory[frameNumber]);
+    p.HitStun.SetFromSnapShot(this.PlayerHitStunHistory[frameNumber]);
+    p.HitPause.SetFromSnapShot(this.PlayerHitPauseHistory[frameNumber]);
     p.Flags.SetFromSnapShot(this.FlagsHistory[frameNumber]);
     p.ECB.SetFromSnapShot(this.EcbHistory[frameNumber]);
     p.LedgeDetector.SetFromSnapShot(this.LedgeDetectorHistory[frameNumber]);
@@ -312,22 +319,49 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
   }
 }
 
-export class HitStunComponent {
+type hitStopSnapShot = number; //{ frames: number };
+
+export class HitStopComponent implements IHistoryEnabled<hitStopSnapShot> {
+  private hitStopFrames: number = 0;
+
+  public SetHitStop(frames: number) {
+    this.hitStopFrames = frames;
+  }
+
+  public Decrement() {
+    this.hitStopFrames--;
+  }
+
+  public SetZero() {
+    this.hitStopFrames = 0;
+  }
+
+  public get HitStopFrames(): number {
+    return this.hitStopFrames;
+  }
+
+  public SnapShot(): hitStopSnapShot {
+    return this.hitStopFrames as hitStopSnapShot;
+  }
+
+  public SetFromSnapShot(snapShot: hitStopSnapShot): void {
+    this.hitStopFrames = snapShot;
+  }
+}
+
+type hitStunSnapShot = {
+  hitStunFrames: number;
+  vx: number;
+  vy: number;
+};
+
+export class HitStunComponent implements IHistoryEnabled<hitStunSnapShot> {
   private framesOfHitStun: number = 0;
-  private angle: number = 0;
   private xVelocity: number = 0;
   private yVelocity: number = 0;
 
   public set FramesOfHitStun(hitStunFrames: number) {
     this.framesOfHitStun = hitStunFrames;
-  }
-
-  public set Angle(angle: number) {
-    this.angle = angle;
-  }
-
-  public get Angle(): number {
-    return this.angle;
   }
 
   public get VX(): number {
@@ -338,7 +372,8 @@ export class HitStunComponent {
     return this.yVelocity;
   }
 
-  public SetVelocityXY(vx: number, vy: number) {
+  public SetHitStun(hitStunFrames: number, vx: number, vy: number) {
+    this.framesOfHitStun = hitStunFrames;
     this.xVelocity = vx;
     this.yVelocity = vy;
   }
@@ -349,9 +384,54 @@ export class HitStunComponent {
 
   public Zero() {
     this.framesOfHitStun = 0;
-    this.angle = 0;
     this.xVelocity = 0;
     this.yVelocity = 0;
+  }
+
+  public SnapShot(): hitStunSnapShot {
+    return {
+      hitStunFrames: this.framesOfHitStun,
+      vx: this.xVelocity,
+      vy: this.yVelocity,
+    } as hitStunSnapShot;
+  }
+
+  public SetFromSnapShot(snapShot: hitStunSnapShot): void {
+    this.framesOfHitStun = snapShot.hitStunFrames;
+    this.xVelocity = snapShot.vx;
+    this.yVelocity = snapShot.vy;
+  }
+}
+
+type HitPauseSnapShot = number; //= {
+//  hitpasueFrames: number;
+//};
+
+export class HitPauseComponent implements IHistoryEnabled<HitPauseSnapShot> {
+  private hitPauseFrames: number = 0;
+
+  public SetHitPause(frames: number) {
+    this.hitPauseFrames = frames;
+  }
+
+  public Decrement() {
+    this.hitPauseFrames--;
+  }
+
+  public IsInHitPause(): boolean {
+    return this.hitPauseFrames > 0;
+  }
+
+  public Zero() {
+    this.hitPauseFrames = 0;
+  }
+
+  public SnapShot(): HitPauseSnapShot {
+    return this.hitPauseFrames as HitPauseSnapShot;
+  }
+
+  public SetFromSnapShot(snapShot: HitPauseSnapShot): void {
+    this.hitPauseFrames = snapShot;
   }
 }
 

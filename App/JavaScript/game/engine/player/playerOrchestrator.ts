@@ -4,6 +4,9 @@ import {
   AttackComponment,
   ECBComponent,
   FSMInfoComponent,
+  HitPauseComponent,
+  HitStopComponent,
+  HitStunComponent,
   HurtCapsules,
   JumpComponent,
   LedgeDetectorComponent,
@@ -36,6 +39,9 @@ export class Player {
   private readonly weight: WeightComponent;
   private readonly flags: PlayerFlagsComponent;
   private readonly points: PlayerPointsComponent;
+  private readonly hitStun: HitStunComponent;
+  private readonly hitStop: HitStopComponent;
+  private readonly hitPause: HitPauseComponent;
   private readonly speeds: SpeedsComponent;
   private readonly ecb: ECBComponent;
   private readonly hurtCircles: HurtCapsules;
@@ -54,6 +60,9 @@ export class Player {
     this.speeds = speedsBuilder.Build();
     this.flags = new PlayerFlagsComponent();
     this.points = new PlayerPointsComponent();
+    this.hitStun = new HitStunComponent();
+    this.hitStop = new HitStopComponent();
+    this.hitPause = new HitPauseComponent();
     this.ecb = new ECBComponent(
       CharacterConfig.ECBHeight,
       CharacterConfig.ECBWidth,
@@ -89,6 +98,18 @@ export class Player {
 
   public get Points(): PlayerPointsComponent {
     return this.points;
+  }
+
+  public get HitStun(): HitStunComponent {
+    return this.hitStun;
+  }
+
+  public get HitStop(): HitStopComponent {
+    return this.hitStop;
+  }
+
+  public get HitPause(): HitPauseComponent {
+    return this.hitPause;
   }
 
   public get Jump(): JumpComponent {

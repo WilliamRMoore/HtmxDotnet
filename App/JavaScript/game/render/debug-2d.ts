@@ -190,7 +190,6 @@ function drawPlayer(
     drawPrevEcb(ctx, ecb, lastEcb, alpha);
     drawCurrentECB(ctx, ecb, lastEcb, alpha);
     drawHurtCircles(ctx, pos, lastPos, circlesHistory, alpha);
-    drawHitCircles(ctx, attack, fsm, flags, pos, lastPos, alpha);
     drawPositionMarker(ctx, pos, lastPos, alpha);
     const lerpDirection = alpha > 0.5 ? facingRight : lastFacingRight;
     drawDirectionMarker(ctx, lerpDirection, ecb, lastEcb, alpha);
@@ -202,6 +201,16 @@ function drawPlayer(
       lastLd,
       alpha
     );
+  }
+
+  for (let i = 0; i < playerCount; i++) {
+    const playerHistory = world.GetComponentHistory(i);
+    const pos = playerHistory!.PositionHistory[currentFrame];
+    const lastPos = playerHistory!.PositionHistory[lastFrame];
+    const flags = playerHistory!.FlagsHistory[currentFrame];
+    const attack = playerHistory!.AttackHistory[currentFrame];
+    const fsm = playerHistory!.FsmInfoHistory[currentFrame];
+    drawHitCircles(ctx, attack, fsm, flags, pos, lastPos, alpha);
   }
 }
 

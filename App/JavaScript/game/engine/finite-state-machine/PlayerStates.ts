@@ -34,6 +34,9 @@ class _GameEvents {
   public readonly SOFT_LAND_GE = 17;
   public readonly FALL_GE = 18;
   public readonly LEDGE_GRAB_GE = 19;
+  public readonly HIT_STOP = 20;
+  public readonly lAUNCH = 21;
+  public readonly TUBMLE = 22;
 }
 
 export const GAME_EVENTS = new _GameEvents();
@@ -61,6 +64,9 @@ class _STATES {
   public readonly HELPESS_S = 18 as stateId;
   public readonly ATTACK_S = 19 as stateId;
   public readonly DOWN_SPECIAL_S = 20 as stateId;
+  public readonly HIT_STOP_S = 21 as stateId;
+  public readonly LAUNCH_S = 22 as stateId;
+  public readonly TUMBLE_S = 23 as stateId;
 }
 
 export const STATES = new _STATES();
@@ -540,7 +546,37 @@ const IdleToDownSpecial: condition = {
   },
   StateId: STATES.DOWN_SPECIAL_S,
 };
+
+const HitStopToLaunch: condition = {
+  Name: 'HitStopToLaunch',
+  ConditionFunc: (w, playerIndex) => {
+    const p = w.GetPlayer(playerIndex)!;
+
+    if (p.HitStop.HitStopFrames > 0) {
+      return false;
+    }
+
+    return true;
+  },
+  StateId: STATES.LAUNCH_S,
+};
+
+const LaunchToTumble: condition = {
+  Name: 'LaunchToHitStun',
+  ConditionFunc: (w, playerIndex) => {
+    const p = w.GetPlayer(playerIndex)!;
+
+    if (p.HitStun.FramesOfHitStun > 0) {
+      return false;
+    }
+
+    return true;
+  },
+  StateId: STATES.TUMBLE_S,
+};
+
 // Attack Conditionals =================================================================
+
 const AttackToNeutral: attackCondition = {
   Name: 'AttackToNurtal',
   ConditionFunc: (w, playerIndex) => {
@@ -597,6 +633,9 @@ export const AIR_DODGE_RELATIONS = InitAirDodgeRelations();
 export const HELPESS_RELATIONS = InitHelpessRelations();
 export const ATTACK_RELATIONS = InitAttackRelations();
 export const DOWN_SPECIAL_RELATIONS = InitDownSpecialRelations();
+export const HIT_STOP_RELATIONS = InitHitStopRelations();
+export const TUMBLE_RELATIONS = InitTubleRelations();
+export const LAUNCH_RELATIONS = InitLaunchRelations();
 
 // Init functions ====================================================================
 
@@ -769,6 +808,33 @@ function InitDownSpecialRelations(): StateRelation {
   return downSpecRelations;
 }
 
+function InitHitStopRelations(): StateRelation {
+  const hitStunRelations = new StateRelation(
+    STATES.HIT_STOP_S,
+    InitHitStopTranslations()
+  );
+
+  return hitStunRelations;
+}
+
+function InitTubleRelations(): StateRelation {
+  const TubmbleRelations = new StateRelation(
+    STATES.TUMBLE_S,
+    InitTumbleTranslations()
+  );
+
+  return TubmbleRelations;
+}
+
+function InitLaunchRelations(): StateRelation {
+  const launchRelations = new StateRelation(
+    STATES.LAUNCH_S,
+    InitLaunchTranslations()
+  );
+
+  return launchRelations;
+}
+
 // Action State Mapping functions ===================================================
 
 function InitIdleTranslations() {
@@ -779,6 +845,7 @@ function InitIdleTranslations() {
     { geId: GAME_EVENTS.TURN_GE, sId: STATES.TURN_S },
     { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
     { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
   ]);
 
   const condtions: Array<condition> = [
@@ -799,6 +866,7 @@ function InitStartWalkTranslations(): ActionStateMappings {
     { geId: GAME_EVENTS.IDLE_GE, sId: STATES.IDLE_S },
     { geId: GAME_EVENTS.MOVE_FAST_GE, sId: STATES.DASH_S },
     { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
   ]);
 
   const conditions: Array<condition> = [WalkToTurn];
@@ -816,6 +884,7 @@ function InitTurnTranslations(): ActionStateMappings {
   const turnTranslations = new ActionStateMappings();
   turnTranslations._setMappings([
     { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
   ]);
 
   const defaultConditions: Array<condition> = [TurnDefaultWalk, defaultIdle];
@@ -830,6 +899,7 @@ function InitWalkTranslations(): ActionStateMappings {
   walkTranslations._setMappings([
     { geId: GAME_EVENTS.IDLE_GE, sId: STATES.IDLE_S },
     { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
   ]);
 
   const conditions: Array<condition> = [WalkToTurn];
@@ -844,6 +914,7 @@ function InitDashTranslations(): ActionStateMappings {
   dashTranslations._setMappings([
     { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
     { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
   ]);
 
   const conditions: Array<condition> = [DashToTurn];
@@ -861,6 +932,7 @@ function InitDashTrunTranslations(): ActionStateMappings {
   const dashTrunTranslations = new ActionStateMappings();
   dashTrunTranslations._setMappings([
     { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
   ]);
 
   dashTrunTranslations._setDefault([defaultDash]);
@@ -874,6 +946,7 @@ function InitRunTranslations(): ActionStateMappings {
     { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
     { geId: GAME_EVENTS.IDLE_GE, sId: STATES.STOP_RUN_S },
     { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
   ]);
 
   const conditions: Array<condition> = [RunToTurn];
@@ -887,6 +960,7 @@ function InitRunTurnTranslations(): ActionStateMappings {
   const runTurnTranslations = new ActionStateMappings();
   runTurnTranslations._setMappings([
     { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
   ]);
 
   runTurnTranslations._setDefault([defaultRun]);
@@ -901,6 +975,7 @@ function InitStopRunTranslations(): ActionStateMappings {
     { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
     { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
     { geId: GAME_EVENTS.TURN_GE, sId: STATES.RUN_TURN_S },
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
   ]);
 
   const conditions: Array<condition> = [RunStopToTurn];
@@ -915,6 +990,10 @@ function InitStopRunTranslations(): ActionStateMappings {
 function InitJumpSquatTranslations(): ActionStateMappings {
   const jumpSquatTranslations = new ActionStateMappings();
 
+  jumpSquatTranslations._setMappings([
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
+  ]);
+
   jumpSquatTranslations._setDefault([defaultJump]);
 
   return jumpSquatTranslations;
@@ -922,6 +1001,11 @@ function InitJumpSquatTranslations(): ActionStateMappings {
 
 function InitJumpTranslations(): ActionStateMappings {
   const jumpTranslations = new ActionStateMappings();
+
+  jumpTranslations._setMappings([
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
+  ]);
+
   const condtions: Array<condition> = [ToJump, ToAirDodge];
 
   jumpTranslations._setConditions(condtions);
@@ -937,6 +1021,7 @@ function InitNFallTranslations(): ActionStateMappings {
     { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
     { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.SOFT_LAND_S },
     { geId: GAME_EVENTS.LEDGE_GRAB_GE, sId: STATES.LEDGE_GRAB_S },
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
   ]);
 
   const condtions: Array<condition> = [ToJump, ToAirDodge];
@@ -952,6 +1037,7 @@ function InitFastFallTranslations(): ActionStateMappings {
     { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_S },
     { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
     { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.SOFT_LAND_S },
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
   ]);
 
   return ffTranslations;
@@ -959,6 +1045,10 @@ function InitFastFallTranslations(): ActionStateMappings {
 
 function InitLandTranslations(): ActionStateMappings {
   const landTranslations = new ActionStateMappings();
+
+  landTranslations._setMappings([
+    { geId: GAME_EVENTS.HIT_STOP, sId: STATES.HIT_STOP_S },
+  ]);
 
   landTranslations._setDefault([LandToIdle, LandToWalk, LandToTurn]);
 
@@ -1017,6 +1107,36 @@ function InitDownSpecialTrnaslations(): ActionStateMappings {
   downSpecialTranslations._setDefault([defaultIdle]);
 
   return downSpecialTranslations;
+}
+
+function InitHitStopTranslations(): ActionStateMappings {
+  const hitStopTranslations = new ActionStateMappings();
+
+  const hitStopConditions = [HitStopToLaunch];
+
+  hitStopTranslations._setConditions(hitStopConditions);
+
+  return hitStopTranslations;
+}
+
+function InitTumbleTranslations(): ActionStateMappings {
+  const TumbleTranslations = new ActionStateMappings();
+  TumbleTranslations._setMappings([
+    { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
+    { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.LAND_S },
+  ]);
+
+  TumbleTranslations._setConditions([ToJump]);
+
+  return TumbleTranslations;
+}
+
+function InitLaunchTranslations(): ActionStateMappings {
+  const launchTranslations = new ActionStateMappings();
+
+  launchTranslations._setConditions([LaunchToTumble]);
+
+  return launchTranslations;
 }
 
 // STATES ==================================================================
@@ -1285,7 +1405,13 @@ export const Helpess: FSMState = {
   StateName: 'Helpess',
   StateId: STATES.HELPESS_S,
   OnEnter: (p: Player, w: World) => {},
-  OnUpdate: (p: Player, w: World) => {},
+  OnUpdate: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID);
+    const speeds = p.Speeds;
+    const airSpeed = speeds.AerialSpeedInpulseLimit;
+    const airMult = speeds.AirDogeSpeed;
+    p.Velocity.AddClampedXImpulse(airSpeed, (ia!.LXAxsis * airMult) / 2);
+  },
   OnExit: (p: Player, w: World) => {},
 };
 
@@ -1335,7 +1461,7 @@ export const DownSpecial: FSMState = {
       p.Flags.GravityOff();
     }
   },
-  OnUpdate(p: Player, world: World) {
+  OnUpdate: (p: Player, world: World) => {
     const attackComp = p.Attacks;
     const attack = attackComp.GetAttack();
     const impulse = attack?.GetImpulseForFrame(p.FSMInfo.CurrentStateFrame);
@@ -1353,10 +1479,63 @@ export const DownSpecial: FSMState = {
       pVel.AddClampedYImpulse(clamp, y);
     }
   },
-  OnExit(p: Player, world: World) {
+  OnExit: (p: Player, world: World) => {
     const attackComp = p.Attacks;
     p.Flags.GravityOn();
-    attackComp.ZeroCurrentAttack();
     p.Attacks.GetAttack()!.ResetPlayeIdHitArray();
+    attackComp.ZeroCurrentAttack();
   },
 };
+
+export const hitStop: FSMState = {
+  StateName: 'HitStop',
+  StateId: STATES.HIT_STOP_S,
+  OnEnter: (p: Player, world: World) => {
+    p.Flags.GravityOff();
+    p.Velocity.X = 0;
+    p.Velocity.Y = 0;
+  },
+  OnUpdate: (p: Player, world: World) => {
+    p.HitStop.Decrement();
+  },
+  OnExit: (p: Player, world: World) => {
+    p.Flags.GravityOn();
+    p.HitStop.SetZero();
+  },
+};
+
+export const Launch: FSMState = {
+  StateName: 'Launch',
+  StateId: STATES.LAUNCH_S,
+  OnEnter: (p, w) => {
+    const pVel = p.Velocity;
+    const hitStun = p.HitStun;
+    pVel.X = hitStun.VX;
+    pVel.Y = hitStun.VY;
+  },
+  OnUpdate: (p, w) => {
+    p.HitStun.DecrementHitStun();
+  },
+  OnExit: (p, w) => {
+    p.HitStun.Zero();
+  },
+};
+
+export const Tumble: FSMState = {
+  StateName: 'Tumble',
+  StateId: STATES.TUMBLE_S,
+  OnEnter: (p, w) => {
+    p.Jump.ResetJumps();
+    p.Jump.IncrementJumps();
+  },
+  OnUpdate: (p, w) => {
+    const ia = w.GetPlayerCurrentInput(p.ID);
+    const speeds = p.Speeds;
+    const airSpeed = speeds.AerialSpeedInpulseLimit;
+    const airMult = speeds.AirDogeSpeed;
+    p.Velocity.AddClampedXImpulse(airSpeed, (ia!.LXAxsis * airMult) / 2);
+  },
+  OnExit: (p, w) => {},
+};
+
+//export const launch: FSMState

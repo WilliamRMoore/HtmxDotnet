@@ -18,6 +18,8 @@ import {
   gameEventId,
   Helpess,
   HELPESS_RELATIONS,
+  HIT_STOP_RELATIONS,
+  hitStop,
   Idle,
   IDLE_STATE_RELATIONS,
   Jump,
@@ -26,6 +28,8 @@ import {
   JumpSquat,
   Land,
   LAND_RELATIONS,
+  Launch,
+  LAUNCH_RELATIONS,
   LEDGE_GRAB_RELATIONS,
   LedgeGrab,
   NeutralFall,
@@ -42,6 +46,8 @@ import {
   StartWalk,
   stateId,
   STOP_RUN_RELATIONS,
+  Tumble,
+  TUMBLE_RELATIONS,
   Turn,
   TURN_RELATIONS,
   Walk,
@@ -86,7 +92,10 @@ export class StateMachine {
       .set(AIR_DODGE_RELATIONS.stateId, AIR_DODGE_RELATIONS.mappings)
       .set(HELPESS_RELATIONS.stateId, HELPESS_RELATIONS.mappings)
       .set(ATTACK_RELATIONS.stateId, ATTACK_RELATIONS.mappings)
-      .set(DOWN_SPECIAL_RELATIONS.stateId, DOWN_SPECIAL_RELATIONS.mappings);
+      .set(DOWN_SPECIAL_RELATIONS.stateId, DOWN_SPECIAL_RELATIONS.mappings)
+      .set(HIT_STOP_RELATIONS.stateId, HIT_STOP_RELATIONS.mappings)
+      .set(TUMBLE_RELATIONS.stateId, TUMBLE_RELATIONS.mappings)
+      .set(LAUNCH_RELATIONS.stateId, LAUNCH_RELATIONS.mappings);
 
     this.states
       .set(Idle.StateId, Idle)
@@ -108,7 +117,10 @@ export class StateMachine {
       .set(AirDodge.StateId, AirDodge)
       .set(Helpess.StateId, Helpess)
       .set(Attack.StateId, Attack)
-      .set(DownSpecial.StateId, DownSpecial);
+      .set(DownSpecial.StateId, DownSpecial)
+      .set(hitStop.StateId, hitStop)
+      .set(Tumble.StateId, Tumble)
+      .set(Launch.StateId, Launch);
   }
 
   public SetInitialState(stateId: stateId) {
@@ -118,13 +130,14 @@ export class StateMachine {
   public UpdateFromWorld(gameEventId: gameEventId) {
     // world events should still have to follow mapping rules
     const state = this.GetTranslation(gameEventId);
-    if (state != undefined) {
-      const fsmInfo = this.player.FSMInfo;
-
-      this.changeState(state);
-      fsmInfo.CurrentState.OnUpdate?.(this.player, this.world);
-      fsmInfo.IncrementStateFrame();
+    if (state === undefined) {
+      return;
     }
+    const fsmInfo = this.player.FSMInfo;
+
+    this.changeState(state);
+    fsmInfo.CurrentState.OnUpdate?.(this.player, this.world);
+    fsmInfo.IncrementStateFrame();
   }
 
   public ForceState(sateId: stateId) {

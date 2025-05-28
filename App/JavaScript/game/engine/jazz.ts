@@ -6,6 +6,7 @@ import { defaultStage } from './stage/stageComponents';
 import {
   ApplyVelocty,
   Gravity,
+  HitPause,
   LedgeGrabDetection,
   OutOfBoundsCheck,
   PlayerAttacks,
@@ -98,6 +99,7 @@ export class Jazz implements IJazz {
     StageCollisionDetection(world);
     PlayerAttacks(world);
     OutOfBoundsCheck(world);
+    HitPause(world);
     RecordHistory(world);
   }
 }
