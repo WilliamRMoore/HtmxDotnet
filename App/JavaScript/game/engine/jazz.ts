@@ -6,7 +6,7 @@ import { defaultStage } from './stage/stageComponents';
 import {
   ApplyVelocty,
   Gravity,
-  HitPause,
+  TimedFlags,
   LedgeGrabDetection,
   OutOfBoundsCheck,
   PlayerAttacks,
@@ -36,7 +36,6 @@ export class Jazz implements IJazz {
   }
 
   public Init(numberOfPlayers: number, positions: Array<FlatVec>): void {
-    //const charConfig = new DefaultCharacterConfig();
     for (let i = 0; i < numberOfPlayers; i++) {
       const pos = positions[i];
       const charConfig = new DefaultCharacterConfig();
@@ -82,25 +81,65 @@ export class Jazz implements IJazz {
 
   private tick() {
     const world = this.world;
-
+    const frame = world.localFrame;
     const playerCount = world.PlayerCount;
+    const players = world.Players;
+    const stateMachines = world.StateMachines;
+    const histories = world.ComponentHistories;
+    const stage = world.Stage;
+    const vecPool = world.VecPool;
+    const colResPool = world.ColResPool;
+    const projResPool = world.ProjResPool;
+    const atkResPool = world.AtkResPool;
+    const clstsPntsResPool = world.ClstsPntsResPool;
 
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
       const player = world.GetPlayer(playerIndex);
       player?.ECB.UpdatePreviousECB();
-      player?.Flags.UpdateTimedFlags();
     }
 
-    PlayerInput(world);
-    Gravity(world);
-    ApplyVelocty(world);
-    PlayerCollisionDetection(world);
-    LedgeGrabDetection(world);
-    StageCollisionDetection(world);
-    PlayerAttacks(world);
-    OutOfBoundsCheck(world);
-    HitPause(world);
-    RecordHistory(world);
+    PlayerInput(playerCount, players, stateMachines, world);
+    Gravity(playerCount, players, stage);
+    ApplyVelocty(playerCount, players, stage);
+    PlayerCollisionDetection(
+      playerCount,
+      players,
+      vecPool,
+      colResPool,
+      projResPool
+    );
+    LedgeGrabDetection(
+      playerCount,
+      players,
+      stateMachines,
+      stage,
+      vecPool,
+      colResPool,
+      projResPool
+    );
+    StageCollisionDetection(
+      playerCount,
+      players,
+      stateMachines,
+      stage,
+      vecPool,
+      colResPool,
+      projResPool
+    );
+    PlayerAttacks(
+      playerCount,
+      players,
+      stateMachines,
+      frame,
+      atkResPool,
+      vecPool,
+      colResPool,
+      clstsPntsResPool,
+      histories
+    );
+    OutOfBoundsCheck(playerCount, players, stateMachines, stage);
+    TimedFlags(playerCount, players);
+    RecordHistory(frame, playerCount, players, histories, world);
   }
 }
 

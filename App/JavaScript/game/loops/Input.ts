@@ -200,8 +200,9 @@ function transcribeInput(input: GamePadInput) {
     return inputAction;
   }
 
-  if (input.LYAxis < 0.5) {
+  if (input.LYAxis < -0.5) {
     inputAction.Action = GAME_EVENTS.DOWN_GE;
+    return inputAction;
   }
 
   if (Math.abs(input.LXAxis) > 0) {

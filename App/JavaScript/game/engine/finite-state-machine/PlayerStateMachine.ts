@@ -7,6 +7,8 @@ import {
   AirDodge,
   Attack,
   ATTACK_RELATIONS,
+  Crouch,
+  CROUCH_RELATIONS,
   Dash,
   DASH_RELATIONS,
   DASH_TURN_RELATIONS,
@@ -95,7 +97,8 @@ export class StateMachine {
       .set(DOWN_SPECIAL_RELATIONS.stateId, DOWN_SPECIAL_RELATIONS.mappings)
       .set(HIT_STOP_RELATIONS.stateId, HIT_STOP_RELATIONS.mappings)
       .set(TUMBLE_RELATIONS.stateId, TUMBLE_RELATIONS.mappings)
-      .set(LAUNCH_RELATIONS.stateId, LAUNCH_RELATIONS.mappings);
+      .set(LAUNCH_RELATIONS.stateId, LAUNCH_RELATIONS.mappings)
+      .set(CROUCH_RELATIONS.stateId, CROUCH_RELATIONS.mappings);
 
     this.states
       .set(Idle.StateId, Idle)
@@ -120,7 +123,8 @@ export class StateMachine {
       .set(DownSpecial.StateId, DownSpecial)
       .set(hitStop.StateId, hitStop)
       .set(Tumble.StateId, Tumble)
-      .set(Launch.StateId, Launch);
+      .set(Launch.StateId, Launch)
+      .set(Crouch.StateId, Crouch);
   }
 
   public SetInitialState(stateId: stateId) {

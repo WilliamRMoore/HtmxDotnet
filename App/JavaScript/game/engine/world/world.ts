@@ -115,8 +115,20 @@ export class World {
     this.RentedProjResHistory[frame] = projReses;
   }
 
-  public get Stage(): Stage | undefined {
-    return this.stage;
+  public get Stage(): Stage {
+    return this.stage!;
+  }
+
+  public get Players(): Array<Player> {
+    return this.players;
+  }
+
+  public get StateMachines(): Array<StateMachine> {
+    return this.stateMachines;
+  }
+
+  public get ComponentHistories(): Array<ComponentHistory> {
+    return this.PlayerComponentHistories;
   }
 
   public GetPlayerPreviousInput(playerId: number): InputAction | undefined {

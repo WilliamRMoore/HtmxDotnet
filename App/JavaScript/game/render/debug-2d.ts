@@ -301,12 +301,14 @@ function drawDirectionMarker(
   lastEcb: ECBSnapShot,
   alpha: number
 ) {
+  const yOffset = ecb.YOffset;
   ctx.strokeStyle = 'white';
   if (facingRight) {
     const curRightX = ComponentHistory.GetRightXFromEcbHistory(ecb);
-    const curRightY = ComponentHistory.GetRightYFromEcbHistory(ecb);
+    const curRightY = ComponentHistory.GetRightYFromEcbHistory(ecb) + yOffset;
     const lastRightX = ComponentHistory.GetRightXFromEcbHistory(lastEcb);
-    const lastRightY = ComponentHistory.GetRightYFromEcbHistory(lastEcb);
+    const lastRightY =
+      ComponentHistory.GetRightYFromEcbHistory(lastEcb) + yOffset;
 
     const rightX = Lerp(lastRightX, curRightX, alpha);
     const rightY = Lerp(lastRightY, curRightY, alpha);
@@ -318,9 +320,10 @@ function drawDirectionMarker(
     ctx.closePath();
   } else {
     const curLeftX = ComponentHistory.GetLeftXFromEcbHistory(ecb);
-    const curLeftY = ComponentHistory.GetLeftYFromEcbHistory(ecb);
+    const curLeftY = ComponentHistory.GetLeftYFromEcbHistory(ecb) + yOffset;
     const lastLeftX = ComponentHistory.GetLeftXFromEcbHistory(lastEcb);
-    const lastLeftY = ComponentHistory.GetLeftYFromEcbHistory(lastEcb);
+    const lastLeftY =
+      ComponentHistory.GetLeftYFromEcbHistory(lastEcb) + yOffset;
 
     const leftX = Lerp(lastLeftX, curLeftX, alpha);
     const leftY = Lerp(lastLeftY, curLeftY, alpha);
@@ -342,23 +345,34 @@ function drawPrevEcb(
   ctx.fillStyle = 'red';
   ctx.lineWidth = 3;
 
+  const curYOffset = curEcb.YOffset;
+  const prevYOffset = lastEcb.YOffset;
+
   const curLeftX = ComponentHistory.GetPrevLeftXFromEcbHistory(curEcb);
-  const curLeftY = ComponentHistory.GetPrevLeftYFromEcbHistory(curEcb);
+  const curLeftY =
+    ComponentHistory.GetPrevLeftYFromEcbHistory(curEcb) + curYOffset;
   const curTopX = ComponentHistory.GetPrevTopXFromEcbHistory(curEcb);
-  const curTopY = ComponentHistory.GetPrevTopYFromEcbHistory(curEcb);
+  const curTopY =
+    ComponentHistory.GetPrevTopYFromEcbHistory(curEcb) + curYOffset;
   const curRightX = ComponentHistory.GetPrevRightXFromEcbHistory(curEcb);
-  const curRightY = ComponentHistory.GetPrevRightYFromEcbHistory(curEcb);
+  const curRightY =
+    ComponentHistory.GetPrevRightYFromEcbHistory(curEcb) + curYOffset;
   const curBottomX = ComponentHistory.GetPrevBottomXFromEcbHistory(curEcb);
-  const curBottomY = ComponentHistory.GetPrevBottomYFromEcbHistory(curEcb);
+  const curBottomY =
+    ComponentHistory.GetPrevBottomYFromEcbHistory(curEcb) + curYOffset;
 
   const lastLeftX = ComponentHistory.GetPrevLeftXFromEcbHistory(lastEcb);
-  const lastLeftY = ComponentHistory.GetPrevLeftYFromEcbHistory(lastEcb);
+  const lastLeftY =
+    ComponentHistory.GetPrevLeftYFromEcbHistory(lastEcb) + prevYOffset;
   const lastTopX = ComponentHistory.GetPrevTopXFromEcbHistory(lastEcb);
-  const lastTopY = ComponentHistory.GetPrevTopYFromEcbHistory(lastEcb);
+  const lastTopY =
+    ComponentHistory.GetPrevTopYFromEcbHistory(lastEcb) + prevYOffset;
   const lastRightX = ComponentHistory.GetPrevRightXFromEcbHistory(lastEcb);
-  const lastRightY = ComponentHistory.GetPrevRightYFromEcbHistory(lastEcb);
+  const lastRightY =
+    ComponentHistory.GetPrevRightYFromEcbHistory(lastEcb) + prevYOffset;
   const LastBottomX = ComponentHistory.GetPrevBottomXFromEcbHistory(lastEcb);
-  const LastBottomY = ComponentHistory.GetPrevBottomYFromEcbHistory(lastEcb);
+  const LastBottomY =
+    ComponentHistory.GetPrevBottomYFromEcbHistory(lastEcb) + prevYOffset;
 
   const leftX = Lerp(lastLeftX, curLeftX, alpha);
   const leftY = Lerp(lastLeftY, curLeftY, alpha);
@@ -399,23 +413,31 @@ function drawCurrentECB(
   lastEcb: ECBSnapShot,
   alpha: number
 ) {
+  const curyOffset = ecb.YOffset;
+  const prevYOffset = lastEcb.YOffset;
+
   const curLeftX = ComponentHistory.GetLeftXFromEcbHistory(ecb);
-  const curLeftY = ComponentHistory.GetLeftYFromEcbHistory(ecb);
+  const curLeftY = ComponentHistory.GetLeftYFromEcbHistory(ecb) + curyOffset;
   const curTopX = ComponentHistory.GetTopXFromEcbHistory(ecb);
-  const curTopY = ComponentHistory.GetTopYFromEcbHistory(ecb);
+  const curTopY = ComponentHistory.GetTopYFromEcbHistory(ecb) + curyOffset;
   const curRightX = ComponentHistory.GetRightXFromEcbHistory(ecb);
-  const curRightY = ComponentHistory.GetRightYFromEcbHistory(ecb);
+  const curRightY = ComponentHistory.GetRightYFromEcbHistory(ecb) + curyOffset;
   const curBottomX = ComponentHistory.GetBottomXFromEcbHistory(ecb);
-  const curBottomY = ComponentHistory.GetBottomYFromEcbHistory(ecb);
+  const curBottomY =
+    ComponentHistory.GetBottomYFromEcbHistory(ecb) + curyOffset;
 
   const lastLeftX = ComponentHistory.GetLeftXFromEcbHistory(lastEcb);
-  const lastLeftY = ComponentHistory.GetLeftYFromEcbHistory(lastEcb);
+  const lastLeftY =
+    ComponentHistory.GetLeftYFromEcbHistory(lastEcb) + prevYOffset;
   const lastTopX = ComponentHistory.GetTopXFromEcbHistory(lastEcb);
-  const lastTopY = ComponentHistory.GetTopYFromEcbHistory(lastEcb);
+  const lastTopY =
+    ComponentHistory.GetTopYFromEcbHistory(lastEcb) + prevYOffset;
   const lastRightX = ComponentHistory.GetRightXFromEcbHistory(lastEcb);
-  const lastRightY = ComponentHistory.GetRightYFromEcbHistory(lastEcb);
+  const lastRightY =
+    ComponentHistory.GetRightYFromEcbHistory(lastEcb) + prevYOffset;
   const lastBottomX = ComponentHistory.GetBottomXFromEcbHistory(lastEcb);
-  const lastBottomY = ComponentHistory.GetBottomYFromEcbHistory(lastEcb);
+  const lastBottomY =
+    ComponentHistory.GetBottomYFromEcbHistory(lastEcb) + prevYOffset;
 
   const leftX = Lerp(lastLeftX, curLeftX, alpha);
   const leftY = Lerp(lastLeftY, curLeftY, alpha);

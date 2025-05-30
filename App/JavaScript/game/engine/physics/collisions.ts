@@ -121,7 +121,7 @@ export function IntersectsCircles(
 
 export function closestPointsBetweenSegments(
   p1: PooledVector,
-  q1: PooledVector, // Segment 1 endpoints
+  q1: PooledVector,
   p2: PooledVector,
   q2: PooledVector,
   vecPool: Pool<PooledVector>,

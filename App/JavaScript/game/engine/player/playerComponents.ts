@@ -54,7 +54,6 @@ export class ComponentHistory {
   readonly PlayerPointsHistory: Array<PlayerPointsSnapShot> = [];
   readonly PlayerHitStunHistory: Array<hitStunSnapShot> = [];
   readonly PlayerHitStopHistory: Array<hitStopSnapShot> = [];
-  readonly PlayerHitPauseHistory: Array<HitPauseSnapShot> = [];
   readonly VelocityHistory: Array<FlatVec> = [];
   readonly FlagsHistory: Array<FlagsSnapShot> = [];
   readonly EcbHistory: Array<ECBSnapShot> = [];
@@ -70,7 +69,7 @@ export class ComponentHistory {
     p.Points.SetFromSnapShot(this.PlayerPointsHistory[frameNumber]);
     p.HitStop.SetFromSnapShot(this.PlayerHitStopHistory[frameNumber]);
     p.HitStun.SetFromSnapShot(this.PlayerHitStunHistory[frameNumber]);
-    p.HitPause.SetFromSnapShot(this.PlayerHitPauseHistory[frameNumber]);
+    //p.HitPause.SetFromSnapShot(this.PlayerHitPauseHistory[frameNumber]);
     p.Flags.SetFromSnapShot(this.FlagsHistory[frameNumber]);
     p.ECB.SetFromSnapShot(this.EcbHistory[frameNumber]);
     p.LedgeDetector.SetFromSnapShot(this.LedgeDetectorHistory[frameNumber]);
@@ -403,38 +402,6 @@ export class HitStunComponent implements IHistoryEnabled<hitStunSnapShot> {
   }
 }
 
-type HitPauseSnapShot = number; //= {
-//  hitpasueFrames: number;
-//};
-
-export class HitPauseComponent implements IHistoryEnabled<HitPauseSnapShot> {
-  private hitPauseFrames: number = 0;
-
-  public SetHitPause(frames: number) {
-    this.hitPauseFrames = frames;
-  }
-
-  public Decrement() {
-    this.hitPauseFrames--;
-  }
-
-  public IsInHitPause(): boolean {
-    return this.hitPauseFrames > 0;
-  }
-
-  public Zero() {
-    this.hitPauseFrames = 0;
-  }
-
-  public SnapShot(): HitPauseSnapShot {
-    return this.hitPauseFrames as HitPauseSnapShot;
-  }
-
-  public SetFromSnapShot(snapShot: HitPauseSnapShot): void {
-    this.hitPauseFrames = snapShot;
-  }
-}
-
 export class SpeedsComponent {
   public readonly GroundedVelocityDecay: number;
   public readonly AerialVelocityDecay: number;
@@ -542,18 +509,13 @@ export class PlayerPointsComponent
   }
 }
 
-type timedFlag = {
-  frameLength: number;
-  frameNumber: number;
-};
-
 export type FlagsSnapShot = {
   FacingRight: boolean;
   FastFalling: boolean;
   Gravity: boolean;
   CanWalkOffStage: boolean;
-  IntangibleFrameLength: number;
-  IntangibleFrameNumber: number;
+  HitPauseFrames: number;
+  IntangabilityFrames: number;
 };
 
 export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
@@ -561,12 +523,8 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
   private fastFalling: boolean = false;
   private gravityOn: boolean = true;
   private canWalkOffStage: boolean = false;
-  private intangible: timedFlag = { frameLength: 0, frameNumber: 0 };
-
-  public SetIntangible(frameLength: number) {
-    this.intangible.frameLength = frameLength;
-    this.intangible.frameNumber = 0;
-  }
+  private hitPauseFrames: number = 0;
+  private intangabilityFrames: number = 0;
 
   public FaceRight(): void {
     this.facingRight = true;
@@ -576,28 +534,12 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
     this.facingRight = false;
   }
 
-  public IsFacingRight(): boolean {
-    return this.facingRight;
-  }
-
-  public IsFacingLeft(): boolean {
-    return !this.facingRight;
-  }
-
   public FastFallOn(): void {
     this.fastFalling = true;
   }
 
   public FastFallOff(): void {
     this.fastFalling = false;
-  }
-
-  public IsFastFalling(): boolean {
-    return this.fastFalling;
-  }
-
-  public IsIntangible(): boolean {
-    return this.intangible.frameLength > this.intangible.frameNumber;
   }
 
   public ChangeDirections() {
@@ -612,6 +554,42 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
     this.canWalkOffStage = false;
   }
 
+  public GravityOn(): void {
+    this.gravityOn = true;
+  }
+
+  public GravityOff(): void {
+    this.gravityOn = false;
+  }
+
+  public SetHitPauseFrames(frames: number): void {
+    this.hitPauseFrames = frames;
+  }
+
+  public DecrementHitPause(): void {
+    this.hitPauseFrames--;
+  }
+
+  public SetIntangabilityFrames(frames: number): void {
+    this.intangabilityFrames = frames;
+  }
+
+  public DecrementIntangabilityFrames(): void {
+    this.intangabilityFrames--;
+  }
+
+  public get IsFastFalling(): boolean {
+    return this.fastFalling;
+  }
+
+  public get IsFacingRight(): boolean {
+    return this.facingRight;
+  }
+
+  public get IsFacingLeft(): boolean {
+    return !this.facingRight;
+  }
+
   public get CanWalkOffStage(): boolean {
     return this.canWalkOffStage;
   }
@@ -620,16 +598,12 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
     return this.gravityOn;
   }
 
-  public GravityOn() {
-    this.gravityOn = true;
+  public get IsInHitPause(): boolean {
+    return this.hitPauseFrames > 0;
   }
 
-  public GravityOff() {
-    this.gravityOn = false;
-  }
-
-  public UpdateTimedFlags(): void {
-    this.intangible.frameNumber++;
+  public get IsIntangible(): boolean {
+    return this.intangabilityFrames > 0;
   }
 
   public SnapShot(): FlagsSnapShot {
@@ -637,8 +611,9 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
       FacingRight: this.facingRight,
       FastFalling: this.fastFalling,
       Gravity: this.gravityOn,
-      IntangibleFrameLength: this.intangible.frameLength,
-      IntangibleFrameNumber: this.intangible.frameNumber,
+      CanWalkOffStage: this.canWalkOffStage,
+      HitPauseFrames: this.hitPauseFrames,
+      IntangabilityFrames: this.intangabilityFrames,
     } as FlagsSnapShot;
   }
 
@@ -646,8 +621,9 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
     this.fastFalling = snapShot.FastFalling;
     this.facingRight = snapShot.FacingRight;
     this.gravityOn = snapShot.Gravity;
-    this.intangible.frameLength = snapShot.IntangibleFrameLength;
-    this.intangible.frameNumber = snapShot.IntangibleFrameNumber;
+    this.canWalkOffStage = snapShot.CanWalkOffStage;
+    this.hitPauseFrames = snapShot.HitPauseFrames;
+    this.intangabilityFrames = snapShot.IntangabilityFrames;
   }
 }
 
@@ -719,6 +695,13 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   public MoveToPosition(x: number, y: number): void {
     this.x = x;
     this.y = y;
+    this.update();
+  }
+
+  public SetECBShape(yOffset: number, height: number, width: number): void {
+    this.yOffset = yOffset;
+    this.height = height;
+    this.width = width;
     this.update();
   }
 
@@ -884,6 +867,10 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
 
   public get PrevRight(): FlatVec {
     return this.prevVerts[3];
+  }
+
+  public get YOffsect(): number {
+    return this.yOffset;
   }
 
   public GetColor(): string {

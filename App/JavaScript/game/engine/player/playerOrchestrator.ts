@@ -4,7 +4,6 @@ import {
   AttackComponment,
   ECBComponent,
   FSMInfoComponent,
-  HitPauseComponent,
   HitStopComponent,
   HitStunComponent,
   HurtCapsules,
@@ -41,7 +40,6 @@ export class Player {
   private readonly points: PlayerPointsComponent;
   private readonly hitStun: HitStunComponent;
   private readonly hitStop: HitStopComponent;
-  private readonly hitPause: HitPauseComponent;
   private readonly speeds: SpeedsComponent;
   private readonly ecb: ECBComponent;
   private readonly hurtCircles: HurtCapsules;
@@ -62,7 +60,7 @@ export class Player {
     this.points = new PlayerPointsComponent();
     this.hitStun = new HitStunComponent();
     this.hitStop = new HitStopComponent();
-    this.hitPause = new HitPauseComponent();
+
     this.ecb = new ECBComponent(
       CharacterConfig.ECBHeight,
       CharacterConfig.ECBWidth,
@@ -106,10 +104,6 @@ export class Player {
 
   public get HitStop(): HitStopComponent {
     return this.hitStop;
-  }
-
-  public get HitPause(): HitPauseComponent {
-    return this.hitPause;
   }
 
   public get Jump(): JumpComponent {
@@ -168,7 +162,7 @@ export class PlayerHelpers {
     if (!this.IsPlayerGroundedOnStage(p, s)) {
       const speeds = p.Speeds;
       const grav = speeds.Gravity;
-      const isFF = p.Flags.IsFastFalling();
+      const isFF = p.Flags.IsFastFalling;
       const fallSpeed = isFF ? speeds.FastFallSpeed : speeds.FallSpeed;
       const GravMutliplier = isFF ? 1.4 : 1;
       p.Velocity.AddClampedYImpulse(fallSpeed, grav * GravMutliplier);
