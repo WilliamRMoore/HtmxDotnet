@@ -57,19 +57,19 @@ export class DefaultCharacterConfig {
       .set(STATES.RUN_TURN_S, 20)
       .set(STATES.STOP_RUN_S, 15)
       .set(STATES.JUMP_S, 15)
-      .set(STATES.AIR_DODGE_S, 25)
-      .set(STATES.LAND_S, 5)
-      .set(STATES.SOFT_LAND_S, 1)
+      .set(STATES.AIR_DODGE_S, 22)
+      .set(STATES.LAND_S, 15)
+      .set(STATES.SOFT_LAND_S, 2)
       .set(STATES.ATTACK_S, neutralAttack.TotalFrameLength)
       .set(STATES.DOWN_SPECIAL_S, DownSpecial.TotalFrameLength);
 
     this.SCB = new SpeedsComponentBuilder();
-    this.SCB.SetWalkSpeeds(11, 2);
-    this.SCB.SetRunSpeeds(14, 2.2);
-    this.SCB.SetFallSpeeds(22, 15, 0.7);
-    this.SCB.SetAerialSpeeds(0.5, 13, 1.8);
-    this.SCB.SetDashSpeeds(3, 17);
-    this.SCB.SetAirDodgeSpeed(25);
+    this.SCB.SetWalkSpeeds(6, 1.6);
+    this.SCB.SetRunSpeeds(10, 2.2);
+    this.SCB.SetFallSpeeds(20, 10, 0.7);
+    this.SCB.SetAerialSpeeds(0.7, 9, 1.8);
+    this.SCB.SetDashSpeeds(3, 13);
+    this.SCB.SetAirDodgeSpeed(20);
     this.SCB.SetGroundedVelocityDecay(0.8);
 
     this.ECBOffset = 0;

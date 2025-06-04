@@ -164,7 +164,7 @@ export class PlayerHelpers {
       const grav = speeds.Gravity;
       const isFF = p.Flags.IsFastFalling;
       const fallSpeed = isFF ? speeds.FastFallSpeed : speeds.FallSpeed;
-      const GravMutliplier = isFF ? 1.4 : 1;
+      const GravMutliplier = isFF ? 2 : 1;
       p.Velocity.AddClampedYImpulse(fallSpeed, grav * GravMutliplier);
     }
   }

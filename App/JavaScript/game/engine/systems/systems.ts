@@ -13,17 +13,10 @@ import { Pool } from '../pools/Pool';
 import { Stage } from '../stage/stageComponents';
 import { CollisionResult } from '../pools/CollisionResult';
 import { ProjectionResult } from '../pools/ProjectResult';
-import { ComponentHistory, ECBComponent } from '../player/playerComponents';
+import { ComponentHistory } from '../player/playerComponents';
 import { ClosestPointsResult } from '../pools/ClosestPointsResult';
 
 const correctionDepth: number = 0.01;
-export const GROUND_COLLISION: number = 0;
-export const LEFT_WALL_COLLISION: number = 1;
-export const RIGHT_WALL_COLLISION: number = 2;
-export const CEILING_COLLISION: number = 3;
-export const CORNER_COLLISION: number = 4;
-export const NO_COLLISION: number = 5;
-
 export function StageCollisionDetection(
   playerCount: number,
   players: Array<Player>,
@@ -33,168 +26,148 @@ export function StageCollisionDetection(
   colResPool: Pool<CollisionResult>,
   projResPool: Pool<ProjectionResult>
 ): void {
+  const stageVerts = stage.StageVerticies.GetVerts();
+
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = players[playerIndex];
-    const pFlags = p.Flags;
     const sm = stateMachines[playerIndex];
-
-    var collision = stageCollision(stage, p, vecPool, colResPool, projResPool);
-
-    if (collision == GROUND_COLLISION) {
-      if (p.Velocity.Y > -15) {
-        sm.UpdateFromWorld(GAME_EVENTS.SOFT_LAND_GE);
-      } else {
-        sm.UpdateFromWorld(GAME_EVENTS.LAND_GE);
-      }
-    }
-
+    const playerVerts = p.ECB.GetHull();
     const grnd = PlayerHelpers.IsPlayerGroundedOnStage(p, stage);
-    const prevGround = PlayerHelpers.IsPlayerPreviouslyGroundedOnStage(
-      p,
-      stage
-    );
 
-    // Did we walk off the ledge?
+    const prvGrnd = PlayerHelpers.IsPlayerPreviouslyGroundedOnStage(p, stage);
+    const pFlags = p.Flags;
+
     if (
-      grnd == false &&
-      prevGround == true &&
-      pFlags.CanWalkOffStage == false
+      grnd === false &&
+      prvGrnd === true &&
+      pFlags.CanWalkOffStage === false
     ) {
       const stageGround = stage.StageVerticies.GetGround();
       const leftStagePoint = stageGround[0];
       const rightStagePoint = stageGround[1];
-      const flags = p.Flags;
       const position = p.Postion;
 
-      if (leftStagePoint.X > position.X && flags.IsFacingLeft) {
+      // Snap to nearest ledge regardless of facing
+      if (
+        Math.abs(position.X - leftStagePoint.X) <
+        Math.abs(position.X - rightStagePoint.X)
+      ) {
         PlayerHelpers.SetPlayerPosition(
           p,
           leftStagePoint.X + 0.1,
           leftStagePoint.Y
         );
-        sm.UpdateFromWorld(GAME_EVENTS.LAND_GE);
-      }
-
-      if (rightStagePoint.X < position.X && flags.IsFacingRight) {
+      } else {
         PlayerHelpers.SetPlayerPosition(
           p,
           rightStagePoint.X - 0.1,
           rightStagePoint.Y
         );
-        sm.UpdateFromWorld(GAME_EVENTS.LAND_GE);
       }
-      continue;
-    }
-
-    // We didn't collide this frame, but are still grounded (E.G. Just idling grounded)
-    if (collision === NO_COLLISION && grnd == true) {
       sm.UpdateFromWorld(GAME_EVENTS.LAND_GE);
       continue;
     }
 
-    // No collision
-    if (
-      collision === NO_COLLISION ||
-      (grnd === false && p.FSMInfo.CurrentStatetId != STATES.LEDGE_GRAB_S)
-    ) {
+    // detect the collision
+    const collisionResult = IntersectsPolygons(
+      playerVerts,
+      stageVerts,
+      vecPool,
+      colResPool,
+      projResPool
+    );
+
+    if (collisionResult.Collision) {
+      const normalX = collisionResult.NormX;
+      const normalY = collisionResult.NormY;
+      const pPos = p.Postion;
+      const yOffset = p.ECB.YOffset;
+      const playerPosDTO = vecPool.Rent().SetXY(pPos.X, pPos.Y);
+      const move = vecPool
+        .Rent()
+        .SetXY(normalX, normalY)
+        .Negate()
+        .Multiply(collisionResult.Depth);
+
+      //Ground correction
+      if (normalX == 0 && normalY > 0) {
+        move.AddToY(yOffset);
+        move.AddToY(correctionDepth);
+
+        if (
+          prvGrnd === false &&
+          (Math.abs(normalX) > 0 && Math.abs(normalY) > 0) === false
+        ) {
+          move.AddToY(p.ECB.YOffset);
+
+          // ECB will change after landing, so compensate for the new offset
+          // Example: airborne yOffset = -25, grounded yOffset = 0
+          const futureYOffset = 0; // grounded ECB yOffset HARD CODED FOR NOW
+          const currentYOffset = p.ECB.YOffset;
+          const yOffsetDiff = futureYOffset - currentYOffset;
+          move.AddToY(yOffsetDiff);
+        }
+
+        playerPosDTO.Add(move);
+        PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
+        sm.UpdateFromWorld(
+          p.Velocity.Y < 7 ? GAME_EVENTS.SOFT_LAND_GE : GAME_EVENTS.LAND_GE
+        );
+
+        continue;
+      }
+
+      //Right wall correction
+      if (normalX > 0 && normalY == 0) {
+        move.AddToX(correctionDepth);
+        playerPosDTO.Add(move);
+        PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
+
+        continue;
+      }
+
+      // Left Wall Correction
+      if (normalX < 0 && normalY == 0) {
+        move.AddToX(-correctionDepth);
+        playerPosDTO.Add(move);
+        PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
+
+        continue;
+      }
+
+      //ceiling
+      if (normalX == 0 && normalY < 0) {
+        move.AddToY(-correctionDepth);
+        playerPosDTO.Add(move);
+        PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
+
+        continue;
+      }
+
+      // corner case, literally
+      if (Math.abs(normalX) > 0 && normalY > 0) {
+        move.AddToX(move.X <= 0 ? move.Y : -move.Y); // add the y value into x
+        playerPosDTO.Add(move);
+        PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
+
+        continue;
+      }
+
+      if (Math.abs(normalX) > 0 && normalY > 0) {
+        playerPosDTO.Add(move);
+        PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
+
+        continue;
+      }
+    }
+
+    // no collision
+
+    if (grnd === false && p.FSMInfo.CurrentStatetId != STATES.LEDGE_GRAB_S) {
       sm.UpdateFromWorld(GAME_EVENTS.FALL_GE);
       continue;
     }
-
-    // We have a collision and we are landed
-    // if (collision !== NO_COLLISION && grnd === true) {
-    //   const playerVelY = p.Velocity.Y;
-    //   const landState =
-    //     playerVelY > 10 ? GAME_EVENTS.LAND_GE : GAME_EVENTS.SOFT_LAND_GE;
-    //   sm.UpdateFromWorld(landState);
-    //   continue;
-    // }
   }
-}
-
-function stageCollision(
-  stage: Stage,
-  player: Player,
-  vecPool: Pool<PooledVector>,
-  colResPool: Pool<CollisionResult>,
-  projResPool: Pool<ProjectionResult>
-): number {
-  const stageVerts = stage.StageVerticies.GetVerts();
-  const playerVerts = player.ECB.GetHull();
-  const yOffset = player.ECB.YOffsect;
-
-  // detect the collision
-  const collisionResult = IntersectsPolygons(
-    playerVerts,
-    stageVerts,
-    vecPool,
-    colResPool,
-    projResPool
-  );
-
-  if (collisionResult.Collision) {
-    const normalX = collisionResult.NormX;
-    const normalY = collisionResult.NormY;
-    const pPos = player.Postion;
-    const playerPosDTO = vecPool.Rent().SetXY(pPos.X, pPos.Y);
-    const move = vecPool
-      .Rent()
-      .SetXY(normalX, normalY)
-      .Negate()
-      .Multiply(collisionResult.Depth);
-
-    //move.AddToY(yOffset);
-
-    //Ground correction
-    if (normalX == 0 && normalY > 0) {
-      //add the correction depth
-      move.AddToY(correctionDepth);
-      playerPosDTO.Add(move);
-      PlayerHelpers.SetPlayerPosition(player, playerPosDTO.X, playerPosDTO.Y);
-
-      return GROUND_COLLISION;
-    }
-
-    //Right wall correction
-    if (normalX > 0 && normalY == 0) {
-      move.AddToX(correctionDepth);
-      playerPosDTO.Add(move);
-      PlayerHelpers.SetPlayerPosition(player, playerPosDTO.X, playerPosDTO.Y);
-
-      return RIGHT_WALL_COLLISION;
-    }
-
-    // Left Wall Correction
-    if (normalX < 0 && normalY == 0) {
-      move.AddToX(-correctionDepth);
-      playerPosDTO.Add(move);
-      PlayerHelpers.SetPlayerPosition(player, playerPosDTO.X, playerPosDTO.Y);
-
-      return LEFT_WALL_COLLISION;
-    }
-
-    //ceiling
-    if (normalX == 0 && normalY < 0) {
-      move.AddToY(-correctionDepth);
-      playerPosDTO.Add(move);
-      PlayerHelpers.SetPlayerPosition(player, playerPosDTO.X, playerPosDTO.Y);
-
-      return CEILING_COLLISION;
-    }
-
-    // corner case, literally
-    if (Math.abs(normalX) > 0 && Math.abs(normalY) > 0) {
-      move.AddToX(move.X <= 0 ? move.Y : -move.Y); // add the y value into x
-      playerPosDTO.Add(move);
-      PlayerHelpers.SetPlayerPosition(player, playerPosDTO.X, playerPosDTO.Y);
-
-      return CORNER_COLLISION;
-    }
-
-    return NO_COLLISION; // This can happen because we use the CC Hull for collision detection, the hull can make contact with the stage, but the current ECB might be off of it completely, as is the case for running off stage
-  }
-
-  return NO_COLLISION;
 }
 
 export function LedgeGrabDetection(

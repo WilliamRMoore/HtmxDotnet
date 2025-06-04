@@ -869,7 +869,7 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     return this.prevVerts[3];
   }
 
-  public get YOffsect(): number {
+  public get YOffset(): number {
     return this.yOffset;
   }
 

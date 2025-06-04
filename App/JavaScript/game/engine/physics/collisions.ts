@@ -81,8 +81,8 @@ export function IntersectsPolygons(
     }
   }
 
-  const centerA = findArithemticMean(verticiesA, vecPool.Rent());
-  const centerB = findArithemticMean(verticiesB, vecPool.Rent());
+  const centerA = FindArithemticMean(verticiesA, vecPool.Rent());
+  const centerB = FindArithemticMean(verticiesB, vecPool.Rent());
 
   const direction = centerB.Subtract(centerA);
 
@@ -198,7 +198,7 @@ export function closestPointsBetweenSegments(
 
 // suplimental functions ====================================
 
-function findArithemticMean(
+export function FindArithemticMean(
   verticies: Array<FlatVec>,
   pooledVec: PooledVector
 ): PooledVector {

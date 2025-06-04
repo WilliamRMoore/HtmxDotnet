@@ -218,7 +218,7 @@ function transcribeInput(input: GamePadInput) {
   return inputAction;
 }
 
-function setDeadzone(v: number) {
+function setDeadzone(v: number): number {
   const DEADZONE = 0.3;
 
   if (Math.abs(v) < DEADZONE) {
@@ -232,6 +232,8 @@ function setDeadzone(v: number) {
   return v;
 }
 
+const clampDto: Array<number> = [];
+
 function clampStick(x: number, y: number) {
   let m = Math.sqrt(x * x + y * y);
 
@@ -240,7 +242,9 @@ function clampStick(x: number, y: number) {
     y /= m;
   }
 
-  return [x, y];
+  clampDto[0] = x;
+  clampDto[1] = y;
+  return clampDto;
 }
 
 export function NewInputAction() {

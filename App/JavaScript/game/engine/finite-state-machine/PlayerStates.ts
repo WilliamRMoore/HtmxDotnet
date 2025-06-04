@@ -1346,7 +1346,7 @@ export const NeutralFall: FSMState = {
   StateName: 'NFALL',
   StateId: STATES.N_FALL_S,
   OnEnter: (p: Player, w: World) => {
-    p.ECB.SetECBShape(-25, 50, 50);
+    p.ECB.SetECBShape(-25, 60, 70);
   },
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
@@ -1365,10 +1365,17 @@ export const FastFall: FSMState = {
   StateName: 'FastFall',
   StateId: STATES.F_FALL_S,
   OnEnter: (p: Player, w: World) => {
-    p.ECB.SetECBShape(-25, 50, 50);
+    p.ECB.SetECBShape(0, 50, 60);
     p.Flags.FastFallOn();
   },
-  OnUpdate: (p: Player, w: World) => {},
+  OnUpdate: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
+    const speedsComp = p.Speeds;
+    p.Velocity.AddClampedXImpulse(
+      speedsComp.AerialSpeedInpulseLimit,
+      ia.LXAxsis * speedsComp.ArielVelocityMultiplier
+    );
+  },
   OnExit: (p: Player, w: World) => {
     p.Flags.FastFallOff();
     p.ECB.SetECBShape(0, 100, 100);
@@ -1582,10 +1589,12 @@ export const Crouch: FSMState = {
   StateId: STATES.CROUCH_S,
   OnEnter: (p: Player, w: World) => {
     p.ECB.SetECBShape(0, 50, 100);
+    p.Flags.SetCanWalkOffFalse();
   },
   OnUpdate: (p: Player, w: World) => {},
   OnExit: (p, w) => {
     p.ECB.SetECBShape(0, 100, 100);
+    p.Flags.SetCanWalkOffTrue();
   },
 };
 
