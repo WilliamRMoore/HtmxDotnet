@@ -15,6 +15,7 @@ import { CollisionResult } from '../pools/CollisionResult';
 import { ProjectionResult } from '../pools/ProjectResult';
 import { ComponentHistory } from '../player/playerComponents';
 import { ClosestPointsResult } from '../pools/ClosestPointsResult';
+import { ActiveHitBubblesDTO } from '../pools/ActiveAttackHitBubbles';
 
 const correctionDepth: number = 0.01;
 export function StageCollisionDetection(
@@ -33,7 +34,6 @@ export function StageCollisionDetection(
     const sm = stateMachines[playerIndex];
     const playerVerts = p.ECB.GetHull();
     const grnd = PlayerHelpers.IsPlayerGroundedOnStage(p, stage);
-
     const prvGrnd = PlayerHelpers.IsPlayerPreviouslyGroundedOnStage(p, stage);
     const pFlags = p.Flags;
 
@@ -372,6 +372,7 @@ export function PlayerAttacks(
   players: Array<Player>,
   stateMachines: Array<StateMachine>,
   currentFrame: number,
+  activeHitBuubleDtoPool: Pool<ActiveHitBubblesDTO>,
   atkResPool: Pool<AttackResult>,
   vecPool: Pool<PooledVector>,
   colResPool: Pool<CollisionResult>,
@@ -388,6 +389,7 @@ export function PlayerAttacks(
 
     const p1HitsP2Result = p1VsP2(
       currentFrame,
+      activeHitBuubleDtoPool,
       atkResPool,
       vecPool,
       colResPool,
@@ -398,6 +400,7 @@ export function PlayerAttacks(
     );
     const p2HitsP1Result = p1VsP2(
       currentFrame,
+      activeHitBuubleDtoPool,
       atkResPool,
       vecPool,
       colResPool,
@@ -453,13 +456,28 @@ function resolveHitResult(
   pB.HitStop.SetHitStop(hitStop);
   pB.HitStun.SetHitStun(hitStunFrames, launchVec.X, launchVec.Y);
 
-  const pBSm = stateMachines[pB.ID]; //world.GetStateMachine(pB.ID)!;
+  const pBSm = stateMachines[pB.ID];
 
   pBSm.UpdateFromWorld(GAME_EVENTS.HIT_STOP_GE);
 }
 
+/**
+ * Checks for and resolves attack collisions between two players for the current frame.
+ *
+ * @param {number} currentFrame - The current world frame number.
+ * @param {Pool<ActiveHitBubblesDTO>} activeHbPool - Pool for renting active hit bubble DTOs.
+ * @param {Pool<AttackResult>} atkResPool - Pool for renting attack result objects.
+ * @param {Pool<PooledVector>} vecPool - Pool for renting vector objects.
+ * @param {Pool<CollisionResult>} colResPool - Pool for renting collision result objects.
+ * @param {Pool<ClosestPointsResult>} clstsPntsResPool - Pool for renting closest points result objects.
+ * @param {Array<ComponentHistory>} componentHistories - Array of component histories for all players.
+ * @param {Player} pA - The attacking player.
+ * @param {Player} pB - The defending player.
+ * @returns {AttackResult} The result of the attack collision for this frame.
+ * */
 function p1VsP2(
   currentFrame: number,
+  activeHbPool: Pool<ActiveHitBubblesDTO>,
   atkResPool: Pool<AttackResult>,
   vecPool: Pool<PooledVector>,
   colResPool: Pool<CollisionResult>,
@@ -468,7 +486,6 @@ function p1VsP2(
   pA: Player,
   pB: Player
 ): AttackResult {
-  // p1HitBubbles vs p2HurtBubbles
   const pAstateFrame = pA.FSMInfo.CurrentStateFrame;
   const pAAttack = pA.Attacks.GetAttack();
 
@@ -480,7 +497,10 @@ function p1VsP2(
     return atkResPool.Rent();
   }
 
-  const pAHitBubbles = pAAttack.GetHitBubblesForFrame(pAstateFrame);
+  const pAHitBubbles = pAAttack.GetActiveHitBubblesForFrame(
+    pAstateFrame,
+    activeHbPool.Rent()
+  );
 
   if (pAHitBubbles === undefined) {
     return atkResPool.Rent();
@@ -489,13 +509,13 @@ function p1VsP2(
   const pBHurtBubbles = pB.HurtBubbles.HurtCapsules;
 
   const hurtLength = pBHurtBubbles.length;
-  const hitLength = pAHitBubbles.length;
+  const hitLength = pAHitBubbles.Length;
 
   for (let hurtIndex = 0; hurtIndex < hurtLength; hurtIndex++) {
     const pBHurtBubble = pBHurtBubbles[hurtIndex];
 
     for (let hitIndex = 0; hitIndex < hitLength; hitIndex++) {
-      const pAHitBubble = pAHitBubbles[hitIndex];
+      const pAHitBubble = pAHitBubbles.AtIndex(hitIndex)!;
       const pAPositionHistory = componentHistories[pA.ID].PositionHistory;
       const previousWorldFrame = currentFrame - 1 < 0 ? 0 : currentFrame - 1;
       const pAPrevPositionDto = vecPool
@@ -505,29 +525,26 @@ function p1VsP2(
       const currentStateFrame = pAstateFrame;
       const pAFacingRight = pA.Flags.IsFacingRight;
 
-      const pAhitBubbleCurrentPos = pAHitBubble.GetOffSetForFrameGlobal(
+      const pAhitBubbleCurrentPos = pAHitBubble?.GetGlobalPosition(
         vecPool,
+        pACurPositionDto.X,
+        pACurPositionDto.Y,
         pAFacingRight,
-        currentStateFrame,
-        pACurPositionDto
+        currentStateFrame
       )!;
 
       if (pAhitBubbleCurrentPos === undefined) {
         continue;
       }
 
-      let pAHitBubblePreviousPos = pAHitBubble.GetOffSetForFrameGlobal(
-        vecPool,
-        pAFacingRight,
-        currentStateFrame - 1 < 0 ? 0 : currentStateFrame - 1,
-        pAPrevPositionDto
-      );
-
-      if (pAHitBubblePreviousPos === undefined) {
-        pAHitBubblePreviousPos = vecPool
-          .Rent()
-          .SetXY(pACurPositionDto.X, pACurPositionDto.Y);
-      }
+      let pAHitBubblePreviousPos =
+        pAHitBubble?.GetGlobalPosition(
+          vecPool,
+          pAPrevPositionDto.X,
+          pAPrevPositionDto.Y,
+          pAFacingRight,
+          currentStateFrame - 1 < 0 ? 0 : currentStateFrame - 1
+        ) ?? vecPool.Rent().SetXY(pACurPositionDto.X, pACurPositionDto.Y);
 
       const pBPosition = pB.Postion;
 
@@ -623,7 +640,7 @@ function CalculateKnockback(player: Player, attackRes: AttackResult): number {
   const s = attackRes.KnockBackScaling;
   const b = attackRes.BaseKnockBack;
 
-  return ((p / 10 + (p * d) / 20) * (200 / (w + 100)) * 1.4 + b) * s * 0.01;
+  return ((p / 10 + (p * d) / 20) * (200 / (w + 100)) * 1.4 + b) * s * 0.013;
 }
 
 export function ApplyVelocty(

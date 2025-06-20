@@ -5,6 +5,7 @@ import { RENDERFPS60Loop } from './FPS60LoopExecutor';
 import { GetInput } from './Input';
 import { World } from '../engine/world/world';
 import { FlatVec } from '../engine/physics/vector';
+import { PlayerHelpers } from '../engine/player/playerOrchestrator';
 
 const frameInterval = 1000 / 60;
 
@@ -55,11 +56,12 @@ function RENDER_LOOP(world: World) {
 
 function logicStep(engine: IJazz, gamePadInfo: Array<playerControllerInfo>) {
   const gamePadCount = gamePadInfo.length;
+  const w = engine.World;
   for (let i = 0; i < gamePadCount; i++) {
     const info = gamePadInfo[i];
     const gpI = info.inputIndex;
     const pi = info.playerIndex;
-    const input = GetInput(gpI);
+    const input = GetInput(gpI, w!);
     engine.UpdateInputForCurrentFrame(input, pi);
   }
   engine.Tick();

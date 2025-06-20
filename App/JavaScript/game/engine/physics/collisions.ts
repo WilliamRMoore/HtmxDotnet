@@ -189,11 +189,11 @@ export function closestPointsBetweenSegments(
   let c2X = p2Dto.X + t * d2.X;
   let c2Y = p2Dto.Y + t * d2.Y;
 
-  const ret = ClosestPointsPool.Rent();
+  const closestPoints = ClosestPointsPool.Rent();
 
-  ret.Set(c1X, c1Y, c2X, c2Y);
+  closestPoints.Set(c1X, c1Y, c2X, c2Y);
 
-  return ret;
+  return closestPoints;
 }
 
 // suplimental functions ====================================

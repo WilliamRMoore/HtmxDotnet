@@ -87,6 +87,7 @@ export class Jazz implements IJazz {
     const stateMachines = world.StateMachines;
     const histories = world.ComponentHistories;
     const stage = world.Stage;
+    const activewHitBubbleDtoPool = world.ActiveHitBubbleDto;
     const vecPool = world.VecPool;
     const colResPool = world.ColResPool;
     const projResPool = world.ProjResPool;
@@ -131,6 +132,7 @@ export class Jazz implements IJazz {
       players,
       stateMachines,
       frame,
+      activewHitBubbleDtoPool,
       atkResPool,
       vecPool,
       colResPool,

@@ -1,3 +1,4 @@
+import { Circle } from '../engine/physics/circle';
 import { FlatVec } from '../engine/physics/vector';
 import {
   Attack,
@@ -11,6 +12,7 @@ import {
   LedgeDetectorSnapShot,
   StaticHistory,
 } from '../engine/player/playerComponents';
+import { ActiveHitBubblesDTO } from '../engine/pools/ActiveAttackHitBubbles';
 import { Lerp } from '../engine/utils';
 import { World } from '../engine/world/world';
 
@@ -459,6 +461,7 @@ function drawCurrentECB(
   ctx.stroke();
   ctx.fill();
 }
+const adto = new ActiveHitBubblesDTO();
 
 function drawHitCircles(
   ctx: CanvasRenderingContext2D,
@@ -472,9 +475,9 @@ function drawHitCircles(
   if (attack === undefined) {
     return;
   }
-
+  adto.Zero();
   const currentSateFrame = fsmInfo.StateFrame;
-  const circles = attack.GetHitBubblesForFrame(currentSateFrame);
+  const circles = attack.GetActiveHitBubblesForFrame(currentSateFrame, adto); //.GetHitBubblesForFrame(currentSateFrame);
 
   if (circles == undefined) {
     return;
@@ -484,14 +487,17 @@ function drawHitCircles(
   ctx.fillStyle = 'red';
   ctx.lineWidth = 2;
   ctx.globalAlpha = 0.4;
-  const length = circles.length;
+  const length = circles.Length;
 
   const interpolatedX = Lerp(lastPosition.X, currentPosition.X, alpha);
   const interpolatedY = Lerp(lastPosition.Y, currentPosition.Y, alpha);
 
   for (let i = 0; i < length; i++) {
-    const circle = circles[i];
-    const offSet = circle.GetLocalOffSetForFrame(currentSateFrame);
+    const circle = circles.AtIndex(i); //circles[i];
+    if (circle === undefined) {
+      continue;
+    }
+    const offSet = circle?.GetLocalPosiitionOffsetForFrame(currentSateFrame); //circle.GetLocalOffSetForFrame(currentSateFrame);
     if (offSet === undefined) {
       continue;
     }

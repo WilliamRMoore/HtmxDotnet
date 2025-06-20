@@ -1,10 +1,7 @@
 import {
-  AttackDecisions,
+  AttackGameEventMappings,
   attackId,
-  DownSpecialConditions,
-  GAME_EVENTS,
   Idle,
-  RunAttackCondition,
   stateId,
   STATES,
 } from '../finite-state-machine/PlayerStates';
@@ -15,13 +12,13 @@ import {
   LineSegmentIntersection,
 } from '../physics/vector';
 import { FillArrayWithFlatVec } from '../utils';
-import { Player, PlayerHelpers } from './playerOrchestrator';
+import { Player } from './playerOrchestrator';
 import { Clamp } from '../utils';
 import { Circle } from '../physics/circle';
 import { InputAction } from '../../loops/Input';
-import { World } from '../world/world';
 import { PooledVector } from '../pools/PooledVector';
 import { Pool } from '../pools/Pool';
+import { ActiveHitBubblesDTO } from '../pools/ActiveAttackHitBubbles';
 
 /**
  * This file contains everything pertaining to player components.
@@ -57,7 +54,6 @@ export class ComponentHistory {
   readonly VelocityHistory: Array<FlatVec> = [];
   readonly FlagsHistory: Array<FlagsSnapShot> = [];
   readonly EcbHistory: Array<ECBSnapShot> = [];
-  //readonly HurtCirclesHistory: Array<HurtCirclesSnapShot> = [];
   readonly JumpHistroy: Array<number> = [];
   readonly LedgeDetectorHistory: Array<LedgeDetectorSnapShot> = [];
   readonly AttackHistory: Array<AttackSnapShot> = [];
@@ -69,7 +65,6 @@ export class ComponentHistory {
     p.Points.SetFromSnapShot(this.PlayerPointsHistory[frameNumber]);
     p.HitStop.SetFromSnapShot(this.PlayerHitStopHistory[frameNumber]);
     p.HitStun.SetFromSnapShot(this.PlayerHitStunHistory[frameNumber]);
-    //p.HitPause.SetFromSnapShot(this.PlayerHitPauseHistory[frameNumber]);
     p.Flags.SetFromSnapShot(this.FlagsHistory[frameNumber]);
     p.ECB.SetFromSnapShot(this.EcbHistory[frameNumber]);
     p.LedgeDetector.SetFromSnapShot(this.LedgeDetectorHistory[frameNumber]);
@@ -1143,8 +1138,9 @@ export class HitBubble {
   public readonly Priority: number;
   public readonly Radius: number;
   public readonly launchAngle: number;
-  public readonly ActiveFrames: Array<frameNumber>;
-  private readonly frameOffsets: Map<frameNumber, FlatVec>;
+  public readonly activeStartFrame: frameNumber;
+  public readonly activeEndFrame: frameNumber;
+  public readonly frameOffsets: Map<frameNumber, FlatVec>;
 
   constructor(
     id: bubbleId,
@@ -1152,36 +1148,50 @@ export class HitBubble {
     priority: number,
     radius: number,
     launchAngle: number,
-    frameOffsets: Map<frameNumber, FlatVec>,
-    activeFrames: Array<frameNumber>
+    frameOffsets: Map<frameNumber, FlatVec>
   ) {
     this.BubbleId = id;
     this.Damage = damage;
     this.Priority = priority;
     this.Radius = radius;
     this.launchAngle = launchAngle;
+    const activeframes = frameOffsets
+      .keys()
+      .toArray()
+      .sort((a, b) => a - b);
+    this.activeStartFrame = activeframes[0]; //activeStartFrame;
+    this.activeEndFrame = activeframes[activeframes.length - 1]; //activeEndFrame;
     this.frameOffsets = frameOffsets;
-    this.ActiveFrames = activeFrames;
   }
 
-  public GetLocalOffSetForFrame(stateFrameNumber: number) {
-    return this.frameOffsets.get(stateFrameNumber);
+  public IsActive(attackFrameNumber: frameNumber): boolean {
+    return (
+      attackFrameNumber >= this.activeStartFrame &&
+      attackFrameNumber <= this.activeEndFrame
+    );
   }
 
-  public GetOffSetForFrameGlobal(
+  public GetLocalPosiitionOffsetForFrame(
+    frameNumber: frameNumber
+  ): FlatVec | undefined {
+    return this.frameOffsets.get(frameNumber);
+  }
+
+  public GetGlobalPosition(
     vecPool: Pool<PooledVector>,
-    facingRight: boolean,
-    stateFrameNumber: number,
-    playerGlobalPositon: PooledVector
+    playerX: number,
+    playerY: number,
+    facinRight: boolean,
+    attackFrameNumber: frameNumber
   ): PooledVector | undefined {
-    const offSet = this.frameOffsets.get(stateFrameNumber);
-    if (offSet === undefined) {
-      return;
+    const offset = this.frameOffsets.get(attackFrameNumber);
+
+    if (offset === undefined) {
+      return undefined;
     }
-    const globalX = facingRight
-      ? playerGlobalPositon.X + offSet.X
-      : playerGlobalPositon.X - offSet.X;
-    const globalY = playerGlobalPositon.Y + offSet.Y;
+
+    const globalX = facinRight ? playerX + offset.X : playerX - offset.X;
+    const globalY = playerY + offset.Y;
 
     return vecPool.Rent().SetXY(globalX, globalY);
   }
@@ -1189,61 +1199,60 @@ export class HitBubble {
 
 export class Attack {
   public readonly Name: string;
-  public readonly Gravity: boolean;
   public readonly TotalFrameLength: number;
+  public readonly InteruptableFrame: number;
+  public readonly GravityActive: boolean;
   public readonly BaseKnockBack: number;
   public readonly KnockBackScaling: number;
-  private hitBubbles: Map<frameNumber, Array<HitBubble>>;
-  private impulses: Map<frameNumber, FlatVec>;
   public readonly ImpulseClamp: number | undefined;
   public readonly PlayerIdsHit: Array<number> = [];
+  public readonly impulses: Map<frameNumber, FlatVec> = new Map<
+    frameNumber,
+    FlatVec
+  >();
+  public readonly HitBubbles: Array<HitBubble>;
 
   constructor(
     name: string,
     totalFrameLength: number,
-    hitBubbles: Array<HitBubble>,
+    interuptableFrame: number,
     baseKb: number,
     kbScaling: number,
-    impulseClamp = 0,
-    impulses: Map<frameNumber, FlatVec> = new Map<frameNumber, FlatVec>(),
-    gravity = true
+    impulseClamp: number | undefined,
+    hitBubbles: Array<HitBubble>,
+    gravityActive: boolean = true,
+    impulses: Map<frameNumber, FlatVec> | undefined = undefined
   ) {
-    this.impulses = impulses;
-    this.ImpulseClamp = impulseClamp;
     this.Name = name;
     this.TotalFrameLength = totalFrameLength;
-    this.Gravity = gravity;
+    this.InteruptableFrame = interuptableFrame;
+    this.GravityActive = gravityActive;
     this.BaseKnockBack = baseKb;
     this.KnockBackScaling = kbScaling;
+    this.ImpulseClamp = impulseClamp;
+    this.HitBubbles = hitBubbles.sort((a, b) => a.Priority - b.Priority);
 
-    let attack = new Map<frameNumber, Array<HitBubble>>();
-    hitBubbles.forEach((hb) => {
-      const activeFrames = hb.ActiveFrames;
-      for (let i = 0; i < activeFrames.length; i++) {
-        const frame = activeFrames[i];
-        if (attack.has(frame)) {
-          attack!.get(frame)!.push(hb);
-        } else {
-          attack.set(frame, [hb]);
-        }
-      }
-    });
-
-    for (let [k, v] of attack) {
-      v.sort((a, b) => a.Priority - b.Priority);
+    if (impulses !== undefined) {
+      this.impulses = impulses;
     }
-
-    this.hitBubbles = attack;
   }
 
-  public GetHitBubblesForFrame(
-    frameNumber: number
-  ): Array<HitBubble> | undefined {
-    return this.hitBubbles.get(frameNumber);
-  }
-
-  public GetImpulseForFrame(frameNumber: number): FlatVec | undefined {
+  public GetActiveImpulseForFrame(frameNumber: number): FlatVec | undefined {
     return this.impulses.get(frameNumber);
+  }
+
+  public GetActiveHitBubblesForFrame(
+    frameNumber: frameNumber,
+    activeHBs: ActiveHitBubblesDTO
+  ): ActiveHitBubblesDTO {
+    const hitBubbleslength = this.HitBubbles.length;
+    for (let i = 0; i < hitBubbleslength; i++) {
+      const hb = this.HitBubbles[i];
+      if (hb.IsActive(frameNumber)) {
+        activeHBs.AddBubble(hb);
+      }
+    }
+    return activeHBs;
   }
 
   public HitPlayer(playerIndex: number) {
@@ -1260,6 +1269,90 @@ export class Attack {
   }
 }
 
+export class AttackBuilder {
+  private name: string = '';
+  private totalFrames: number = 0;
+  private interuptableFrame: number = 0;
+  private hasGravtity: boolean = true;
+  private baseKnockBack: number = 0;
+  private knockBackScaling: number = 0;
+  private impulseClamp: number | undefined;
+  private impulses: Map<frameNumber, FlatVec> | undefined;
+  private hitBubbles: Array<HitBubble> = [];
+
+  constructor(name: string) {
+    this.name = name;
+  }
+
+  public WithTotalFrames(totalFrames: number): AttackBuilder {
+    this.totalFrames = totalFrames;
+    return this;
+  }
+
+  public WithImpulses(
+    impulses: Map<frameNumber, FlatVec>,
+    impulseClamp: number | undefined
+  ): AttackBuilder {
+    this.impulses = impulses;
+    this.impulseClamp = impulseClamp;
+    return this;
+  }
+
+  public WithInteruptableFrame(interuptFrame: number): AttackBuilder {
+    this.interuptableFrame = interuptFrame;
+    return this;
+  }
+
+  public WithGravity(gravity: boolean): AttackBuilder {
+    this.hasGravtity = gravity;
+    return this;
+  }
+
+  public WithBaseKnockBack(baseKb: number): AttackBuilder {
+    this.baseKnockBack = baseKb;
+    return this;
+  }
+
+  public WithKnockBackScaling(kbScaling: number): AttackBuilder {
+    this.knockBackScaling = kbScaling;
+    return this;
+  }
+
+  public WithHitBubble(
+    damage: number,
+    radius: number,
+    priority: number,
+    launchAngle: number,
+    frameOffsets: Map<frameNumber, FlatVec>
+  ): AttackBuilder {
+    const hitBubId = this.hitBubbles.length;
+    const hitBub = new HitBubble(
+      hitBubId,
+      damage,
+      priority,
+      radius,
+      launchAngle,
+      frameOffsets
+    );
+    this.hitBubbles.push(hitBub);
+    return this;
+  }
+
+  public Build() {
+    return new Attack(
+      this.name,
+      this.totalFrames,
+      this.interuptableFrame,
+      this.baseKnockBack,
+      this.knockBackScaling,
+      this.impulseClamp,
+      this.hitBubbles,
+      this.hasGravtity,
+      this.impulses
+    );
+  }
+}
+
 export type AttackSnapShot = Attack | undefined;
 export class AttackComponment implements IHistoryEnabled<AttackSnapShot> {
   private attacks: Map<attackId, Attack>;
@@ -1273,37 +1366,63 @@ export class AttackComponment implements IHistoryEnabled<AttackSnapShot> {
     return this.currentAttack;
   }
 
-  public SetCurrentAttack(p: Player, w: World, ia: InputAction): void {
-    const gameEventID = ia.Action;
-    const grounded = PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage!);
+  public SetCurrentAttack(ia: InputAction): void {
+    const gameEventId = ia.Action;
+    const attackId = AttackGameEventMappings.get(gameEventId);
+    if (attackId === undefined) {
+      return;
+    }
+    const attack = this.attacks.get(attackId);
 
-    if (gameEventID === GAME_EVENTS.ATTACK_GE && grounded) {
-      const conditionsLength = AttackDecisions.length;
-      for (let i = 0; i < conditionsLength; i++) {
-        const cond = AttackDecisions[i];
-        const attackId = RunAttackCondition(cond, w, p.ID);
-        if (attackId !== undefined) {
-          this.currentAttack = this.attacks.get(attackId);
-          return;
-        }
-      }
-      //this.currentAttack = this.attacks.get(ATTACKS.NUETRAL_ATTACK);
+    if (attack === undefined) {
       return;
     }
 
-    if (gameEventID === GAME_EVENTS.DOWN_SPECIAL_GE && grounded) {
-      const conditionalsLength = DownSpecialConditions.length;
-      for (let i = 0; i < conditionalsLength; i++) {
-        const cond = DownSpecialConditions[i];
-        const attackId = RunAttackCondition(cond, w, p.ID);
-        if (attackId !== undefined) {
-          this.currentAttack = this.attacks.get(attackId);
-          return;
-        }
-      }
-      return;
-      //this.currentAttack = this.attacks.get(ATTACKS.DOWN_SPECIAL_ATTACK);
-    }
+    this.currentAttack = attack;
+    // const gameEventID = ia.Action;
+    // const grounded = PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage!);
+
+    // //neutral attack
+    // if (gameEventID === GAME_EVENTS.ATTACK_GE && grounded) {
+    //   const conditionsLength = AttackDecisions.length;
+    //   for (let i = 0; i < conditionsLength; i++) {
+    //     const cond = AttackDecisions[i];
+    //     const attackId = RunAttackCondition(cond, w, p.ID);
+    //     if (attackId !== undefined) {
+    //       this.currentAttack = this.attacks.get(attackId);
+    //       return;
+    //     }
+    //   }
+    //   return;
+    // }
+
+    // //neutral air
+    // if (gameEventID === GAME_EVENTS.AIR_ATTACK_GE && !grounded) {
+
+    //   const constionsLength = NeutralAirConditions.length;
+    //   for (let i = 0; i < constionsLength; i++) {
+    //     const cond = NeutralAirConditions[i];
+    //     const attackId = RunAttackCondition(cond, w, p.ID);
+    //     if (attackId !== undefined) {
+    //       this.currentAttack = this.attacks.get(attackId);
+    //       return;
+    //     }
+    //   }
+    //   return;
+    // }
+
+    // if (gameEventID === GAME_EVENTS.DOWN_SPECIAL_GE && grounded) {
+    //   const conditionalsLength = DownSpecialConditions.length;
+    //   for (let i = 0; i < conditionalsLength; i++) {
+    //     const cond = DownSpecialConditions[i];
+    //     const attackId = RunAttackCondition(cond, w, p.ID);
+    //     if (attackId !== undefined) {
+    //       this.currentAttack = this.attacks.get(attackId);
+    //       return;
+    //     }
+    //   }
+    //   return;
+    // }
   }
 
   public ZeroCurrentAttack(): void {

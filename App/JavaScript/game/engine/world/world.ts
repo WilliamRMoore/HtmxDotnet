@@ -10,11 +10,13 @@ import { CollisionResult } from '../pools/CollisionResult';
 import { ProjectionResult } from '../pools/ProjectResult';
 import { AttackResult } from '../pools/AttackResult';
 import { ClosestPointsResult } from '../pools/ClosestPointsResult';
+import { ActiveHitBubblesDTO } from '../pools/ActiveAttackHitBubbles';
 
 export class World {
   private players: Array<Player> = [];
   private stage?: Stage;
   private stateMachines: Array<StateMachine> = [];
+  public readonly ActiveHitBubbleDto: Pool<ActiveHitBubblesDTO>;
   public readonly VecPool: Pool<PooledVector>;
   public readonly ColResPool: Pool<CollisionResult>;
   public readonly ProjResPool: Pool<ProjectionResult>;
@@ -31,6 +33,10 @@ export class World {
   private readonly FrameTimeStamps: Array<number> = [];
 
   constructor() {
+    this.ActiveHitBubbleDto = new Pool<ActiveHitBubblesDTO>(
+      10,
+      () => new ActiveHitBubblesDTO()
+    );
     this.VecPool = new Pool<PooledVector>(500, () => new PooledVector());
     this.ColResPool = new Pool<CollisionResult>(
       100,

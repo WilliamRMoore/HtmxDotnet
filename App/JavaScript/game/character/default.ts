@@ -7,7 +7,7 @@ import {
 import { FlatVec } from '../engine/physics/vector';
 import {
   Attack,
-  HitBubble,
+  AttackBuilder,
   HurtCapsule,
   SpeedsComponentBuilder,
 } from '../engine/player/playerComponents';
@@ -46,8 +46,9 @@ export class DefaultCharacterConfig {
   public Weight: number;
 
   constructor() {
-    const neutralAttack = GetNeutralAttack();
+    const neutralAttack = GetNutralAttackNewAPI();
     const DownSpecial = GetDownSpecial();
+    const neutralAir = GetNeutralAir();
 
     this.FrameLengths.set(STATES.START_WALK_S, 5)
       .set(STATES.JUMP_SQUAT_S, 5)
@@ -61,6 +62,7 @@ export class DefaultCharacterConfig {
       .set(STATES.LAND_S, 15)
       .set(STATES.SOFT_LAND_S, 2)
       .set(STATES.ATTACK_S, neutralAttack.TotalFrameLength)
+      .set(STATES.N_AIR_S, neutralAir.TotalFrameLength)
       .set(STATES.DOWN_SPECIAL_S, DownSpecial.TotalFrameLength);
 
     this.SCB = new SpeedsComponentBuilder();
@@ -88,7 +90,8 @@ export class DefaultCharacterConfig {
     this.ledgeBoxYOffset = -130;
     this.attacks
       .set(ATTACKS.NUETRAL_ATTACK, neutralAttack)
-      .set(ATTACKS.DOWN_SPECIAL_ATTACK, DownSpecial);
+      .set(ATTACKS.DOWN_SPECIAL, DownSpecial)
+      .set(ATTACKS.N_AIR_ATTACK, neutralAir);
   }
 
   private populateHurtCircles() {
@@ -99,131 +102,131 @@ export class DefaultCharacterConfig {
   }
 }
 
-// total frame 100
-function GetDownSpecial(): Attack {
-  //length 35
-  const activeFrames = [
-    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
-    34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52,
-    53, 54, 55, 56, 57, 58, 59, 60,
-  ];
+function GetNutralAttackNewAPI() {
+  const hb1OffSets = new Map<frameNumber, FlatVec>();
+  const hb1Frame3Offset = new FlatVec(30, -50);
+  const hb1Frame4Offset = new FlatVec(60, -50);
+  const hb1Frame5Offset = new FlatVec(80, -50);
+  const hb1Frame6Offset = new FlatVec(80, -50);
+  const hb1Frame7Offset = new FlatVec(80, -50);
+
+  hb1OffSets
+    .set(3, hb1Frame3Offset)
+    .set(4, hb1Frame4Offset)
+    .set(5, hb1Frame5Offset)
+    .set(6, hb1Frame6Offset)
+    .set(7, hb1Frame7Offset);
+
+  const hb2OffSets = new Map<frameNumber, FlatVec>();
+  const hb2Frame3Offset = new FlatVec(15, -50);
+  const hb2Frame4Offset = new FlatVec(25, -50);
+  const hb2Frame5Offset = new FlatVec(55, -50);
+  const hb2Frame6Offset = new FlatVec(65, -50);
+  const hb2Frame7Offset = new FlatVec(65, -50);
+
+  hb2OffSets
+    .set(3, hb2Frame3Offset)
+    .set(4, hb2Frame4Offset)
+    .set(5, hb2Frame5Offset)
+    .set(6, hb2Frame6Offset)
+    .set(7, hb2Frame7Offset);
+
+  const bldr = new AttackBuilder('ThunderPalm');
+
+  bldr
+    .WithBaseKnockBack(15)
+    .WithKnockBackScaling(54)
+    .WithGravity(true)
+    .WithTotalFrames(18)
+    .WithInteruptableFrame(15)
+    .WithHitBubble(7, 16, 0, 60, hb1OffSets)
+    .WithHitBubble(6, 14, 1, 60, hb2OffSets);
+
+  return bldr.Build();
+}
+
+function GetNeutralAir() {
+  const activeFrames = 40;
+  const hb1OffSets = new Map<frameNumber, FlatVec>();
+  hb1OffSets
+    .set(6, new FlatVec(80, -50))
+    .set(7, new FlatVec(85, -50))
+    .set(8, new FlatVec(90, -50))
+    .set(9, new FlatVec(90, -50));
+
+  const hb2OffSets = new Map<frameNumber, FlatVec>()
+    .set(6, new FlatVec(35, -50))
+    .set(7, new FlatVec(40, -50))
+    .set(8, new FlatVec(45, -50))
+    .set(9, new FlatVec(47, -50));
+
+  const hb3offSets = new Map<frameNumber, FlatVec>()
+    .set(6, new FlatVec(10, -50))
+    .set(7, new FlatVec(10, -50))
+    .set(8, new FlatVec(10, -50))
+    .set(9, new FlatVec(10, -50));
+
+  const hb4offsets = new Map<frameNumber, FlatVec>()
+    .set(19, new FlatVec(80, -50))
+    .set(20, new FlatVec(85, -50))
+    .set(21, new FlatVec(90, -50));
+
+  const hb5Offsets = new Map<frameNumber, FlatVec>()
+    .set(19, new FlatVec(35, -50))
+    .set(20, new FlatVec(40, -50))
+    .set(21, new FlatVec(45, -50));
+
+  const hb6Offsets = new Map<frameNumber, FlatVec>()
+    .set(19, new FlatVec(10, -50))
+    .set(20, new FlatVec(10, -50))
+    .set(21, new FlatVec(10, -50))
+    .set(22, new FlatVec(10, -50));
+
+  const bldr = new AttackBuilder('NeutralAir')
+    .WithBaseKnockBack(59)
+    .WithKnockBackScaling(60)
+    .WithGravity(true)
+    .WithTotalFrames(activeFrames)
+    .WithHitBubble(12, 20, 0, 25, hb1OffSets)
+    .WithHitBubble(11, 19, 1, 25, hb2OffSets)
+    .WithHitBubble(13, 23, 3, 35, hb3offSets)
+    .WithHitBubble(15, 20, 4, 25, hb4offsets)
+    .WithHitBubble(12, 20, 5, 25, hb5Offsets)
+    .WithHitBubble(13, 23, 6, 35, hb6Offsets);
+
+  return bldr.Build();
+}
+
+function GetDownSpecial() {
+  const activeFrames = 77;
   const impulses = new Map<frameNumber, FlatVec>();
   const hb1OffSets = new Map<frameNumber, FlatVec>();
   const hb2OffSets = new Map<frameNumber, FlatVec>();
   const hb3offSets = new Map<frameNumber, FlatVec>();
   const hb4OffSets = new Map<frameNumber, FlatVec>();
 
-  activeFrames.forEach((fr) => {
-    hb1OffSets.set(fr, new FlatVec(100, -25));
-    hb2OffSets.set(fr, new FlatVec(70, -25));
-    hb3offSets.set(fr, new FlatVec(40, -25));
-    if (fr > 50) {
-      hb4OffSets.set(fr, new FlatVec(120, -25));
+  for (let i = 0; i < activeFrames; i++) {
+    hb1OffSets.set(i, new FlatVec(100, -25));
+    hb2OffSets.set(i, new FlatVec(70, -25));
+    hb3offSets.set(i, new FlatVec(40, -25));
+    if (i > 50) {
+      hb4OffSets.set(i, new FlatVec(120, -25));
     }
-    impulses.set(fr, new FlatVec(3, 0));
-  });
+    impulses.set(i, new FlatVec(3, 0));
+  }
 
-  const downSpecialHitBox1 = new HitBubble(
-    0,
-    15,
-    0,
-    20,
-    45,
-    hb1OffSets,
-    activeFrames
-  );
+  const blrd = new AttackBuilder('WizardsRod');
 
-  const downSpecialHitBox2 = new HitBubble(
-    1,
-    13,
-    1,
-    19,
-    45,
-    hb2OffSets,
-    activeFrames
-  );
+  blrd
+    .WithBaseKnockBack(15)
+    .WithKnockBackScaling(66)
+    .WithGravity(false)
+    .WithTotalFrames(activeFrames)
+    .WithHitBubble(15, 20, 0, 45, hb1OffSets)
+    .WithHitBubble(13, 19, 1, 45, hb2OffSets)
+    .WithHitBubble(12, 18, 3, 45, hb3offSets)
+    .WithHitBubble(16, 25, 4, 45, hb4OffSets)
+    .WithImpulses(impulses, 15);
 
-  const downSpecialHitBox3 = new HitBubble(
-    2,
-    12,
-    2,
-    18,
-    45,
-    hb3offSets,
-    activeFrames
-  );
-
-  const downSpecialHitBox4 = new HitBubble(
-    3,
-    16,
-    3,
-    25,
-    45,
-    hb4OffSets,
-    activeFrames
-  );
-
-  const hitBubles = [
-    downSpecialHitBox1,
-    downSpecialHitBox2,
-    downSpecialHitBox3,
-    downSpecialHitBox4,
-  ];
-
-  return new Attack('WizardsRod', 77, hitBubles, 15, 81, 13, impulses, false);
-}
-
-function GetNeutralAttack() {
-  const hb1OffSets = new Map<frameNumber, FlatVec>();
-  const hb1ActiveFrame = [3, 4, 5, 6, 7];
-  const hb1Frame3Offset = new FlatVec(30, -50);
-  const hb1Frame4Offset = new FlatVec(40, -50);
-  const hb1Frame5Offset = new FlatVec(70, -50);
-  const hb1Frame6Offset = new FlatVec(70, -50);
-  const hb1Frame7Offset = new FlatVec(70, -50);
-
-  hb1OffSets.set(3, hb1Frame3Offset);
-  hb1OffSets.set(4, hb1Frame4Offset);
-  hb1OffSets.set(5, hb1Frame5Offset);
-  hb1OffSets.set(6, hb1Frame6Offset);
-  hb1OffSets.set(7, hb1Frame7Offset);
-
-  const hb2ActiveFrame = [3, 4, 5, 6, 7];
-  const hb2OffSets = new Map<frameNumber, FlatVec>();
-  const hb2Frame3Offset = new FlatVec(15, -50);
-  const hb2Frame4Offset = new FlatVec(25, -50);
-  const hb2Frame5Offset = new FlatVec(55, -50);
-  const hb2Frame6Offset = new FlatVec(55, -50);
-  const hb2Frame7Offset = new FlatVec(55, -50);
-
-  hb2OffSets.set(3, hb2Frame3Offset);
-  hb2OffSets.set(4, hb2Frame4Offset);
-  hb2OffSets.set(5, hb2Frame5Offset);
-  hb2OffSets.set(6, hb2Frame6Offset);
-  hb2OffSets.set(7, hb2Frame7Offset);
-
-  const defaultNeutralAttackHitBubble1 = new HitBubble(
-    0,
-    7,
-    0,
-    14,
-    60,
-    hb1OffSets,
-    hb1ActiveFrame
-  );
-  const defaultNeutralAttackHitBubble2 = new HitBubble(
-    1,
-    6,
-    1,
-    12,
-    60,
-    hb2OffSets,
-    hb2ActiveFrame
-  );
-
-  const hbs = [defaultNeutralAttackHitBubble1, defaultNeutralAttackHitBubble2];
-
-  const DefaultNeutralAttack = new Attack('ThunderPalm', 18, hbs, 30, 100);
-
-  return DefaultNeutralAttack;
+  return blrd.Build();
 }

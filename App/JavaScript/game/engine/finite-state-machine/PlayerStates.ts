@@ -21,22 +21,27 @@ class _GameEvents {
   public readonly DOWN_ATTACK_GE = 5;
   public readonly SIDE_ATTACK_GE = 6;
   public readonly ATTACK_GE = 7;
-  public readonly IDLE_GE = 8;
-  public readonly MOVE_GE = 9;
-  public readonly MOVE_FAST_GE = 10;
-  public readonly JUMP_GE = 11;
-  public readonly GRAB_GE = 12;
-  public readonly GUARD_GE = 13;
-  public readonly DOWN_GE = 14;
-  public readonly TURN_GE = 15;
+  public readonly N_AIR_GE = 8;
+  public readonly F_AIR_GE = 9;
+  public readonly B_AIR_GE = 10;
+  public readonly U_AIR_GE = 11;
+  public readonly D_AIR_GE = 12;
+  public readonly IDLE_GE = 13;
+  public readonly MOVE_GE = 14;
+  public readonly MOVE_FAST_GE = 15;
+  public readonly JUMP_GE = 16;
+  public readonly GRAB_GE = 17;
+  public readonly GUARD_GE = 18;
+  public readonly DOWN_GE = 19;
+  public readonly TURN_GE = 20;
   // End of GameEvents that can be source from player input
-  public readonly LAND_GE = 16;
-  public readonly SOFT_LAND_GE = 17;
-  public readonly FALL_GE = 18;
-  public readonly LEDGE_GRAB_GE = 19;
-  public readonly HIT_STOP_GE = 20;
-  public readonly lAUNCH_GE = 21;
-  public readonly TUBMLE_GE = 22;
+  public readonly LAND_GE = 21;
+  public readonly SOFT_LAND_GE = 22;
+  public readonly FALL_GE = 23;
+  public readonly LEDGE_GRAB_GE = 24;
+  public readonly HIT_STOP_GE = 25;
+  public readonly LAUNCH_GE = 26;
+  public readonly TUBMLE_GE = 27;
 }
 
 export const GAME_EVENTS = new _GameEvents();
@@ -63,17 +68,36 @@ class _STATES {
   public readonly AIR_DODGE_S = 17 as stateId;
   public readonly HELPESS_S = 18 as stateId;
   public readonly ATTACK_S = 19 as stateId;
-  public readonly DOWN_SPECIAL_S = 20 as stateId;
-  public readonly HIT_STOP_S = 21 as stateId;
-  public readonly LAUNCH_S = 22 as stateId;
-  public readonly TUMBLE_S = 23 as stateId;
-  public readonly CROUCH_S = 24 as stateId;
+  public readonly N_AIR_S = 20 as stateId;
+  public readonly F_AIR_S = 21 as stateId;
+  public readonly B_AIR_S = 22 as stateId;
+  public readonly U_AIR_S = 23 as stateId;
+  public readonly D_AIR_S = 24 as stateId;
+  public readonly DOWN_SPECIAL_S = 25 as stateId;
+  public readonly HIT_STOP_S = 26 as stateId;
+  public readonly LAUNCH_S = 27 as stateId;
+  public readonly TUMBLE_S = 28 as stateId;
+  public readonly CROUCH_S = 29 as stateId;
 }
 
 export const STATES = new _STATES();
 class _ATTACKS {
   public readonly NUETRAL_ATTACK = 0 as attackId;
-  public readonly DOWN_SPECIAL_ATTACK = 1 as attackId;
+  public readonly SIDE_ATTACK = 1 as attackId;
+  public readonly UP_ATTACK = 2 as attackId;
+  public readonly DOWN_ATTACK = 3 as attackId;
+  public readonly SIDE_TILT = 4 as attackId;
+  public readonly UP_TILT = 5 as attackId;
+  public readonly DOWN_TILT = 6 as attackId;
+  public readonly N_AIR_ATTACK = 7 as attackId;
+  public readonly F_AIR_ATTACK = 8 as attackId;
+  public readonly B_AIR_ATTACK = 9 as attackId;
+  public readonly U_AIR_ATTACK = 10 as attackId;
+  public readonly D_AIR_ATTACK = 11 as attackId;
+  public readonly NUETRAL_SPECIAL = 12 as stateId;
+  public readonly SIDE_SPECIAL = 13 as stateId;
+  public readonly UP_SPECAIL = 14 as stateId;
+  public readonly DOWN_SPECIAL = 15 as attackId;
 }
 
 export const ATTACKS = new _ATTACKS();
@@ -105,6 +129,18 @@ export class ActionStateMappings {
 
   public GetConditions() {
     return this.condtions;
+  }
+
+  public get HasDefaults(): boolean {
+    return this.defaultConditions !== undefined;
+  }
+
+  public get HasConditions(): boolean {
+    return this.condtions !== undefined;
+  }
+
+  public get HasDirectMappings(): boolean {
+    return this.mappings.size > 0;
   }
 
   _setMappings(mappingsArray: { geId: gameEventId; sId: stateId }[]) {
@@ -381,6 +417,60 @@ const TurnDefaultWalk: condition = {
   StateId: STATES.WALK_S,
 };
 
+const TurnToDash: condition = {
+  Name: 'TurnToDash',
+  ConditionFunc: (w, playerIndex) => {
+    const p = w.GetPlayer(playerIndex)!;
+    const stateFrame = p.FSMInfo.CurrentStateFrame;
+
+    if (stateFrame > 2) {
+      return false;
+    }
+
+    const input = w.GetPlayerCurrentInput(playerIndex)!;
+
+    if (input.LXAxsis < -0.5 && p.Flags.IsFacingRight) {
+      return true;
+    }
+
+    if (input.LXAxsis > 0.5 && p.Flags.IsFacingLeft) {
+      return true;
+    }
+
+    return false;
+  },
+  StateId: STATES.DASH_S,
+};
+
+const LandToJumpSquat: condition = {
+  Name: 'LandToJumpSquat',
+  ConditionFunc: (w, playerIndex) => {
+    const ia = w.GetPlayerCurrentInput(playerIndex);
+    const prevIa = w.GetPlayerPreviousInput(playerIndex);
+    const p = w.GetPlayer(playerIndex);
+    const stateFrame = p!.FSMInfo.CurrentStateFrame;
+
+    if (stateFrame > 1) {
+      return false;
+    }
+
+    if (ia?.Action !== GAME_EVENTS.JUMP_GE) {
+      return false;
+    }
+
+    if (prevIa === null) {
+      return true;
+    }
+
+    if (prevIa?.Action === GAME_EVENTS.JUMP_GE) {
+      return false;
+    }
+
+    return true;
+  },
+  StateId: STATES.JUMP_SQUAT_S,
+};
+
 const defaultWalk: condition = {
   Name: 'Walk',
   ConditionFunc: (w: World) => {
@@ -578,7 +668,7 @@ const LaunchToTumble: condition = {
 
 // Attack Conditionals =================================================================
 
-const AttackToNeutral: attackCondition = {
+const attackToNeutral: attackCondition = {
   Name: 'AttackToNurtal',
   ConditionFunc: (w, playerIndex) => {
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
@@ -594,7 +684,17 @@ const AttackToNeutral: attackCondition = {
   AttackId: ATTACKS.NUETRAL_ATTACK,
 };
 
-export const AttackDecisions = [AttackToNeutral];
+export const AttackDecisions = [attackToNeutral];
+
+const toNuetralAir: attackCondition = {
+  Name: 'ToNeutralAir',
+  ConditionFunc: (p, w) => {
+    return true;
+  },
+  AttackId: ATTACKS.N_AIR_ATTACK,
+};
+
+export const NeutralAirConditions = [toNuetralAir];
 
 const downSpecialToDownSpecialGrounded: attackCondition = {
   Name: 'DownSpecialToDownSpeacialGrounded',
@@ -608,10 +708,16 @@ const downSpecialToDownSpecialGrounded: attackCondition = {
     }
     return false;
   },
-  AttackId: ATTACKS.DOWN_SPECIAL_ATTACK,
+  AttackId: ATTACKS.DOWN_SPECIAL,
 };
 
 export const DownSpecialConditions = [downSpecialToDownSpecialGrounded];
+
+export const AttackGameEventMappings = new Map<gameEventId, attackId>()
+  .set(GAME_EVENTS.ATTACK_GE, ATTACKS.NUETRAL_ATTACK)
+  .set(GAME_EVENTS.N_AIR_GE, ATTACKS.N_AIR_ATTACK)
+  .set(GAME_EVENTS.DOWN_SPECIAL_GE, ATTACKS.DOWN_SPECIAL);
+
 // STATE RELATIONS =====================================================================
 
 export const IDLE_STATE_RELATIONS = InitIdleRelations();
@@ -633,9 +739,10 @@ export const LEDGE_GRAB_RELATIONS = InitLedgeGrabRelations();
 export const AIR_DODGE_RELATIONS = InitAirDodgeRelations();
 export const HELPESS_RELATIONS = InitHelpessRelations();
 export const ATTACK_RELATIONS = InitAttackRelations();
+export const AIR_ATK_RELATIONS = InitAirAttackRelations();
 export const DOWN_SPECIAL_RELATIONS = InitDownSpecialRelations();
 export const HIT_STOP_RELATIONS = InitHitStopRelations();
-export const TUMBLE_RELATIONS = InitTubleRelations();
+export const TUMBLE_RELATIONS = InitTumbleRelations();
 export const LAUNCH_RELATIONS = InitLaunchRelations();
 export const CROUCH_RELATIONS = InitCrouchRelations();
 
@@ -801,6 +908,15 @@ function InitAttackRelations(): StateRelation {
   return attackRelations;
 }
 
+function InitAirAttackRelations(): StateRelation {
+  const airAttackRelations = new StateRelation(
+    STATES.N_AIR_S,
+    InitAirAttackTranslations()
+  );
+
+  return airAttackRelations;
+}
+
 function InitDownSpecialRelations(): StateRelation {
   const downSpecRelations = new StateRelation(
     STATES.DOWN_SPECIAL_S,
@@ -819,13 +935,13 @@ function InitHitStopRelations(): StateRelation {
   return hitStunRelations;
 }
 
-function InitTubleRelations(): StateRelation {
-  const TubmbleRelations = new StateRelation(
+function InitTumbleRelations(): StateRelation {
+  const TumbleRelations = new StateRelation(
     STATES.TUMBLE_S,
     InitTumbleTranslations()
   );
 
-  return TubmbleRelations;
+  return TumbleRelations;
 }
 
 function InitLaunchRelations(): StateRelation {
@@ -900,6 +1016,8 @@ function InitTurnTranslations(): ActionStateMappings {
   ]);
 
   const defaultConditions: Array<condition> = [TurnDefaultWalk, defaultIdle];
+
+  turnTranslations._setConditions([TurnToDash]);
 
   turnTranslations._setDefault(defaultConditions);
 
@@ -1019,6 +1137,7 @@ function InitJumpTranslations(): ActionStateMappings {
 
   jumpTranslations._setMappings([
     { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
+    { geId: GAME_EVENTS.N_AIR_GE, sId: STATES.N_AIR_S },
   ]);
 
   const condtions: Array<condition> = [ToJump, ToAirDodge];
@@ -1037,6 +1156,7 @@ function InitNFallTranslations(): ActionStateMappings {
     { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.SOFT_LAND_S },
     { geId: GAME_EVENTS.LEDGE_GRAB_GE, sId: STATES.LEDGE_GRAB_S },
     { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
+    { geId: GAME_EVENTS.N_AIR_GE, sId: STATES.N_AIR_S },
   ]);
 
   const condtions: Array<condition> = [ToJump, ToAirDodge];
@@ -1053,6 +1173,7 @@ function InitFastFallTranslations(): ActionStateMappings {
     { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
     { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.SOFT_LAND_S },
     { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
+    { geId: GAME_EVENTS.N_AIR_GE, sId: STATES.N_AIR_S },
   ]);
 
   ffTranslations._setConditions([ToAirDodge]);
@@ -1116,6 +1237,17 @@ function InitAttackTranslations(): ActionStateMappings {
   attackTranslations._setDefault([defaultIdle]);
 
   return attackTranslations;
+}
+
+function InitAirAttackTranslations(): ActionStateMappings {
+  const airAttackTranslations = new ActionStateMappings();
+  airAttackTranslations._setDefault([defaultNFall]);
+  airAttackTranslations._setMappings([
+    { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
+    { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.SOFT_LAND_S },
+  ]);
+
+  return airAttackTranslations;
 }
 
 function InitDownSpecialTrnaslations(): ActionStateMappings {
@@ -1467,12 +1599,14 @@ export const Attack: FSMState = {
   OnEnter: (p: Player, w: World) => {
     const attackComp = p.Attacks;
     const ia = w.GetPlayerCurrentInput(p.ID)!;
-    attackComp.SetCurrentAttack(p, w, ia);
+    attackComp.SetCurrentAttack(ia);
   },
   OnUpdate: (p: Player, w: World) => {
     const attackComp = p.Attacks;
     const attack = attackComp.GetAttack();
-    const impulse = attack?.GetImpulseForFrame(p.FSMInfo.CurrentStateFrame);
+    const impulse = attack?.GetActiveImpulseForFrame(
+      p.FSMInfo.CurrentStateFrame
+    );
 
     if (impulse === undefined) {
       return;
@@ -1491,8 +1625,37 @@ export const Attack: FSMState = {
     const attackComp = p.Attacks;
     p.Attacks.GetAttack()!.ResetPlayeIdHitArray();
     attackComp.ZeroCurrentAttack();
-    p.Flags.GravityOn();
   },
+};
+
+export const AerialAttack: FSMState = {
+  StateName: 'AerialAttack',
+  StateId: STATES.N_AIR_S,
+  OnEnter: (p: Player, w: World) => {
+    const attackComp = p.Attacks;
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
+    attackComp.SetCurrentAttack(ia);
+  },
+  OnUpdate: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID);
+    const speeds = p.Speeds;
+    const airSpeed = speeds.AerialSpeedInpulseLimit;
+    const airMult = speeds.AirDogeSpeed;
+    p.Velocity.AddClampedXImpulse(airSpeed, (ia!.LXAxsis * airMult) / 2);
+  },
+  OnExit(p, world) {
+    const attackComp = p.Attacks;
+    p.Attacks.GetAttack()!.ResetPlayeIdHitArray();
+    attackComp.ZeroCurrentAttack();
+  },
+};
+
+export const FAerialAttack: FSMState = {
+  StateName: 'FAir',
+  StateId: STATES.F_AIR_S,
+  OnEnter: (p, w) => {},
+  OnUpdate(p, world) {},
+  OnExit(p, world) {},
 };
 
 export const DownSpecial: FSMState = {
@@ -1501,8 +1664,8 @@ export const DownSpecial: FSMState = {
   OnEnter: (p: Player, w: World) => {
     const attackComp = p.Attacks;
     const ia = w.GetPlayerCurrentInput(p.ID)!;
-    attackComp.SetCurrentAttack(p, w, ia);
-    const gravity = attackComp.GetAttack()!.Gravity;
+    attackComp.SetCurrentAttack(ia);
+    const gravity = attackComp.GetAttack()!.GravityActive;
     if (gravity === false) {
       p.Flags.GravityOff();
     }
@@ -1510,7 +1673,9 @@ export const DownSpecial: FSMState = {
   OnUpdate: (p: Player, world: World) => {
     const attackComp = p.Attacks;
     const attack = attackComp.GetAttack();
-    const impulse = attack?.GetImpulseForFrame(p.FSMInfo.CurrentStateFrame);
+    const impulse = attack?.GetActiveImpulseForFrame(
+      p.FSMInfo.CurrentStateFrame
+    );
 
     if (impulse === undefined) {
       return;
@@ -1597,5 +1762,3 @@ export const Crouch: FSMState = {
     p.Flags.SetCanWalkOffTrue();
   },
 };
-
-//export const launch: FSMState

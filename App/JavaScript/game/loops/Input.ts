@@ -1,4 +1,6 @@
 import { GAME_EVENTS } from '../engine/finite-state-machine/PlayerStates';
+import { PlayerHelpers } from '../engine/player/playerOrchestrator';
+import { World } from '../engine/world/world';
 
 export type InputAction = {
   Action: number;
@@ -99,16 +101,133 @@ function readInput(gamePad: Gamepad) {
   currentInput.select = gamePad.buttons[8].pressed;
 }
 
-export function GetInput(index: number): InputAction {
+export function GetInput(index: number, w: World): InputAction {
   const gp = navigator.getGamepads()[index];
   if (gp && gp.connected) {
     readInput(gp);
   }
-  return transcribeInput(currentInput);
+  return transcribeInput(currentInput, w, index);
 }
 
-function transcribeInput(input: GamePadInput) {
+function handleSpecial(
+  inputAction: InputAction,
+  input: GamePadInput,
+  isAerial: boolean,
+  isFacingRight: boolean,
+  LXAxis: number,
+  LYAxis: number
+) {
+  //are we more vertical than horizontal?
+  if (Math.abs(LYAxis) > Math.abs(LXAxis)) {
+    if (LYAxis > 0) {
+      inputAction.Action = GAME_EVENTS.UP_SPECIAL_GE;
+      return inputAction;
+    }
+    inputAction.Action = GAME_EVENTS.DOWN_SPECIAL_GE;
+    return inputAction;
+  }
+  // Is it a special on the x axis?
+  if (LXAxis != 0) {
+    inputAction.Action = GAME_EVENTS.SIDE_SPECIAL_GE;
+    return inputAction;
+  }
+
+  // It is a nuetral special
+  inputAction.Action = GAME_EVENTS.SPECIAL_GE;
+  return inputAction;
+}
+
+function handleAerialAction(
+  inputAction: InputAction,
+  LXAxis: number,
+  LYAxis: number,
+  isFacingRight: boolean
+) {
+  //left or right
+  if (Math.abs(LXAxis) > Math.abs(LYAxis)) {
+    // input right
+    if (LXAxis > 0) {
+      // facing right
+      if (isFacingRight) {
+        inputAction.Action = GAME_EVENTS.F_AIR_GE;
+        return inputAction;
+      }
+      // facing left
+      inputAction.Action = GAME_EVENTS.B_AIR_GE;
+      return inputAction;
+    }
+  }
+
+  // up or down
+  if (Math.abs(LYAxis) > Math.abs(LXAxis)) {
+    // input up
+    if (LYAxis > 0) {
+      inputAction.Action = GAME_EVENTS.U_AIR_GE;
+      return inputAction;
+    }
+    // input down
+    inputAction.Action = GAME_EVENTS.D_AIR_GE;
+    return inputAction;
+  }
+
+  inputAction.Action = GAME_EVENTS.N_AIR_GE;
+  return inputAction;
+}
+
+function handleGroundedAction(
+  inputAction: InputAction,
+  LXAxis: number,
+  LYAxis: number,
+  isFacingRight: boolean
+) {
+  if (Math.abs(LYAxis) > Math.abs(LXAxis)) {
+    // up
+    if (LYAxis > 0) {
+      inputAction.Action = GAME_EVENTS.UP_ATTACK_GE;
+      return inputAction;
+    }
+    // down
+    inputAction.Action = GAME_EVENTS.DOWN_ATTACK_GE;
+    return inputAction;
+  }
+
+  // left or right
+  if (LXAxis != 0) {
+    inputAction.Action = GAME_EVENTS.SIDE_ATTACK_GE;
+    return inputAction;
+  }
+
+  // nuetral
+  inputAction.Action = GAME_EVENTS.ATTACK_GE;
+  return inputAction;
+}
+
+function handlAction(
+  inputAction: InputAction,
+  input: GamePadInput,
+  isAerial: boolean,
+  isFacingRight: boolean,
+  LXAxis: number,
+  LYAxis: number
+): InputAction {
+  if (isAerial) {
+    return handleAerialAction(inputAction, LXAxis, LYAxis, isFacingRight);
+  }
+  // If grounded
+  return handleGroundedAction(inputAction, LXAxis, LYAxis, isFacingRight);
+}
+
+function transcribeInput(
+  input: GamePadInput,
+  w: World,
+  pIndex: number
+): InputAction {
   // Button priority is as follows: special > attack > right stick > grab > guard > jump
+  const p = w.GetPlayer(pIndex)!;
+  const previousInput = w.GetPlayerPreviousInput(pIndex);
+  const isAerial = !PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage);
+  const isFacingRight = p.Flags.IsFacingRight;
+
   const LXAxis = input.LXAxis;
   const LYAxis = input.LYAxis;
   const RXAxis = input.RXAxis;
@@ -124,49 +243,41 @@ function transcribeInput(input: GamePadInput) {
 
   // special was pressed
   if (input.special) {
-    // Is it a special on the y axis?
-    if (Math.abs(LYAxis) > Math.abs(LXAxis)) {
-      if (LYAxis > 0) {
-        inputAction.Action = GAME_EVENTS.UP_SPECIAL_GE;
-        return inputAction;
-      }
-      inputAction.Action = GAME_EVENTS.DOWN_SPECIAL_GE;
-      return inputAction;
-    }
-    // Is it a special on the x axis?
-    if (LXAxis != 0) {
-      inputAction.Action = GAME_EVENTS.SIDE_SPECIAL_GE;
-      return inputAction;
-    }
-
-    // It is a nuetral special
-    inputAction.Action = GAME_EVENTS.SPECIAL_GE;
-    return inputAction;
+    return handleSpecial(
+      inputAction,
+      input,
+      isAerial,
+      isFacingRight,
+      LXAxis,
+      LYAxis
+    );
   }
 
   // Action was pressed
   if (input.action) {
-    // Y axis?
-    if (Math.abs(LYAxis) > Math.abs(LXAxis)) {
-      if (LYAxis > 0) {
-        inputAction.Action = GAME_EVENTS.UP_ATTACK_GE;
-        return inputAction;
-      }
-      inputAction.Action = GAME_EVENTS.DOWN_ATTACK_GE;
-      return inputAction;
-    }
-
-    if (LXAxis != 0) {
-      inputAction.Action = GAME_EVENTS.SIDE_ATTACK_GE;
-      return inputAction;
-    }
-    inputAction.Action = GAME_EVENTS.ATTACK_GE;
-    return inputAction;
+    return handlAction(
+      inputAction,
+      input,
+      isAerial,
+      isFacingRight,
+      LXAxis,
+      LYAxis
+    );
   }
 
   // Right stick was used
   // Right stick more horizontal than vertical
   if (Math.abs(RXAxis) > Math.abs(RYAxis)) {
+    if (isAerial) {
+      if (isFacingRight) {
+        if (RXAxis > 0) {
+          inputAction.Action = GAME_EVENTS.F_AIR_GE;
+          return inputAction;
+        }
+        inputAction.Action = GAME_EVENTS.B_AIR_GE;
+        return inputAction;
+      }
+    }
     inputAction.Action = GAME_EVENTS.SIDE_ATTACK_GE;
     return inputAction;
   }
@@ -174,6 +285,15 @@ function transcribeInput(input: GamePadInput) {
   // Right stick was used
   // Right stick more vertical than horrizontal
   if (Math.abs(RYAxis) > Math.abs(RXAxis)) {
+    if (isAerial) {
+      if (RYAxis > 0) {
+        inputAction.Action = GAME_EVENTS.U_AIR_GE;
+        return inputAction;
+      }
+      inputAction.Action = GAME_EVENTS.D_AIR_GE;
+      return inputAction;
+    }
+
     if (RYAxis > 0) {
       inputAction.Action = GAME_EVENTS.UP_ATTACK_GE;
       return inputAction;
@@ -200,16 +320,20 @@ function transcribeInput(input: GamePadInput) {
     return inputAction;
   }
 
-  if (input.LYAxis < -0.5) {
+  const diff = LYAxis - (previousInput?.LYAxsis ?? 0);
+  if (LYAxis > 0.7 && diff > 0.4) {
+    inputAction.Action = GAME_EVENTS.JUMP_GE;
+    return inputAction;
+  }
+
+  if (LYAxis < -0.5) {
     inputAction.Action = GAME_EVENTS.DOWN_GE;
     return inputAction;
   }
 
-  if (Math.abs(input.LXAxis) > 0) {
+  if (Math.abs(LXAxis) > 0) {
     inputAction.Action =
-      Math.abs(input.LXAxis) > 0.6
-        ? GAME_EVENTS.MOVE_FAST_GE
-        : GAME_EVENTS.MOVE_GE;
+      Math.abs(LXAxis) > 0.6 ? GAME_EVENTS.MOVE_FAST_GE : GAME_EVENTS.MOVE_GE;
     return inputAction;
   }
 

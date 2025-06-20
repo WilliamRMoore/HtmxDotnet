@@ -3,6 +3,8 @@ import { World } from '../world/world';
 import { InputAction } from '../../loops/Input';
 import {
   ActionStateMappings,
+  AerialAttack,
+  AIR_ATK_RELATIONS,
   AIR_DODGE_RELATIONS,
   AirDodge,
   Attack,
@@ -94,6 +96,7 @@ export class StateMachine {
       .set(AIR_DODGE_RELATIONS.stateId, AIR_DODGE_RELATIONS.mappings)
       .set(HELPESS_RELATIONS.stateId, HELPESS_RELATIONS.mappings)
       .set(ATTACK_RELATIONS.stateId, ATTACK_RELATIONS.mappings)
+      .set(AIR_ATK_RELATIONS.stateId, AIR_ATK_RELATIONS.mappings)
       .set(DOWN_SPECIAL_RELATIONS.stateId, DOWN_SPECIAL_RELATIONS.mappings)
       .set(HIT_STOP_RELATIONS.stateId, HIT_STOP_RELATIONS.mappings)
       .set(TUMBLE_RELATIONS.stateId, TUMBLE_RELATIONS.mappings)
@@ -120,6 +123,7 @@ export class StateMachine {
       .set(AirDodge.StateId, AirDodge)
       .set(Helpess.StateId, Helpess)
       .set(Attack.StateId, Attack)
+      .set(AerialAttack.StateId, AerialAttack)
       .set(DownSpecial.StateId, DownSpecial)
       .set(hitStop.StateId, hitStop)
       .set(Tumble.StateId, Tumble)
