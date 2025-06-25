@@ -5,7 +5,6 @@ import { RENDERFPS60Loop } from './FPS60LoopExecutor';
 import { GetInput } from './Input';
 import { World } from '../engine/world/world';
 import { FlatVec } from '../engine/physics/vector';
-import { PlayerHelpers } from '../engine/player/playerOrchestrator';
 
 const frameInterval = 1000 / 60;
 

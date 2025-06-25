@@ -1,5 +1,4 @@
 import { GAME_EVENT_IDS } from '../engine/player/finite-state-machine/PlayerStates';
-import { PlayerHelpers } from '../engine/player/playerOrchestrator';
 import { World } from '../engine/world/world';
 
 export type InputAction = {

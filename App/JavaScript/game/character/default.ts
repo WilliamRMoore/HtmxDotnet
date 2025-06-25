@@ -1,7 +1,6 @@
 import {
   attackId,
   ATTACK_IDS,
-  FAerialAttack,
   stateId,
   STATE_IDS,
 } from '../engine/player/finite-state-machine/PlayerStates';
@@ -59,9 +58,9 @@ export class DefaultCharacterConfig {
       .set(STATE_IDS.DASH_TURN_S, 1)
       .set(STATE_IDS.RUN_TURN_S, 20)
       .set(STATE_IDS.STOP_RUN_S, 15)
-      .set(STATE_IDS.JUMP_S, 15)
+      .set(STATE_IDS.JUMP_S, 2)
       .set(STATE_IDS.AIR_DODGE_S, 22)
-      .set(STATE_IDS.LAND_S, 15)
+      .set(STATE_IDS.LAND_S, 12)
       .set(STATE_IDS.SOFT_LAND_S, 2)
       .set(STATE_IDS.ATTACK_S, neutralAttack.TotalFrameLength)
       .set(STATE_IDS.N_AIR_S, neutralAir.TotalFrameLength)
@@ -135,7 +134,7 @@ function GetNAir() {
     .set(6, hb2Frame6Offset)
     .set(7, hb2Frame7Offset);
 
-  const bldr = new AttackBuilder('ThunderPalm');
+  const bldr = new AttackBuilder('NAttack');
 
   bldr
     .WithBaseKnockBack(15)
@@ -186,7 +185,7 @@ function GetNeutralAir() {
     .set(21, new FlatVec(10, -50))
     .set(22, new FlatVec(10, -50));
 
-  const bldr = new AttackBuilder('NeutralAir')
+  const bldr = new AttackBuilder('NAir')
     .WithBaseKnockBack(59)
     .WithKnockBackScaling(60)
     .WithGravity(true)
@@ -201,13 +200,17 @@ function GetNeutralAir() {
   return bldr.Build();
 }
 
+function GetUAir() {
+  //const
+}
+
 function GetFAir() {
   // FAir attack parameters
-  const fairTotalFrames = 42;
+  const fairTotalFrames = 40;
   const fairActiveStart = 11;
   const fairActiveEnd = 22;
   const fairFramesActive = fairActiveEnd - fairActiveStart + 1;
-  const fairRadius = 20;
+  const fairRadius = 25;
   const fairDamage = 17;
   const fairBaseKnockback = 63;
   const fairLaunchAngle = 10;
@@ -217,8 +220,8 @@ function GetFAir() {
     -Math.PI / 2, // start above (90deg)
     Math.PI / 2, // end below (270deg)
     fairFramesActive,
-    130, // distance from player center
-    20 // retract inwards by 10px at end
+    155, // distance from player center
+    130 // retract inwards by 10px at end
   );
 
   // Bubble 2: further from player, stacked above, same rotation
@@ -226,8 +229,16 @@ function GetFAir() {
     -Math.PI / 2,
     Math.PI / 2,
     fairFramesActive,
-    110,
-    20
+    130,
+    110
+  );
+
+  const bubble3Offsets = generateFairBubbleOffsets(
+    -Math.PI / 2,
+    Math.PI / 2,
+    fairFramesActive,
+    100,
+    100
   );
 
   // Build the FAir attack using AttackBuilder
@@ -237,8 +248,9 @@ function GetFAir() {
     .WithBaseKnockBack(fairBaseKnockback)
     .WithKnockBackScaling(0)
     .WithGravity(true)
-    .WithHitBubble(fairDamage, fairRadius, 1, fairLaunchAngle, bubble1Offsets)
+    .WithHitBubble(fairDamage, fairRadius, 2, fairLaunchAngle, bubble1Offsets)
     .WithHitBubble(fairDamage, fairRadius, 1, fairLaunchAngle, bubble2Offsets)
+    .WithHitBubble(fairDamage, fairRadius, 0, fairLaunchAngle, bubble3Offsets)
     .Build();
 
   return FairAttack;
@@ -262,7 +274,7 @@ function GetDownSpecial() {
     impulses.set(i, new FlatVec(3, 0));
   }
 
-  const blrd = new AttackBuilder('WizardsRod');
+  const blrd = new AttackBuilder('DSpecial');
 
   blrd
     .WithBaseKnockBack(15)

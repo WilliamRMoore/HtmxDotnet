@@ -9,7 +9,7 @@ import {
 } from '../player/finite-state-machine/PlayerStates';
 import { World } from '../world/world';
 import { StateMachine } from '../player/finite-state-machine/PlayerStateMachine';
-import { Player, PlayerHelpers } from '../player/playerOrchestrator';
+import { Player } from '../player/playerOrchestrator';
 import { AttackResult } from '../pools/AttackResult';
 import { PooledVector } from '../pools/PooledVector';
 import { Pool } from '../pools/Pool';
@@ -106,7 +106,7 @@ export function StageCollisionDetection(
         playerPosDTO.Add(move);
         p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
         sm.UpdateFromWorld(
-          p.Velocity.Y < 7
+          p.Velocity.Y < 8
             ? GAME_EVENT_IDS.SOFT_LAND_GE
             : GAME_EVENT_IDS.LAND_GE
         );
@@ -321,11 +321,7 @@ export function Gravity(
       continue;
     }
 
-    if (
-      p.Flags.HasGravity &&
-      !p.IsPlayerGroundedOnStage(stage)
-      //!PlayerHelpers.IsPlayerGroundedOnStage(p, stage)
-    ) {
+    if (p.Flags.HasGravity && !p.IsPlayerGroundedOnStage(stage)) {
       const speeds = p.Speeds;
       const grav = speeds.Gravity;
       const isFF = p.Flags.IsFastFalling;

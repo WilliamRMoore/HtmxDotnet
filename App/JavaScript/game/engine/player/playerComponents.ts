@@ -1108,15 +1108,19 @@ export class JumpComponent implements IHistoryEnabled<number> {
     this.numberOfJumps = numberOfJumps;
   }
 
-  public HasJumps() {
+  public HasJumps(): boolean {
     return this.jumpCount < this.numberOfJumps;
   }
 
-  public IncrementJumps() {
+  public OnFirstJump(): boolean {
+    return this.jumpCount === 1;
+  }
+
+  public IncrementJumps(): void {
     this.jumpCount++;
   }
 
-  public ResetJumps() {
+  public ResetJumps(): void {
     this.jumpCount = 0;
   }
 

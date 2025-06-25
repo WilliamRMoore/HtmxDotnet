@@ -1,4 +1,4 @@
-import { Player, PlayerHelpers } from '../playerOrchestrator';
+import { Player } from '../playerOrchestrator';
 import { EaseIn } from '../../utils';
 import { World } from '../../world/world';
 import { FSMState } from './PlayerStateMachine';
@@ -700,7 +700,7 @@ const attackToNeutral: attackCondition = {
   ConditionFunc: (w, playerIndex) => {
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
     const p = w.GetPlayer(playerIndex)!;
-    const grounded = p.IsPlayerGroundedOnStage(w.Stage); //PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage!);
+    const grounded = p.IsPlayerGroundedOnStage(w.Stage);
 
     if (ia?.Action === GAME_EVENT_IDS.ATTACK_GE && grounded) {
       return true;
@@ -728,7 +728,7 @@ const downSpecialToDownSpecialGrounded: attackCondition = {
   ConditionFunc: (w, playerIndex) => {
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
     const p = w.GetPlayer(playerIndex)!;
-    const grounded = p.IsPlayerGroundedOnStage(w.Stage!); //PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage!);
+    const grounded = p.IsPlayerGroundedOnStage(w.Stage!);
 
     if (ia.Action === GAME_EVENT_IDS.DOWN_SPECIAL_GE && grounded) {
       return true;
@@ -958,8 +958,8 @@ function InitJumpRelations(): StateRelation {
 
   jumpTranslations._setMappings([
     { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
-    { geId: GAME_EVENT_IDS.N_AIR_GE, sId: STATE_IDS.N_AIR_S },
-    { geId: GAME_EVENT_IDS.F_AIR_GE, sId: STATE_IDS.F_AIR_S },
+    //{ geId: GAME_EVENT_IDS.N_AIR_GE, sId: STATE_IDS.N_AIR_S },
+    //{ geId: GAME_EVENT_IDS.F_AIR_GE, sId: STATE_IDS.F_AIR_S },
   ]);
 
   const condtions: Array<condition> = [ToJump, ToAirDodge];
@@ -1386,12 +1386,20 @@ export const Jump: FSMState = {
     if (jumpComp.HasJumps()) {
       p.Flags.FastFallOff();
       p.AddToPlayerYPosition(-0.5); //PlayerHelpers.AddToPlayerYPosition(p, -0.5);
-      p.Velocity.Y = -jumpComp.JumpVelocity;
+      // p.Velocity.Y = -jumpComp.JumpVelocity;
       jumpComp.IncrementJumps();
     }
-    p.ECB.SetECBShape(0, 75, 75);
+    p.ECB.SetECBShape(-25, 60, 70);
   },
   OnUpdate: (p: Player, w: World) => {
+    if (p.FSMInfo.CurrentStateFrame === 0 && p.Jump.OnFirstJump()) {
+      p.AddToPlayerYPosition(-p.ECB.YOffset + 20);
+      return;
+    }
+
+    if (p.FSMInfo.CurrentStateFrame === 1) {
+      p.Velocity.Y = -p.Jump.JumpVelocity;
+    }
     const inputAction = w.GetPlayerCurrentInput(p.ID);
     const speedsComp = p.Speeds;
     p.Velocity.AddClampedXImpulse(
@@ -1427,7 +1435,7 @@ export const FastFall: FSMState = {
   StateName: 'FastFall',
   StateId: STATE_IDS.F_FALL_S,
   OnEnter: (p: Player, w: World) => {
-    p.ECB.SetECBShape(0, 50, 60);
+    p.ECB.SetECBShape(-25, 50, 60);
     p.Flags.FastFallOn();
   },
   OnUpdate: (p: Player, w: World) => {
@@ -1578,7 +1586,7 @@ export const AerialAttack: FSMState = {
       p.Flags.FastFallOn();
     }
   },
-  OnExit(p, world) {
+  OnExit(p: Player, w: World) {
     const attackComp = p.Attacks;
     attackComp.GetAttack()!.ResetPlayeIdHitArray();
     attackComp.ZeroCurrentAttack();
@@ -1589,11 +1597,11 @@ export const AerialAttack: FSMState = {
 export const FAerialAttack: FSMState = {
   StateName: 'FAir',
   StateId: STATE_IDS.F_AIR_S,
-  OnEnter: (p, w) => {
+  OnEnter: (p: Player, w: World) => {
     p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.F_AIR_GE);
     p.ECB.SetECBShape(-25, 60, 70);
   },
-  OnUpdate: (p, w) => {
+  OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID)!;
     const speedsComp = p.Speeds;
     p.Velocity.AddClampedXImpulse(
@@ -1601,9 +1609,32 @@ export const FAerialAttack: FSMState = {
       ia.LXAxsis * speedsComp.ArielVelocityMultiplier
     );
   },
-  OnExit: (p, w) => {
+  OnExit: (p: Player, w: World) => {
     const attackComp = p.Attacks;
-    p.Attacks.GetAttack()!.ResetPlayeIdHitArray();
+    attackComp.GetAttack()!.ResetPlayeIdHitArray();
+    attackComp.ZeroCurrentAttack();
+    p.ECB.SetECBShape(0, 100, 100);
+  },
+};
+
+export const UAirAttack: FSMState = {
+  StateName: 'UAir',
+  StateId: STATE_IDS.U_AIR_S,
+  OnEnter: (p: Player, w: World) => {
+    p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.U_AIR_GE);
+    p.ECB.SetECBShape(-25, 60, 60);
+  },
+  OnUpdate: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
+    const speedsComp = p.Speeds;
+    p.Velocity.AddClampedXImpulse(
+      speedsComp.AerialSpeedInpulseLimit,
+      ia.LXAxsis * speedsComp.ArielVelocityMultiplier
+    );
+  },
+  OnExit: (p: Player, w: World) => {
+    const attackComp = p.Attacks;
+    attackComp.GetAttack()!.ResetPlayeIdHitArray();
     attackComp.ZeroCurrentAttack();
     p.ECB.SetECBShape(0, 100, 100);
   },
@@ -1620,7 +1651,7 @@ export const DownSpecial: FSMState = {
       p.Flags.GravityOff();
     }
   },
-  OnUpdate: (p: Player, world: World) => {
+  OnUpdate: (p: Player, w: World) => {
     const attackComp = p.Attacks;
     const attack = attackComp.GetAttack();
     const impulse = attack?.GetActiveImpulseForFrame(
@@ -1640,7 +1671,7 @@ export const DownSpecial: FSMState = {
       pVel.AddClampedYImpulse(clamp, y);
     }
   },
-  OnExit: (p: Player, world: World) => {
+  OnExit: (p: Player, w: World) => {
     const attackComp = p.Attacks;
     p.Flags.GravityOn();
     p.Attacks.GetAttack()!.ResetPlayeIdHitArray();
@@ -1669,13 +1700,13 @@ export const hitStop: FSMState = {
 export const Launch: FSMState = {
   StateName: 'Launch',
   StateId: STATE_IDS.LAUNCH_S,
-  OnEnter: (p, w) => {
+  OnEnter: (p: Player, w: World) => {
     const pVel = p.Velocity;
     const hitStun = p.HitStun;
     pVel.X = hitStun.VX;
     pVel.Y = hitStun.VY;
   },
-  OnUpdate: (p, w) => {
+  OnUpdate: (p: Player, w: World) => {
     p.HitStun.DecrementHitStun();
   },
   OnExit: (p, w) => {
@@ -1686,18 +1717,18 @@ export const Launch: FSMState = {
 export const Tumble: FSMState = {
   StateName: 'Tumble',
   StateId: STATE_IDS.TUMBLE_S,
-  OnEnter: (p, w) => {
+  OnEnter: (p: Player, w: World) => {
     p.Jump.ResetJumps();
     p.Jump.IncrementJumps();
   },
-  OnUpdate: (p, w) => {
+  OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     const speeds = p.Speeds;
     const airSpeed = speeds.AerialSpeedInpulseLimit;
     const airMult = speeds.AirDogeSpeed;
     p.Velocity.AddClampedXImpulse(airSpeed, (ia!.LXAxsis * airMult) / 2);
   },
-  OnExit: (p, w) => {},
+  OnExit: (p: Player, w: World) => {},
 };
 
 export const Crouch: FSMState = {
@@ -1708,7 +1739,7 @@ export const Crouch: FSMState = {
     p.Flags.SetCanWalkOffFalse();
   },
   OnUpdate: (p: Player, w: World) => {},
-  OnExit: (p, w) => {
+  OnExit: (p: Player, w: World) => {
     p.ECB.SetECBShape(0, 100, 100);
     p.Flags.SetCanWalkOffTrue();
   },

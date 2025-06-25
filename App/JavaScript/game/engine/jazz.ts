@@ -1,7 +1,7 @@
 import { DefaultCharacterConfig } from '../character/default';
 import { InputAction } from '../loops/Input';
 import { FlatVec } from './physics/vector';
-import { Player, PlayerHelpers } from './player/playerOrchestrator';
+import { Player } from './player/playerOrchestrator';
 import { defaultStage } from './stage/stageComponents';
 import {
   ApplyVelocty,
