@@ -110,7 +110,7 @@ export class Player {
     return this.jump;
   }
 
-  public get Postion(): PositionComponent {
+  public get Position(): PositionComponent {
     return this.position;
   }
 
@@ -137,39 +137,17 @@ export class Player {
   public get Attacks(): AttackComponment {
     return this.attacks;
   }
-}
 
-export class PlayerHelpers {
-  public static AddWalkImpulseToPlayer(p: Player, impulse: number): void {
-    const velocity = p.Velocity;
-    const speeds = p.Speeds;
+  public AddWalkImpulseToPlayer(impulse: number): void {
+    const velocity = this.velocity;
+    const speeds = this.speeds;
     velocity.AddClampedXImpulse(
       speeds.MaxWalkSpeed,
       impulse * speeds.WalkSpeedMulitplier
     );
   }
 
-  public static AddRunImpulseToPlayer(p: Player, impulse: number): void {
-    const velocity = p.Velocity;
-    const speeds = p.Speeds;
-    velocity.AddClampedXImpulse(
-      speeds.MaxRunSpeed,
-      impulse * speeds.RunSpeedMultiplier
-    );
-  }
-
-  public static AddGravityToPlayer(p: Player, s: Stage): void {
-    if (!this.IsPlayerGroundedOnStage(p, s)) {
-      const speeds = p.Speeds;
-      const grav = speeds.Gravity;
-      const isFF = p.Flags.IsFastFalling;
-      const fallSpeed = isFF ? speeds.FastFallSpeed : speeds.FallSpeed;
-      const GravMutliplier = isFF ? 2 : 1;
-      p.Velocity.AddClampedYImpulse(fallSpeed, grav * GravMutliplier);
-    }
-  }
-
-  public static IsPlayerGroundedOnStage(p: Player, s: Stage): boolean {
+  public IsPlayerGroundedOnStage(s: Stage): boolean {
     const grnd = s.StageVerticies.GetGround();
 
     if (grnd == undefined) {
@@ -180,7 +158,7 @@ export class PlayerHelpers {
     for (let i = 0; i < grndLength; i++) {
       const va = grnd[i];
       const vb = grnd[i + 1];
-      if (p.ECB.DetectGroundCollision(va, vb)) {
+      if (this.ecb.DetectGroundCollision(va, vb)) {
         return true;
       }
     }
@@ -188,10 +166,7 @@ export class PlayerHelpers {
     return false;
   }
 
-  public static IsPlayerPreviouslyGroundedOnStage(
-    p: Player,
-    s: Stage
-  ): boolean {
+  public IsPlayerPreviouslyGroundedOnStage(s: Stage): boolean {
     const grnd = s.StageVerticies.GetGround();
     if (grnd == undefined) {
       return false;
@@ -201,7 +176,7 @@ export class PlayerHelpers {
     for (let i = 0; i < grndLength; i++) {
       const va = grnd[i];
       const vb = grnd[i + 1];
-      if (p.ECB.DetectPreviousGroundCollision(va, vb)) {
+      if (this.ecb.DetectPreviousGroundCollision(va, vb)) {
         return true;
       }
     }
@@ -209,36 +184,125 @@ export class PlayerHelpers {
     return false;
   }
 
-  public static SetPlayerPosition(p: Player, x: number, y: number) {
-    p.Postion.X = x;
-    p.Postion.Y = y;
-    p.ECB.MoveToPosition(x, y);
-    p.LedgeDetector.MoveTo(x, y);
+  public SetPlayerPosition(x: number, y: number) {
+    const position = this.position;
+    this.Position;
+    position.X = x;
+    position.Y = y;
+    this.ecb.MoveToPosition(x, y);
+    this.ledgeDetector.MoveTo(x, y);
   }
 
-  public static SetPlayerInitialPosition(
-    p: Player,
-    x: number,
-    y: number
-  ): void {
-    p.Postion.X = x;
-    p.Postion.Y = y;
-    p.ECB.SetInitialPosition(x, y);
-    p.LedgeDetector.MoveTo(x, y);
-  }
-
-  public static AddToPlayerYPosition(p: Player, y: number): void {
-    const position = p.Postion;
-    position.Y += y;
-    p.ECB.MoveToPosition(position.X, position.Y);
-    p.LedgeDetector.MoveTo(position.X, position.Y);
-  }
-
-  public static AddToPlayerPosition(p: Player, x: number, y: number): void {
-    const pos = p.Postion;
+  public AddToPlayerPosition(x: number, y: number): void {
+    const pos = this.position;
     pos.X += x;
     pos.Y += y;
-    p.ECB.MoveToPosition(pos.X, pos.Y);
-    p.LedgeDetector.MoveTo(pos.X, pos.Y);
+    this.ecb.MoveToPosition(pos.X, pos.Y);
+    this.ledgeDetector.MoveTo(pos.X, pos.Y);
   }
+
+  public AddToPlayerYPosition(y: number): void {
+    const position = this.position;
+    position.Y += y;
+    this.ecb.MoveToPosition(position.X, position.Y);
+    this.ledgeDetector.MoveTo(position.X, position.Y);
+  }
+
+  public SetPlayerInitialPosition(x: number, y: number): void {
+    this.Position.X = x;
+    this.Position.Y = y;
+    this.ecb.SetInitialPosition(x, y);
+    this.ledgeDetector.MoveTo(x, y);
+  }
+}
+
+export class PlayerHelpers {
+  // public static AddWalkImpulseToPlayer(p: Player, impulse: number): void {
+  //   const velocity = p.Velocity;
+  //   const speeds = p.Speeds;
+  //   velocity.AddClampedXImpulse(
+  //     speeds.MaxWalkSpeed,
+  //     impulse * speeds.WalkSpeedMulitplier
+  //   );
+  // }
+  // public static AddRunImpulseToPlayer(p: Player, impulse: number): void {
+  //   const velocity = p.Velocity;
+  //   const speeds = p.Speeds;
+  //   velocity.AddClampedXImpulse(
+  //     speeds.MaxRunSpeed,
+  //     impulse * speeds.RunSpeedMultiplier
+  //   );
+  // }
+  // public static AddGravityToPlayer(p: Player, s: Stage): void {
+  //   if (!this.IsPlayerGroundedOnStage(p, s)) {
+  //     const speeds = p.Speeds;
+  //     const grav = speeds.Gravity;
+  //     const isFF = p.Flags.IsFastFalling;
+  //     const fallSpeed = isFF ? speeds.FastFallSpeed : speeds.FallSpeed;
+  //     const GravMutliplier = isFF ? 2 : 1;
+  //     p.Velocity.AddClampedYImpulse(fallSpeed, grav * GravMutliplier);
+  //   }
+  // }
+  // public static IsPlayerGroundedOnStage(p: Player, s: Stage): boolean {
+  //   const grnd = s.StageVerticies.GetGround();
+  //   if (grnd == undefined) {
+  //     return false;
+  //   }
+  //   const grndLength = grnd.length - 1;
+  //   for (let i = 0; i < grndLength; i++) {
+  //     const va = grnd[i];
+  //     const vb = grnd[i + 1];
+  //     if (p.ECB.DetectGroundCollision(va, vb)) {
+  //       return true;
+  //     }
+  //   }
+  //   return false;
+  // }
+  // public static IsPlayerPreviouslyGroundedOnStage(
+  //   p: Player,
+  //   s: Stage
+  // ): boolean {
+  //   const grnd = s.StageVerticies.GetGround();
+  //   if (grnd == undefined) {
+  //     return false;
+  //   }
+  //   const grndLength = grnd.length - 1;
+  //   for (let i = 0; i < grndLength; i++) {
+  //     const va = grnd[i];
+  //     const vb = grnd[i + 1];
+  //     if (p.ECB.DetectPreviousGroundCollision(va, vb)) {
+  //       return true;
+  //     }
+  //   }
+  //   return false;
+  // }
+  // public static SetPlayerPosition(p: Player, x: number, y: number) {
+  //   p.Position.X = x;
+  //   p.Position.Y = y;
+  //   p.ECB.MoveToPosition(x, y);
+  //   p.LedgeDetector.MoveTo(x, y);
+  // }
+  // public static SetPlayerInitialPosition(
+  //   p: Player,
+  //   x: number,
+  //   y: number
+  // ): void {
+  //   p.Position.X = x;
+  //   p.Position.Y = y;
+  //   p.ECB.SetInitialPosition(x, y);
+  //   p.LedgeDetector.MoveTo(x, y);
+  // }
+  // public static AddToPlayerYPosition(p: Player, y: number): void {
+  //   const position = p.Position;
+  //   position.Y += y;
+  //   p.ECB.MoveToPosition(position.X, position.Y);
+  //   p.LedgeDetector.MoveTo(position.X, position.Y);
+  // }
+  // public static AddToPlayerPosition(p: Player, x: number, y: number): void {
+  //   const pos = p.Position;
+  //   pos.X += x;
+  //   pos.Y += y;
+  //   p.ECB.MoveToPosition(pos.X, pos.Y);
+  //   p.LedgeDetector.MoveTo(pos.X, pos.Y);
+  // }
 }

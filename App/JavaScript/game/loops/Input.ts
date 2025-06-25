@@ -1,4 +1,4 @@
-import { GAME_EVENTS } from '../engine/finite-state-machine/PlayerStates';
+import { GAME_EVENT_IDS } from '../engine/player/finite-state-machine/PlayerStates';
 import { PlayerHelpers } from '../engine/player/playerOrchestrator';
 import { World } from '../engine/world/world';
 
@@ -120,20 +120,20 @@ function handleSpecial(
   //are we more vertical than horizontal?
   if (Math.abs(LYAxis) > Math.abs(LXAxis)) {
     if (LYAxis > 0) {
-      inputAction.Action = GAME_EVENTS.UP_SPECIAL_GE;
+      inputAction.Action = GAME_EVENT_IDS.UP_SPECIAL_GE;
       return inputAction;
     }
-    inputAction.Action = GAME_EVENTS.DOWN_SPECIAL_GE;
+    inputAction.Action = GAME_EVENT_IDS.DOWN_SPECIAL_GE;
     return inputAction;
   }
   // Is it a special on the x axis?
   if (LXAxis != 0) {
-    inputAction.Action = GAME_EVENTS.SIDE_SPECIAL_GE;
+    inputAction.Action = GAME_EVENT_IDS.SIDE_SPECIAL_GE;
     return inputAction;
   }
 
   // It is a nuetral special
-  inputAction.Action = GAME_EVENTS.SPECIAL_GE;
+  inputAction.Action = GAME_EVENT_IDS.SPECIAL_GE;
   return inputAction;
 }
 
@@ -149,11 +149,11 @@ function handleAerialAction(
     if (LXAxis > 0) {
       // facing right
       if (isFacingRight) {
-        inputAction.Action = GAME_EVENTS.F_AIR_GE;
+        inputAction.Action = GAME_EVENT_IDS.F_AIR_GE;
         return inputAction;
       }
       // facing left
-      inputAction.Action = GAME_EVENTS.B_AIR_GE;
+      inputAction.Action = GAME_EVENT_IDS.B_AIR_GE;
       return inputAction;
     }
   }
@@ -162,15 +162,15 @@ function handleAerialAction(
   if (Math.abs(LYAxis) > Math.abs(LXAxis)) {
     // input up
     if (LYAxis > 0) {
-      inputAction.Action = GAME_EVENTS.U_AIR_GE;
+      inputAction.Action = GAME_EVENT_IDS.U_AIR_GE;
       return inputAction;
     }
     // input down
-    inputAction.Action = GAME_EVENTS.D_AIR_GE;
+    inputAction.Action = GAME_EVENT_IDS.D_AIR_GE;
     return inputAction;
   }
 
-  inputAction.Action = GAME_EVENTS.N_AIR_GE;
+  inputAction.Action = GAME_EVENT_IDS.N_AIR_GE;
   return inputAction;
 }
 
@@ -183,22 +183,22 @@ function handleGroundedAction(
   if (Math.abs(LYAxis) > Math.abs(LXAxis)) {
     // up
     if (LYAxis > 0) {
-      inputAction.Action = GAME_EVENTS.UP_ATTACK_GE;
+      inputAction.Action = GAME_EVENT_IDS.UP_ATTACK_GE;
       return inputAction;
     }
     // down
-    inputAction.Action = GAME_EVENTS.DOWN_ATTACK_GE;
+    inputAction.Action = GAME_EVENT_IDS.DOWN_ATTACK_GE;
     return inputAction;
   }
 
   // left or right
   if (LXAxis != 0) {
-    inputAction.Action = GAME_EVENTS.SIDE_ATTACK_GE;
+    inputAction.Action = GAME_EVENT_IDS.SIDE_ATTACK_GE;
     return inputAction;
   }
 
   // nuetral
-  inputAction.Action = GAME_EVENTS.ATTACK_GE;
+  inputAction.Action = GAME_EVENT_IDS.ATTACK_GE;
   return inputAction;
 }
 
@@ -225,7 +225,7 @@ function transcribeInput(
   // Button priority is as follows: special > attack > right stick > grab > guard > jump
   const p = w.GetPlayer(pIndex)!;
   const previousInput = w.GetPlayerPreviousInput(pIndex);
-  const isAerial = !PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage);
+  const isAerial = !p.IsPlayerGroundedOnStage(w.Stage);
   const isFacingRight = p.Flags.IsFacingRight;
 
   const LXAxis = input.LXAxis;
@@ -271,14 +271,23 @@ function transcribeInput(
     if (isAerial) {
       if (isFacingRight) {
         if (RXAxis > 0) {
-          inputAction.Action = GAME_EVENTS.F_AIR_GE;
+          inputAction.Action = GAME_EVENT_IDS.F_AIR_GE;
           return inputAction;
         }
-        inputAction.Action = GAME_EVENTS.B_AIR_GE;
+
+        inputAction.Action = GAME_EVENT_IDS.B_AIR_GE;
+        return inputAction;
+      } else {
+        if (RXAxis < 0) {
+          inputAction.Action = GAME_EVENT_IDS.F_AIR_GE;
+          return inputAction;
+        }
+
+        inputAction.Action = GAME_EVENT_IDS.B_AIR_GE;
         return inputAction;
       }
     }
-    inputAction.Action = GAME_EVENTS.SIDE_ATTACK_GE;
+    inputAction.Action = GAME_EVENT_IDS.SIDE_ATTACK_GE;
     return inputAction;
   }
 
@@ -287,58 +296,60 @@ function transcribeInput(
   if (Math.abs(RYAxis) > Math.abs(RXAxis)) {
     if (isAerial) {
       if (RYAxis > 0) {
-        inputAction.Action = GAME_EVENTS.U_AIR_GE;
+        inputAction.Action = GAME_EVENT_IDS.U_AIR_GE;
         return inputAction;
       }
-      inputAction.Action = GAME_EVENTS.D_AIR_GE;
+      inputAction.Action = GAME_EVENT_IDS.D_AIR_GE;
       return inputAction;
     }
 
     if (RYAxis > 0) {
-      inputAction.Action = GAME_EVENTS.UP_ATTACK_GE;
+      inputAction.Action = GAME_EVENT_IDS.UP_ATTACK_GE;
       return inputAction;
     }
-    inputAction.Action = GAME_EVENTS.DOWN_ATTACK_GE;
+    inputAction.Action = GAME_EVENT_IDS.DOWN_ATTACK_GE;
     return inputAction;
   }
 
   // Grab was pressed
   if (input.rb) {
-    inputAction.Action = GAME_EVENTS.GRAB_GE;
+    inputAction.Action = GAME_EVENT_IDS.GRAB_GE;
     return inputAction;
   }
 
   // Guard was pressed
   if (input.rt || input.lt) {
-    inputAction.Action = GAME_EVENTS.GUARD_GE;
+    inputAction.Action = GAME_EVENT_IDS.GUARD_GE;
     return inputAction;
   }
 
   // Jump was pressed
   if (input.jump) {
-    inputAction.Action = GAME_EVENTS.JUMP_GE;
+    inputAction.Action = GAME_EVENT_IDS.JUMP_GE;
     return inputAction;
   }
 
   const diff = LYAxis - (previousInput?.LYAxsis ?? 0);
   if (LYAxis > 0.7 && diff > 0.4) {
-    inputAction.Action = GAME_EVENTS.JUMP_GE;
+    inputAction.Action = GAME_EVENT_IDS.JUMP_GE;
     return inputAction;
   }
 
   if (LYAxis < -0.5) {
-    inputAction.Action = GAME_EVENTS.DOWN_GE;
+    inputAction.Action = GAME_EVENT_IDS.DOWN_GE;
     return inputAction;
   }
 
   if (Math.abs(LXAxis) > 0) {
     inputAction.Action =
-      Math.abs(LXAxis) > 0.6 ? GAME_EVENTS.MOVE_FAST_GE : GAME_EVENTS.MOVE_GE;
+      Math.abs(LXAxis) > 0.6
+        ? GAME_EVENT_IDS.MOVE_FAST_GE
+        : GAME_EVENT_IDS.MOVE_GE;
     return inputAction;
   }
 
   // Nothing was pressed
-  inputAction.Action = GAME_EVENTS.IDLE_GE;
+  inputAction.Action = GAME_EVENT_IDS.IDLE_GE;
   return inputAction;
 }
 
@@ -373,7 +384,7 @@ function clampStick(x: number, y: number) {
 
 export function NewInputAction() {
   return {
-    Action: GAME_EVENTS.IDLE_GE,
+    Action: GAME_EVENT_IDS.IDLE_GE,
     LXAxsis: 0,
     LYAxsis: 0,
     RXAxis: 0,

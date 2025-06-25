@@ -1,8 +1,8 @@
 import { Jazz } from '../../JavaScript/game/engine/jazz';
 import {
-  GAME_EVENTS,
-  STATES,
-} from '../../JavaScript/game/engine/finite-state-machine/PlayerStates';
+  GAME_EVENT_IDS,
+  STATE_IDS,
+} from '../../JavaScript/game/engine/player/finite-state-machine/PlayerStates';
 import { InputAction } from '../../JavaScript/game/loops/Input';
 import { RenderData } from '../../JavaScript/game/render/debug-2d';
 import { PlayerHelpers } from '../../JavaScript/game/engine/player/playerOrchestrator';
@@ -16,10 +16,10 @@ test('test', () => {
     610,
     200
   );
-  engine.World!.GetStateMachine(0)!.SetInitialState(STATES.N_FALL_S);
+  engine.World!.GetStateMachine(0)!.SetInitialState(STATE_IDS.N_FALL_S);
 
   const ia: InputAction = {
-    Action: GAME_EVENTS.IDLE_GE,
+    Action: GAME_EVENT_IDS.IDLE_GE,
     LXAxsis: 0,
     LYAxsis: 0,
     RXAxis: 0,
@@ -55,10 +55,10 @@ test('test fast fall to ground', () => {
     610,
     430
   );
-  engine.World!.GetStateMachine(0)!.SetInitialState(STATES.N_FALL_S);
+  engine.World!.GetStateMachine(0)!.SetInitialState(STATE_IDS.N_FALL_S);
 
   let ia: InputAction = {
-    Action: GAME_EVENTS.IDLE_GE,
+    Action: GAME_EVENT_IDS.IDLE_GE,
     LXAxsis: 0,
     LYAxsis: 0,
     RXAxis: 0,
@@ -69,7 +69,7 @@ test('test fast fall to ground', () => {
   engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();
 
-  ia.Action = GAME_EVENTS.DOWN_GE;
+  ia.Action = GAME_EVENT_IDS.DOWN_GE;
 
   engine.UpdateInputForCurrentFrame(ia, 0);
   engine.Tick();

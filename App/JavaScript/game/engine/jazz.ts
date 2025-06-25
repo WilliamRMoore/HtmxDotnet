@@ -41,7 +41,7 @@ export class Jazz implements IJazz {
       const charConfig = new DefaultCharacterConfig();
       const p = new Player(i, charConfig);
       this.world.SetPlayer(p);
-      PlayerHelpers.SetPlayerInitialPosition(p, pos.X, pos.Y);
+      p.SetPlayerInitialPosition(pos.X, pos.Y);
     }
     const s = defaultStage();
     this.world.SetStage(s);

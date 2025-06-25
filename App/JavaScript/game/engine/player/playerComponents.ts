@@ -1,11 +1,12 @@
 import {
   AttackGameEventMappings,
   attackId,
+  gameEventId,
   Idle,
   stateId,
-  STATES,
-} from '../finite-state-machine/PlayerStates';
-import { FSMState } from '../finite-state-machine/PlayerStateMachine';
+  STATE_IDS,
+} from './finite-state-machine/PlayerStates';
+import { FSMState } from './finite-state-machine/PlayerStateMachine';
 import {
   CreateConvexHull,
   FlatVec,
@@ -15,7 +16,6 @@ import { FillArrayWithFlatVec } from '../utils';
 import { Player } from './playerOrchestrator';
 import { Clamp } from '../utils';
 import { Circle } from '../physics/circle';
-import { InputAction } from '../../loops/Input';
 import { PooledVector } from '../pools/PooledVector';
 import { Pool } from '../pools/Pool';
 import { ActiveHitBubblesDTO } from '../pools/ActiveAttackHitBubbles';
@@ -59,7 +59,7 @@ export class ComponentHistory {
   readonly AttackHistory: Array<AttackSnapShot> = [];
 
   public SetPlayerToFrame(p: Player, frameNumber: number) {
-    p.Postion.SetFromSnapShot(this.PositionHistory[frameNumber]);
+    p.Position.SetFromSnapShot(this.PositionHistory[frameNumber]);
     p.FSMInfo.SetFromSnapShot(this.FsmInfoHistory[frameNumber]);
     p.Velocity.SetFromSnapShot(this.VelocityHistory[frameNumber]);
     p.Points.SetFromSnapShot(this.PlayerPointsHistory[frameNumber]);
@@ -251,7 +251,7 @@ export type FSMInfoSnapShot = {
 
 export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
   private currentState: FSMState = Idle;
-  private currentStateId: stateId = STATES.IDLE_S;
+  private currentStateId: stateId = STATE_IDS.IDLE_S;
   private currentStateFrame: number = 0;
   private readonly frameLengths: Map<stateId, number>;
 
@@ -284,11 +284,11 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
     this.currentStateFrame = 0;
   }
 
-  public GetFrameLengthOrUndefined(stateId: stateId): number | undefined {
+  public GetFrameLengthForState(stateId: stateId): number | undefined {
     return this.frameLengths.get(stateId);
   }
 
-  public GetFrameLenthOrUndefinedForCurrentState(): number | undefined {
+  public GetCurrentStateFrameLength(): number | undefined {
     return this.frameLengths.get(this.currentStateId);
   }
 
@@ -1366,8 +1366,7 @@ export class AttackComponment implements IHistoryEnabled<AttackSnapShot> {
     return this.currentAttack;
   }
 
-  public SetCurrentAttack(ia: InputAction): void {
-    const gameEventId = ia.Action;
+  public SetCurrentAttack(gameEventId: gameEventId): void {
     const attackId = AttackGameEventMappings.get(gameEventId);
     if (attackId === undefined) {
       return;
@@ -1379,50 +1378,6 @@ export class AttackComponment implements IHistoryEnabled<AttackSnapShot> {
     }
 
     this.currentAttack = attack;
-    // const gameEventID = ia.Action;
-    // const grounded = PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage!);
-
-    // //neutral attack
-    // if (gameEventID === GAME_EVENTS.ATTACK_GE && grounded) {
-    //   const conditionsLength = AttackDecisions.length;
-    //   for (let i = 0; i < conditionsLength; i++) {
-    //     const cond = AttackDecisions[i];
-    //     const attackId = RunAttackCondition(cond, w, p.ID);
-    //     if (attackId !== undefined) {
-    //       this.currentAttack = this.attacks.get(attackId);
-    //       return;
-    //     }
-    //   }
-    //   return;
-    // }
-
-    // //neutral air
-    // if (gameEventID === GAME_EVENTS.AIR_ATTACK_GE && !grounded) {
-
-    //   const constionsLength = NeutralAirConditions.length;
-    //   for (let i = 0; i < constionsLength; i++) {
-    //     const cond = NeutralAirConditions[i];
-    //     const attackId = RunAttackCondition(cond, w, p.ID);
-    //     if (attackId !== undefined) {
-    //       this.currentAttack = this.attacks.get(attackId);
-    //       return;
-    //     }
-    //   }
-    //   return;
-    // }
-
-    // if (gameEventID === GAME_EVENTS.DOWN_SPECIAL_GE && grounded) {
-    //   const conditionalsLength = DownSpecialConditions.length;
-    //   for (let i = 0; i < conditionalsLength; i++) {
-    //     const cond = DownSpecialConditions[i];
-    //     const attackId = RunAttackCondition(cond, w, p.ID);
-    //     if (attackId !== undefined) {
-    //       this.currentAttack = this.attacks.get(attackId);
-    //       return;
-    //     }
-    //   }
-    //   return;
-    // }
   }
 
   public ZeroCurrentAttack(): void {

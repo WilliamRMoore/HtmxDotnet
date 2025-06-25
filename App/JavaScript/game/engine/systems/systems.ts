@@ -3,9 +3,12 @@ import {
   IntersectsCircles,
   IntersectsPolygons,
 } from '../physics/collisions';
-import { GAME_EVENTS, STATES } from '../finite-state-machine/PlayerStates';
+import {
+  GAME_EVENT_IDS,
+  STATE_IDS,
+} from '../player/finite-state-machine/PlayerStates';
 import { World } from '../world/world';
-import { StateMachine } from '../finite-state-machine/PlayerStateMachine';
+import { StateMachine } from '../player/finite-state-machine/PlayerStateMachine';
 import { Player, PlayerHelpers } from '../player/playerOrchestrator';
 import { AttackResult } from '../pools/AttackResult';
 import { PooledVector } from '../pools/PooledVector';
@@ -33,8 +36,8 @@ export function StageCollisionDetection(
     const p = players[playerIndex];
     const sm = stateMachines[playerIndex];
     const playerVerts = p.ECB.GetHull();
-    const grnd = PlayerHelpers.IsPlayerGroundedOnStage(p, stage);
-    const prvGrnd = PlayerHelpers.IsPlayerPreviouslyGroundedOnStage(p, stage);
+    const grnd = p.IsPlayerGroundedOnStage(stage);
+    const prvGrnd = p.IsPlayerPreviouslyGroundedOnStage(stage);
     const pFlags = p.Flags;
 
     if (
@@ -45,26 +48,18 @@ export function StageCollisionDetection(
       const stageGround = stage.StageVerticies.GetGround();
       const leftStagePoint = stageGround[0];
       const rightStagePoint = stageGround[1];
-      const position = p.Postion;
+      const position = p.Position;
 
       // Snap to nearest ledge regardless of facing
       if (
         Math.abs(position.X - leftStagePoint.X) <
         Math.abs(position.X - rightStagePoint.X)
       ) {
-        PlayerHelpers.SetPlayerPosition(
-          p,
-          leftStagePoint.X + 0.1,
-          leftStagePoint.Y
-        );
+        p.SetPlayerPosition(leftStagePoint.X + 0.1, leftStagePoint.Y);
       } else {
-        PlayerHelpers.SetPlayerPosition(
-          p,
-          rightStagePoint.X - 0.1,
-          rightStagePoint.Y
-        );
+        p.SetPlayerPosition(rightStagePoint.X - 0.1, rightStagePoint.Y);
       }
-      sm.UpdateFromWorld(GAME_EVENTS.LAND_GE);
+      sm.UpdateFromWorld(GAME_EVENT_IDS.LAND_GE);
       continue;
     }
 
@@ -80,7 +75,7 @@ export function StageCollisionDetection(
     if (collisionResult.Collision) {
       const normalX = collisionResult.NormX;
       const normalY = collisionResult.NormY;
-      const pPos = p.Postion;
+      const pPos = p.Position;
       const yOffset = p.ECB.YOffset;
       const playerPosDTO = vecPool.Rent().SetXY(pPos.X, pPos.Y);
       const move = vecPool
@@ -109,9 +104,11 @@ export function StageCollisionDetection(
         }
 
         playerPosDTO.Add(move);
-        PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
+        p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
         sm.UpdateFromWorld(
-          p.Velocity.Y < 7 ? GAME_EVENTS.SOFT_LAND_GE : GAME_EVENTS.LAND_GE
+          p.Velocity.Y < 7
+            ? GAME_EVENT_IDS.SOFT_LAND_GE
+            : GAME_EVENT_IDS.LAND_GE
         );
 
         continue;
@@ -121,7 +118,7 @@ export function StageCollisionDetection(
       if (normalX > 0 && normalY == 0) {
         move.AddToX(correctionDepth);
         playerPosDTO.Add(move);
-        PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
+        p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
 
         continue;
       }
@@ -130,7 +127,7 @@ export function StageCollisionDetection(
       if (normalX < 0 && normalY == 0) {
         move.AddToX(-correctionDepth);
         playerPosDTO.Add(move);
-        PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
+        p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
 
         continue;
       }
@@ -139,7 +136,7 @@ export function StageCollisionDetection(
       if (normalX == 0 && normalY < 0) {
         move.AddToY(-correctionDepth);
         playerPosDTO.Add(move);
-        PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
+        p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
 
         continue;
       }
@@ -148,14 +145,14 @@ export function StageCollisionDetection(
       if (Math.abs(normalX) > 0 && normalY > 0) {
         move.AddToX(move.X <= 0 ? move.Y : -move.Y); // add the y value into x
         playerPosDTO.Add(move);
-        PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
+        p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
 
         continue;
       }
 
       if (Math.abs(normalX) > 0 && normalY > 0) {
         playerPosDTO.Add(move);
-        PlayerHelpers.SetPlayerPosition(p, playerPosDTO.X, playerPosDTO.Y);
+        p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
 
         continue;
       }
@@ -163,8 +160,8 @@ export function StageCollisionDetection(
 
     // no collision
 
-    if (grnd === false && p.FSMInfo.CurrentStatetId != STATES.LEDGE_GRAB_S) {
-      sm.UpdateFromWorld(GAME_EVENTS.FALL_GE);
+    if (grnd === false && p.FSMInfo.CurrentStatetId != STATE_IDS.LEDGE_GRAB_S) {
+      sm.UpdateFromWorld(GAME_EVENT_IDS.FALL_GE);
       continue;
     }
   }
@@ -194,11 +191,11 @@ export function LedgeGrabDetection(
     const flags = p.Flags;
     const ecb = p.ECB;
 
-    if (p.Velocity.Y < 0 || p.FSMInfo.CurrentStatetId == STATES.JUMP_S) {
+    if (p.Velocity.Y < 0 || p.FSMInfo.CurrentStatetId == STATE_IDS.JUMP_S) {
       continue;
     }
 
-    if (PlayerHelpers.IsPlayerGroundedOnStage(p, stage)) {
+    if (p.IsPlayerGroundedOnStage(stage)) {
       continue;
     }
 
@@ -219,9 +216,8 @@ export function LedgeGrabDetection(
       );
 
       if (intersectsLeftLedge.Collision) {
-        sm.UpdateFromWorld(GAME_EVENTS.LEDGE_GRAB_GE);
-        PlayerHelpers.SetPlayerPosition(
-          p,
+        sm.UpdateFromWorld(GAME_EVENT_IDS.LEDGE_GRAB_GE);
+        p.SetPlayerPosition(
           leftLedge[0].X - 25,
           leftLedge[0].Y + (ecb.Bottom.Y - ecb.Top.Y)
         );
@@ -237,9 +233,8 @@ export function LedgeGrabDetection(
       projResPool
     );
     if (intersectsRightLedge.Collision) {
-      sm.UpdateFromWorld(GAME_EVENTS.LEDGE_GRAB_GE);
-      PlayerHelpers.SetPlayerPosition(
-        p,
+      sm.UpdateFromWorld(GAME_EVENT_IDS.LEDGE_GRAB_GE);
+      p.SetPlayerPosition(
         rightLedge[0].X + 25,
         rightLedge[0].Y + (ecb.Bottom.Y - ecb.Top.Y)
       );
@@ -262,7 +257,7 @@ export function PlayerCollisionDetection(
     const checkPlayerStateId = checkPlayer.FSMInfo.CurrentState.StateId;
 
     if (
-      checkPlayerStateId == STATES.LEDGE_GRAB_S ||
+      checkPlayerStateId == STATE_IDS.LEDGE_GRAB_S ||
       checkPlayer.Flags.IsInHitPause
     ) {
       continue;
@@ -275,7 +270,7 @@ export function PlayerCollisionDetection(
       const otherPlayerStateId = otherPlayer.FSMInfo.CurrentState.StateId;
 
       if (
-        otherPlayerStateId == STATES.LEDGE_GRAB_S ||
+        otherPlayerStateId == STATE_IDS.LEDGE_GRAB_S ||
         otherPlayer.Flags.IsInHitPause
       ) {
         continue;
@@ -292,8 +287,8 @@ export function PlayerCollisionDetection(
       );
 
       if (collision.Collision) {
-        const checkPlayerPos = checkPlayer.Postion;
-        const otherPlayerPos = otherPlayer.Postion;
+        const checkPlayerPos = checkPlayer.Position;
+        const otherPlayerPos = otherPlayer.Position;
         const checkPlayerX = checkPlayerPos.X;
         const checkPlayerY = checkPlayerPos.Y;
         const otherPlayerX = otherPlayerPos.X;
@@ -302,29 +297,13 @@ export function PlayerCollisionDetection(
         const moveX = 1.5;
 
         if (checkPlayerX >= otherPlayerX) {
-          PlayerHelpers.SetPlayerPosition(
-            checkPlayer,
-            checkPlayerX + moveX / 2,
-            checkPlayerY
-          );
-          PlayerHelpers.SetPlayerPosition(
-            otherPlayer,
-            otherPlayerX - moveX / 2,
-            otherPlayerY
-          );
+          checkPlayer.SetPlayerPosition(checkPlayerX + moveX / 2, checkPlayerY);
+          otherPlayer.SetPlayerPosition(otherPlayerX - moveX / 2, otherPlayerY);
           continue;
         }
 
-        PlayerHelpers.SetPlayerPosition(
-          checkPlayer,
-          checkPlayerX - moveX / 2,
-          checkPlayerY
-        );
-        PlayerHelpers.SetPlayerPosition(
-          otherPlayer,
-          otherPlayerX + moveX / 2,
-          otherPlayerY
-        );
+        checkPlayer.SetPlayerPosition(checkPlayerX - moveX / 2, checkPlayerY);
+        otherPlayer.SetPlayerPosition(otherPlayerX + moveX / 2, otherPlayerY);
       }
     }
   }
@@ -344,9 +323,15 @@ export function Gravity(
 
     if (
       p.Flags.HasGravity &&
-      !PlayerHelpers.IsPlayerGroundedOnStage(p, stage)
+      !p.IsPlayerGroundedOnStage(stage)
+      //!PlayerHelpers.IsPlayerGroundedOnStage(p, stage)
     ) {
-      PlayerHelpers.AddGravityToPlayer(p, stage);
+      const speeds = p.Speeds;
+      const grav = speeds.Gravity;
+      const isFF = p.Flags.IsFastFalling;
+      const fallSpeed = isFF ? speeds.FastFallSpeed : speeds.FallSpeed;
+      const GravMutliplier = isFF ? 2 : 1;
+      p.Velocity.AddClampedYImpulse(fallSpeed, grav * GravMutliplier);
     }
   }
 }
@@ -447,7 +432,7 @@ function resolveHitResult(
 
   pA.Flags.SetHitPauseFrames(Math.floor(hitStop * 0.75));
 
-  if (pA.Postion.X > pB.Postion.X) {
+  if (pA.Position.X > pB.Position.X) {
     pB.Flags.FaceRight();
   } else {
     pB.Flags.FaceLeft();
@@ -458,7 +443,7 @@ function resolveHitResult(
 
   const pBSm = stateMachines[pB.ID];
 
-  pBSm.UpdateFromWorld(GAME_EVENTS.HIT_STOP_GE);
+  pBSm.UpdateFromWorld(GAME_EVENT_IDS.HIT_STOP_GE);
 }
 
 /**
@@ -521,7 +506,9 @@ function p1VsP2(
       const pAPrevPositionDto = vecPool
         .Rent()
         .SetFromFlatVec(pAPositionHistory[previousWorldFrame]);
-      const pACurPositionDto = vecPool.Rent().SetXY(pA.Postion.X, pA.Postion.Y);
+      const pACurPositionDto = vecPool
+        .Rent()
+        .SetXY(pA.Position.X, pA.Position.Y);
       const currentStateFrame = pAstateFrame;
       const pAFacingRight = pA.Flags.IsFacingRight;
 
@@ -546,7 +533,7 @@ function p1VsP2(
           currentStateFrame - 1 < 0 ? 0 : currentStateFrame - 1
         ) ?? vecPool.Rent().SetXY(pACurPositionDto.X, pACurPositionDto.Y);
 
-      const pBPosition = pB.Postion;
+      const pBPosition = pB.Position;
 
       const pBStartHurtDto = pBHurtBubble.GetStartPosition(
         pBPosition.X,
@@ -656,7 +643,7 @@ export function ApplyVelocty(
     }
 
     const speeds = p.Speeds;
-    const grounded = PlayerHelpers.IsPlayerGroundedOnStage(p, stage);
+    const grounded = p.IsPlayerGroundedOnStage(stage); //PlayerHelpers.IsPlayerGroundedOnStage(p, stage);
     const playerVelocity = p.Velocity;
     const pvx = playerVelocity.X;
     const pvy = playerVelocity.Y;
@@ -666,7 +653,8 @@ export function ApplyVelocty(
     const groundedVelocityDecay = speeds.GroundedVelocityDecay;
     const aerialVelocityDecay = speeds.AerialVelocityDecay;
 
-    PlayerHelpers.AddToPlayerPosition(p, pvx, pvy);
+    p.AddToPlayerPosition(pvx, pvy);
+    //PlayerHelpers.AddToPlayerPosition(p, pvx, pvy);
 
     if (grounded) {
       if (pvx > 0) {
@@ -733,7 +721,7 @@ export function OutOfBoundsCheck(
     const p = playerArr[playerIndex];
     const sm = playerStateMachineArr[playerIndex];
 
-    const pPos = p.Postion;
+    const pPos = p.Position;
     const pY = pPos.Y;
     const pX = pPos.X;
     const deathBoundry = stage.DeathBoundry!;
@@ -763,7 +751,7 @@ export function OutOfBoundsCheck(
 
 function KillPlayer(p: Player, sm: StateMachine) {
   // reset player to spawn point
-  PlayerHelpers.SetPlayerInitialPosition(p, 610, 300);
+  p.SetPlayerInitialPosition(610, 300); //.SetPlayerInitialPosition(610, 300);
   // reset any stats
   p.Jump.ResetJumps();
   p.Jump.IncrementJumps();
@@ -771,7 +759,7 @@ function KillPlayer(p: Player, sm: StateMachine) {
   p.Velocity.Y = 0;
   p.Points.SubtractMatchPoints(1);
   p.Points.ResetDamagePoints();
-  sm.ForceState(STATES.N_FALL_S);
+  sm.ForceState(STATE_IDS.N_FALL_S);
   // reduce stock count
 }
 
@@ -785,7 +773,7 @@ export function RecordHistory(
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = playerArr[playerIndex]!;
     const history = playerHistories[playerIndex];
-    history.PositionHistory[frameNumber] = p.Postion.SnapShot();
+    history.PositionHistory[frameNumber] = p.Position.SnapShot();
     history.FsmInfoHistory[frameNumber] = p.FSMInfo.SnapShot();
     history.PlayerPointsHistory[frameNumber] = p.Points.SnapShot();
     history.VelocityHistory[frameNumber] = p.Velocity.SnapShot();

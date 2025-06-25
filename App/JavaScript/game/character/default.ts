@@ -1,9 +1,10 @@
 import {
   attackId,
-  ATTACKS,
+  ATTACK_IDS,
+  FAerialAttack,
   stateId,
-  STATES,
-} from '../engine/finite-state-machine/PlayerStates';
+  STATE_IDS,
+} from '../engine/player/finite-state-machine/PlayerStates';
 import { FlatVec } from '../engine/physics/vector';
 import {
   Attack,
@@ -46,29 +47,31 @@ export class DefaultCharacterConfig {
   public Weight: number;
 
   constructor() {
-    const neutralAttack = GetNutralAttackNewAPI();
+    const neutralAttack = GetNAir();
     const DownSpecial = GetDownSpecial();
     const neutralAir = GetNeutralAir();
+    const fAir = GetFAir();
 
-    this.FrameLengths.set(STATES.START_WALK_S, 5)
-      .set(STATES.JUMP_SQUAT_S, 5)
-      .set(STATES.TURN_S, 3)
-      .set(STATES.DASH_S, 20)
-      .set(STATES.DASH_TURN_S, 1)
-      .set(STATES.RUN_TURN_S, 20)
-      .set(STATES.STOP_RUN_S, 15)
-      .set(STATES.JUMP_S, 15)
-      .set(STATES.AIR_DODGE_S, 22)
-      .set(STATES.LAND_S, 15)
-      .set(STATES.SOFT_LAND_S, 2)
-      .set(STATES.ATTACK_S, neutralAttack.TotalFrameLength)
-      .set(STATES.N_AIR_S, neutralAir.TotalFrameLength)
-      .set(STATES.DOWN_SPECIAL_S, DownSpecial.TotalFrameLength);
+    this.FrameLengths.set(STATE_IDS.START_WALK_S, 5)
+      .set(STATE_IDS.JUMP_SQUAT_S, 5)
+      .set(STATE_IDS.TURN_S, 3)
+      .set(STATE_IDS.DASH_S, 20)
+      .set(STATE_IDS.DASH_TURN_S, 1)
+      .set(STATE_IDS.RUN_TURN_S, 20)
+      .set(STATE_IDS.STOP_RUN_S, 15)
+      .set(STATE_IDS.JUMP_S, 15)
+      .set(STATE_IDS.AIR_DODGE_S, 22)
+      .set(STATE_IDS.LAND_S, 15)
+      .set(STATE_IDS.SOFT_LAND_S, 2)
+      .set(STATE_IDS.ATTACK_S, neutralAttack.TotalFrameLength)
+      .set(STATE_IDS.N_AIR_S, neutralAir.TotalFrameLength)
+      .set(STATE_IDS.F_AIR_S, fAir.TotalFrameLength)
+      .set(STATE_IDS.DOWN_SPECIAL_S, DownSpecial.TotalFrameLength);
 
     this.SCB = new SpeedsComponentBuilder();
     this.SCB.SetWalkSpeeds(6, 1.6);
     this.SCB.SetRunSpeeds(10, 2.2);
-    this.SCB.SetFallSpeeds(20, 10, 0.7);
+    this.SCB.SetFallSpeeds(16, 9, 0.6);
     this.SCB.SetAerialSpeeds(0.7, 9, 1.8);
     this.SCB.SetDashSpeeds(3, 13);
     this.SCB.SetAirDodgeSpeed(20);
@@ -82,16 +85,17 @@ export class DefaultCharacterConfig {
 
     this.Weight = 110;
 
-    this.JumpVelocity = 18;
+    this.JumpVelocity = 17;
     this.NumberOfJumps = 2;
 
     this.LedgeBoxHeight = 35;
     this.LedgeBoxWidth = 80;
     this.ledgeBoxYOffset = -130;
     this.attacks
-      .set(ATTACKS.NUETRAL_ATTACK, neutralAttack)
-      .set(ATTACKS.DOWN_SPECIAL, DownSpecial)
-      .set(ATTACKS.N_AIR_ATTACK, neutralAir);
+      .set(ATTACK_IDS.NUETRAL_ATTACK, neutralAttack)
+      .set(ATTACK_IDS.DOWN_SPECIAL, DownSpecial)
+      .set(ATTACK_IDS.N_AIR_ATTACK, neutralAir)
+      .set(ATTACK_IDS.F_AIR_ATTACK, fAir);
   }
 
   private populateHurtCircles() {
@@ -102,7 +106,7 @@ export class DefaultCharacterConfig {
   }
 }
 
-function GetNutralAttackNewAPI() {
+function GetNAir() {
   const hb1OffSets = new Map<frameNumber, FlatVec>();
   const hb1Frame3Offset = new FlatVec(30, -50);
   const hb1Frame4Offset = new FlatVec(60, -50);
@@ -197,6 +201,49 @@ function GetNeutralAir() {
   return bldr.Build();
 }
 
+function GetFAir() {
+  // FAir attack parameters
+  const fairTotalFrames = 42;
+  const fairActiveStart = 11;
+  const fairActiveEnd = 22;
+  const fairFramesActive = fairActiveEnd - fairActiveStart + 1;
+  const fairRadius = 20;
+  const fairDamage = 17;
+  const fairBaseKnockback = 63;
+  const fairLaunchAngle = 10;
+
+  // Bubble 1: closer to player, rotates from above to below, retracts inward
+  const bubble1Offsets = generateFairBubbleOffsets(
+    -Math.PI / 2, // start above (90deg)
+    Math.PI / 2, // end below (270deg)
+    fairFramesActive,
+    130, // distance from player center
+    20 // retract inwards by 10px at end
+  );
+
+  // Bubble 2: further from player, stacked above, same rotation
+  const bubble2Offsets = generateFairBubbleOffsets(
+    -Math.PI / 2,
+    Math.PI / 2,
+    fairFramesActive,
+    110,
+    20
+  );
+
+  // Build the FAir attack using AttackBuilder
+  const FairAttack = new AttackBuilder('FAir')
+    .WithTotalFrames(fairTotalFrames)
+    .WithInteruptableFrame(fairTotalFrames)
+    .WithBaseKnockBack(fairBaseKnockback)
+    .WithKnockBackScaling(0)
+    .WithGravity(true)
+    .WithHitBubble(fairDamage, fairRadius, 1, fairLaunchAngle, bubble1Offsets)
+    .WithHitBubble(fairDamage, fairRadius, 1, fairLaunchAngle, bubble2Offsets)
+    .Build();
+
+  return FairAttack;
+}
+
 function GetDownSpecial() {
   const activeFrames = 77;
   const impulses = new Map<frameNumber, FlatVec>();
@@ -229,4 +276,25 @@ function GetDownSpecial() {
     .WithImpulses(impulses, 15);
 
   return blrd.Build();
+}
+
+// Utility to generate offsets for a rotating hit bubble
+function generateFairBubbleOffsets(
+  startAngle: number,
+  endAngle: number,
+  frames: number,
+  distance: number,
+  inwardRetract: number
+): Map<number, FlatVec> {
+  const offsets = new Map<number, FlatVec>();
+  for (let i = 0; i < frames; i++) {
+    const t = i / (frames - 1);
+    const angle = startAngle + (endAngle - startAngle) * t;
+    const retract = inwardRetract * t;
+    const r = distance - retract;
+    const x = r * Math.cos(angle);
+    const y = r * Math.sin(angle);
+    offsets.set(12 + i, new FlatVec(x, y));
+  }
+  return offsets;
 }

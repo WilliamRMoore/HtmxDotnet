@@ -1,4 +1,4 @@
-import { StateMachine } from '../finite-state-machine/PlayerStateMachine';
+import { StateMachine } from '../player/finite-state-machine/PlayerStateMachine';
 import { InputAction } from '../../loops/Input';
 import { InputStorageManagerLocal } from '../engine-state-management/Managers';
 import { ComponentHistory } from '../player/playerComponents';

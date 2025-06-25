@@ -1,6 +1,6 @@
-import { Player, PlayerHelpers } from '../player/playerOrchestrator';
-import { EaseIn } from '../utils';
-import { World } from '../world/world';
+import { Player, PlayerHelpers } from '../playerOrchestrator';
+import { EaseIn } from '../../utils';
+import { World } from '../../world/world';
 import { FSMState } from './PlayerStateMachine';
 
 // Aliases =========================================================================
@@ -44,7 +44,7 @@ class _GameEvents {
   public readonly TUBMLE_GE = 27;
 }
 
-export const GAME_EVENTS = new _GameEvents();
+export const GAME_EVENT_IDS = new _GameEvents();
 
 //Postfixed _S for state, so you know you are looking at state Ids.
 class _STATES {
@@ -80,7 +80,8 @@ class _STATES {
   public readonly CROUCH_S = 29 as stateId;
 }
 
-export const STATES = new _STATES();
+export const STATE_IDS = new _STATES();
+
 class _ATTACKS {
   public readonly NUETRAL_ATTACK = 0 as attackId;
   public readonly SIDE_ATTACK = 1 as attackId;
@@ -100,7 +101,7 @@ class _ATTACKS {
   public readonly DOWN_SPECIAL = 15 as attackId;
 }
 
-export const ATTACKS = new _ATTACKS();
+export const ATTACK_IDS = new _ATTACKS();
 
 // State mapping classes ===========================================================
 
@@ -213,7 +214,7 @@ const IdleToDashturn: condition = {
 
     return false;
   },
-  StateId: STATES.DASH_TURN_S,
+  StateId: STATE_IDS.DASH_TURN_S,
 };
 
 const IdleToTurn: condition = {
@@ -233,7 +234,7 @@ const IdleToTurn: condition = {
 
     return false;
   },
-  StateId: STATES.TURN_S,
+  StateId: STATE_IDS.TURN_S,
 };
 
 const WalkToTurn: condition = {
@@ -263,7 +264,7 @@ const WalkToTurn: condition = {
 
     return false;
   },
-  StateId: STATES.TURN_S,
+  StateId: STATE_IDS.TURN_S,
 };
 
 const RunToTurn: condition = {
@@ -294,7 +295,7 @@ const RunToTurn: condition = {
 
     return false;
   },
-  StateId: STATES.RUN_TURN_S,
+  StateId: STATE_IDS.RUN_TURN_S,
 };
 
 const DashToTurn: condition = {
@@ -332,7 +333,21 @@ const DashToTurn: condition = {
 
     return false;
   },
-  StateId: STATES.DASH_TURN_S,
+  StateId: STATE_IDS.DASH_TURN_S,
+};
+
+const FallToFFall: condition = {
+  Name: 'FallToFFall',
+  ConditionFunc: (w, playerIndex) => {
+    const currentInput = w.GetPlayerCurrentInput(playerIndex)!;
+    const previousInput = w.GetPlayerPreviousInput(playerIndex)!;
+
+    if (currentInput.LYAxsis < -0.8 && previousInput.LYAxsis > -0.8) {
+      return true;
+    }
+    return false;
+  },
+  StateId: STATE_IDS.F_FALL_S,
 };
 
 const ToJump: condition = {
@@ -341,7 +356,7 @@ const ToJump: condition = {
     const player = w.GetPlayer(playerIndex);
     const currentInput = w.GetPlayerCurrentInput(playerIndex)!;
     const prevInput = w.GetPlayerPreviousInput(playerIndex);
-    const jumpId = GAME_EVENTS.JUMP_GE;
+    const jumpId = GAME_EVENT_IDS.JUMP_GE;
 
     if (
       currentInput.Action === jumpId &&
@@ -353,19 +368,19 @@ const ToJump: condition = {
 
     return false;
   },
-  StateId: STATES.JUMP_S,
+  StateId: STATE_IDS.JUMP_S,
 };
 
 const ToAirDodge: condition = {
   Name: 'ToAirDodge',
   ConditionFunc: (w, playerIndex) => {
     const currentInput = w.GetPlayerCurrentInput(playerIndex);
-    if (currentInput?.Action == GAME_EVENTS.GUARD_GE) {
+    if (currentInput?.Action == GAME_EVENT_IDS.GUARD_GE) {
       return true;
     }
     return false;
   },
-  StateId: STATES.AIR_DODGE_S,
+  StateId: STATE_IDS.AIR_DODGE_S,
 };
 
 const DashDefaultRun: condition = {
@@ -385,7 +400,7 @@ const DashDefaultRun: condition = {
 
     return false;
   },
-  StateId: STATES.RUN_S,
+  StateId: STATE_IDS.RUN_S,
 };
 
 const DashDefaultIdle: condition = {
@@ -399,7 +414,7 @@ const DashDefaultIdle: condition = {
 
     return false;
   },
-  StateId: STATES.IDLE_S,
+  StateId: STATE_IDS.IDLE_S,
 };
 
 const TurnDefaultWalk: condition = {
@@ -414,7 +429,7 @@ const TurnDefaultWalk: condition = {
     }
     return false;
   },
-  StateId: STATES.WALK_S,
+  StateId: STATE_IDS.WALK_S,
 };
 
 const TurnToDash: condition = {
@@ -439,7 +454,7 @@ const TurnToDash: condition = {
 
     return false;
   },
-  StateId: STATES.DASH_S,
+  StateId: STATE_IDS.DASH_S,
 };
 
 const LandToJumpSquat: condition = {
@@ -454,7 +469,7 @@ const LandToJumpSquat: condition = {
       return false;
     }
 
-    if (ia?.Action !== GAME_EVENTS.JUMP_GE) {
+    if (ia?.Action !== GAME_EVENT_IDS.JUMP_GE) {
       return false;
     }
 
@@ -462,13 +477,25 @@ const LandToJumpSquat: condition = {
       return true;
     }
 
-    if (prevIa?.Action === GAME_EVENTS.JUMP_GE) {
+    if (prevIa?.Action === GAME_EVENT_IDS.JUMP_GE) {
       return false;
     }
 
     return true;
   },
-  StateId: STATES.JUMP_SQUAT_S,
+  StateId: STATE_IDS.JUMP_SQUAT_S,
+};
+
+const defaultToFastFall: condition = {
+  Name: 'AttackToFastFall',
+  ConditionFunc: (w: World, playerIndex: number) => {
+    const p = w.GetPlayer(playerIndex)!;
+    if (p.Flags.IsFastFalling) {
+      return true;
+    }
+    return false;
+  },
+  StateId: STATE_IDS.F_FALL_S,
 };
 
 const defaultWalk: condition = {
@@ -476,7 +503,7 @@ const defaultWalk: condition = {
   ConditionFunc: (w: World) => {
     return true;
   },
-  StateId: STATES.WALK_S,
+  StateId: STATE_IDS.WALK_S,
 };
 
 const defaultRun: condition = {
@@ -484,7 +511,7 @@ const defaultRun: condition = {
   ConditionFunc: (w: World) => {
     return true;
   },
-  StateId: STATES.RUN_S,
+  StateId: STATE_IDS.RUN_S,
 };
 
 const defaultIdle: condition = {
@@ -492,7 +519,7 @@ const defaultIdle: condition = {
   ConditionFunc: (w: World) => {
     return true;
   },
-  StateId: STATES.IDLE_S,
+  StateId: STATE_IDS.IDLE_S,
 };
 
 const defaultDash: condition = {
@@ -500,7 +527,7 @@ const defaultDash: condition = {
   ConditionFunc: (w: World) => {
     return true;
   },
-  StateId: STATES.DASH_S,
+  StateId: STATE_IDS.DASH_S,
 };
 
 const defaultJump: condition = {
@@ -508,7 +535,7 @@ const defaultJump: condition = {
   ConditionFunc: (w: World) => {
     return true;
   },
-  StateId: STATES.JUMP_S,
+  StateId: STATE_IDS.JUMP_S,
 };
 
 const defaultNFall: condition = {
@@ -516,7 +543,7 @@ const defaultNFall: condition = {
   ConditionFunc: (w: World) => {
     return true;
   },
-  StateId: STATES.N_FALL_S,
+  StateId: STATE_IDS.N_FALL_S,
 };
 
 const defaultHelpess: condition = {
@@ -524,7 +551,7 @@ const defaultHelpess: condition = {
   ConditionFunc: (w: World) => {
     return true;
   },
-  StateId: STATES.HELPESS_S,
+  StateId: STATE_IDS.HELPESS_S,
 };
 
 const LandToIdle: condition = {
@@ -538,7 +565,7 @@ const LandToIdle: condition = {
 
     return false;
   },
-  StateId: STATES.IDLE_S,
+  StateId: STATE_IDS.IDLE_S,
 };
 
 const LandToWalk: condition = {
@@ -558,7 +585,7 @@ const LandToWalk: condition = {
 
     return false;
   },
-  StateId: STATES.WALK_S,
+  StateId: STATE_IDS.WALK_S,
 };
 
 const LandToTurn: condition = {
@@ -578,7 +605,7 @@ const LandToTurn: condition = {
 
     return false;
   },
-  StateId: STATES.TURN_S,
+  StateId: STATE_IDS.TURN_S,
 };
 
 const RunStopToTurn: condition = {
@@ -598,7 +625,7 @@ const RunStopToTurn: condition = {
 
     return false;
   },
-  StateId: STATES.RUN_TURN_S,
+  StateId: STATE_IDS.RUN_TURN_S,
 };
 
 const IdleToAttack: condition = {
@@ -608,15 +635,15 @@ const IdleToAttack: condition = {
     const lastIa = w.GetPlayerPreviousInput(playerIndex);
 
     if (
-      ia!.Action === GAME_EVENTS.ATTACK_GE &&
-      lastIa!.Action != GAME_EVENTS.ATTACK_GE
+      ia!.Action === GAME_EVENT_IDS.ATTACK_GE &&
+      lastIa!.Action != GAME_EVENT_IDS.ATTACK_GE
     ) {
       return true;
     }
 
     return false;
   },
-  StateId: STATES.ATTACK_S,
+  StateId: STATE_IDS.ATTACK_S,
 };
 
 const ToDownSpecial: condition = {
@@ -626,16 +653,16 @@ const ToDownSpecial: condition = {
     const lastIa = w.GetPlayerPreviousInput(playerIndex);
 
     if (
-      ia!.Action === GAME_EVENTS.DOWN_SPECIAL_GE &&
+      ia!.Action === GAME_EVENT_IDS.DOWN_SPECIAL_GE &&
       (lastIa?.Action === undefined ||
-        lastIa!.Action !== GAME_EVENTS.DOWN_SPECIAL_GE)
+        lastIa!.Action !== GAME_EVENT_IDS.DOWN_SPECIAL_GE)
     ) {
       return true;
     }
 
     return false;
   },
-  StateId: STATES.DOWN_SPECIAL_S,
+  StateId: STATE_IDS.DOWN_SPECIAL_S,
 };
 
 const HitStopToLaunch: condition = {
@@ -649,7 +676,7 @@ const HitStopToLaunch: condition = {
 
     return true;
   },
-  StateId: STATES.LAUNCH_S,
+  StateId: STATE_IDS.LAUNCH_S,
 };
 
 const LaunchToTumble: condition = {
@@ -663,7 +690,7 @@ const LaunchToTumble: condition = {
 
     return true;
   },
-  StateId: STATES.TUMBLE_S,
+  StateId: STATE_IDS.TUMBLE_S,
 };
 
 // Attack Conditionals =================================================================
@@ -673,15 +700,15 @@ const attackToNeutral: attackCondition = {
   ConditionFunc: (w, playerIndex) => {
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
     const p = w.GetPlayer(playerIndex)!;
-    const grounded = PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage!);
+    const grounded = p.IsPlayerGroundedOnStage(w.Stage); //PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage!);
 
-    if (ia?.Action === GAME_EVENTS.ATTACK_GE && grounded) {
+    if (ia?.Action === GAME_EVENT_IDS.ATTACK_GE && grounded) {
       return true;
     }
 
     return false;
   },
-  AttackId: ATTACKS.NUETRAL_ATTACK,
+  AttackId: ATTACK_IDS.NUETRAL_ATTACK,
 };
 
 export const AttackDecisions = [attackToNeutral];
@@ -691,7 +718,7 @@ const toNuetralAir: attackCondition = {
   ConditionFunc: (p, w) => {
     return true;
   },
-  AttackId: ATTACKS.N_AIR_ATTACK,
+  AttackId: ATTACK_IDS.N_AIR_ATTACK,
 };
 
 export const NeutralAirConditions = [toNuetralAir];
@@ -701,279 +728,31 @@ const downSpecialToDownSpecialGrounded: attackCondition = {
   ConditionFunc: (w, playerIndex) => {
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
     const p = w.GetPlayer(playerIndex)!;
-    const grounded = PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage!);
+    const grounded = p.IsPlayerGroundedOnStage(w.Stage!); //PlayerHelpers.IsPlayerGroundedOnStage(p, w.Stage!);
 
-    if (ia.Action === GAME_EVENTS.DOWN_SPECIAL_GE && grounded) {
+    if (ia.Action === GAME_EVENT_IDS.DOWN_SPECIAL_GE && grounded) {
       return true;
     }
     return false;
   },
-  AttackId: ATTACKS.DOWN_SPECIAL,
+  AttackId: ATTACK_IDS.DOWN_SPECIAL,
 };
 
 export const DownSpecialConditions = [downSpecialToDownSpecialGrounded];
 
-export const AttackGameEventMappings = new Map<gameEventId, attackId>()
-  .set(GAME_EVENTS.ATTACK_GE, ATTACKS.NUETRAL_ATTACK)
-  .set(GAME_EVENTS.N_AIR_GE, ATTACKS.N_AIR_ATTACK)
-  .set(GAME_EVENTS.DOWN_SPECIAL_GE, ATTACKS.DOWN_SPECIAL);
-
-// STATE RELATIONS =====================================================================
-
-export const IDLE_STATE_RELATIONS = InitIdleRelations();
-export const START_WALK_RELATIONS = InitStartWalkRelations();
-export const TURN_RELATIONS = InitTurnWalkRelations();
-export const WALK_RELATIONS = InitWalkRelations();
-export const DASH_RELATIONS = InitDashRelations();
-export const DASH_TURN_RELATIONS = InitDashTurnRelations();
-export const RUN_RELATIONS = InitRunRelations();
-export const RUN_TURN_RELATIONS = InitRunTurnRelations();
-export const STOP_RUN_RELATIONS = InitStopRunRelations();
-export const JUMP_SQUAT_RELATIONS = InitJumpSquatRelations();
-export const JUMP_RELATIONS = InitJumpRelations();
-export const NFALL_RELATIONS = InitNeutralFallRelations();
-export const FFALL_RELATIONS = InitFastFallRelations();
-export const LAND_RELATIONS = InitLandRelations();
-export const SOFT_LAND_RELATIONS = InitSoftLandRelations();
-export const LEDGE_GRAB_RELATIONS = InitLedgeGrabRelations();
-export const AIR_DODGE_RELATIONS = InitAirDodgeRelations();
-export const HELPESS_RELATIONS = InitHelpessRelations();
-export const ATTACK_RELATIONS = InitAttackRelations();
-export const AIR_ATK_RELATIONS = InitAirAttackRelations();
-export const DOWN_SPECIAL_RELATIONS = InitDownSpecialRelations();
-export const HIT_STOP_RELATIONS = InitHitStopRelations();
-export const TUMBLE_RELATIONS = InitTumbleRelations();
-export const LAUNCH_RELATIONS = InitLaunchRelations();
-export const CROUCH_RELATIONS = InitCrouchRelations();
-
-// Init functions ====================================================================
+// StateMapping init functions ====================================================================
 
 function InitIdleRelations(): StateRelation {
-  const idle = new StateRelation(STATES.IDLE_S, InitIdleTranslations());
-  return idle;
-}
-
-function InitStartWalkRelations(): StateRelation {
-  const startWalk = new StateRelation(
-    STATES.START_WALK_S,
-    InitStartWalkTranslations()
-  );
-
-  return startWalk;
-}
-
-function InitTurnWalkRelations(): StateRelation {
-  const turnWalk = new StateRelation(STATES.TURN_S, InitTurnTranslations());
-
-  return turnWalk;
-}
-
-function InitWalkRelations(): StateRelation {
-  const walkRelations = new StateRelation(
-    STATES.WALK_S,
-    InitWalkTranslations()
-  );
-
-  return walkRelations;
-}
-
-function InitDashRelations(): StateRelation {
-  const dashRelations = new StateRelation(
-    STATES.DASH_S,
-    InitDashTranslations()
-  );
-
-  return dashRelations;
-}
-
-function InitDashTurnRelations(): StateRelation {
-  const dashTurnRelations = new StateRelation(
-    STATES.DASH_TURN_S,
-    InitDashTrunTranslations()
-  );
-
-  return dashTurnRelations;
-}
-
-function InitRunRelations(): StateRelation {
-  const runRelations = new StateRelation(STATES.RUN_S, InitRunTranslations());
-
-  return runRelations;
-}
-
-function InitRunTurnRelations(): StateRelation {
-  const runTurnRelations = new StateRelation(
-    STATES.RUN_TURN_S,
-    InitRunTurnTranslations()
-  );
-
-  return runTurnRelations;
-}
-
-function InitStopRunRelations(): StateRelation {
-  const stopRunRelations = new StateRelation(
-    STATES.STOP_RUN_S,
-    InitStopRunTranslations()
-  );
-
-  return stopRunRelations;
-}
-
-function InitJumpSquatRelations(): StateRelation {
-  const jumpSquatRelations = new StateRelation(
-    STATES.JUMP_SQUAT_S,
-    InitJumpSquatTranslations()
-  );
-
-  return jumpSquatRelations;
-}
-
-function InitJumpRelations(): StateRelation {
-  const jumpRelations = new StateRelation(
-    STATES.JUMP_S,
-    InitJumpTranslations()
-  );
-
-  return jumpRelations;
-}
-
-function InitNeutralFallRelations(): StateRelation {
-  const nFallRelations = new StateRelation(
-    STATES.N_FALL_S,
-    InitNFallTranslations()
-  );
-
-  return nFallRelations;
-}
-
-function InitFastFallRelations(): StateRelation {
-  const fastFallRelations = new StateRelation(
-    STATES.F_FALL_S,
-    InitFastFallTranslations()
-  );
-  return fastFallRelations;
-}
-
-function InitLandRelations(): StateRelation {
-  const landRelations = new StateRelation(
-    STATES.LAND_S,
-    InitLandTranslations()
-  );
-
-  return landRelations;
-}
-
-function InitSoftLandRelations(): StateRelation {
-  const softLandRelations = new StateRelation(
-    STATES.SOFT_LAND_S,
-    InitSoftLandTranslations()
-  );
-
-  return softLandRelations;
-}
-
-function InitLedgeGrabRelations(): StateRelation {
-  const LedgeGrabRelations = new StateRelation(
-    STATES.LEDGE_GRAB_S,
-    InitLedgeGrabTranslations()
-  );
-
-  return LedgeGrabRelations;
-}
-
-function InitAirDodgeRelations(): StateRelation {
-  const AirDodgeRelations = new StateRelation(
-    STATES.AIR_DODGE_S,
-    InitAirDodgeTranslations()
-  );
-
-  return AirDodgeRelations;
-}
-
-function InitHelpessRelations(): StateRelation {
-  const HelplessRelations = new StateRelation(
-    STATES.HELPESS_S,
-    InitHelpessTranslations()
-  );
-
-  return HelplessRelations;
-}
-
-function InitAttackRelations(): StateRelation {
-  const attackRelations = new StateRelation(
-    STATES.ATTACK_S,
-    InitAttackTranslations()
-  );
-
-  return attackRelations;
-}
-
-function InitAirAttackRelations(): StateRelation {
-  const airAttackRelations = new StateRelation(
-    STATES.N_AIR_S,
-    InitAirAttackTranslations()
-  );
-
-  return airAttackRelations;
-}
-
-function InitDownSpecialRelations(): StateRelation {
-  const downSpecRelations = new StateRelation(
-    STATES.DOWN_SPECIAL_S,
-    InitDownSpecialTrnaslations()
-  );
-
-  return downSpecRelations;
-}
-
-function InitHitStopRelations(): StateRelation {
-  const hitStunRelations = new StateRelation(
-    STATES.HIT_STOP_S,
-    InitHitStopTranslations()
-  );
-
-  return hitStunRelations;
-}
-
-function InitTumbleRelations(): StateRelation {
-  const TumbleRelations = new StateRelation(
-    STATES.TUMBLE_S,
-    InitTumbleTranslations()
-  );
-
-  return TumbleRelations;
-}
-
-function InitLaunchRelations(): StateRelation {
-  const launchRelations = new StateRelation(
-    STATES.LAUNCH_S,
-    InitLaunchTranslations()
-  );
-
-  return launchRelations;
-}
-
-function InitCrouchRelations(): StateRelation {
-  const crouchRelations = new StateRelation(
-    STATES.CROUCH_S,
-    InitCoruchTranslations()
-  );
-
-  return crouchRelations;
-}
-
-// Action State Mapping functions ===================================================
-
-function InitIdleTranslations() {
   const idleTranslations = new ActionStateMappings();
+
   idleTranslations._setMappings([
-    { geId: GAME_EVENTS.MOVE_GE, sId: STATES.START_WALK_S },
-    { geId: GAME_EVENTS.MOVE_FAST_GE, sId: STATES.START_WALK_S },
-    { geId: GAME_EVENTS.TURN_GE, sId: STATES.TURN_S },
-    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
-    { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
-    { geId: GAME_EVENTS.DOWN_GE, sId: STATES.CROUCH_S },
+    { geId: GAME_EVENT_IDS.MOVE_GE, sId: STATE_IDS.START_WALK_S },
+    { geId: GAME_EVENT_IDS.MOVE_FAST_GE, sId: STATE_IDS.START_WALK_S },
+    { geId: GAME_EVENT_IDS.TURN_GE, sId: STATE_IDS.TURN_S },
+    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
+    { geId: GAME_EVENT_IDS.FALL_GE, sId: STATE_IDS.N_FALL_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.DOWN_GE, sId: STATE_IDS.CROUCH_S },
   ]);
 
   const condtions: Array<condition> = [
@@ -985,16 +764,18 @@ function InitIdleTranslations() {
 
   idleTranslations._setConditions(condtions);
 
-  return idleTranslations;
+  const idle = new StateRelation(STATE_IDS.IDLE_S, idleTranslations);
+  return idle;
 }
 
-function InitStartWalkTranslations(): ActionStateMappings {
+function InitStartWalkRelations(): StateRelation {
   const startWalkTranslations = new ActionStateMappings();
+
   startWalkTranslations._setMappings([
-    { geId: GAME_EVENTS.IDLE_GE, sId: STATES.IDLE_S },
-    { geId: GAME_EVENTS.MOVE_FAST_GE, sId: STATES.DASH_S },
-    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.IDLE_GE, sId: STATE_IDS.IDLE_S },
+    { geId: GAME_EVENT_IDS.MOVE_FAST_GE, sId: STATE_IDS.DASH_S },
+    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
   ]);
 
   const conditions: Array<condition> = [WalkToTurn];
@@ -1005,14 +786,20 @@ function InitStartWalkTranslations(): ActionStateMappings {
 
   startWalkTranslations._setDefault(defaultConditions);
 
-  return startWalkTranslations;
+  const startWalk = new StateRelation(
+    STATE_IDS.START_WALK_S,
+    startWalkTranslations
+  );
+
+  return startWalk;
 }
 
-function InitTurnTranslations(): ActionStateMappings {
+function InitTurnRelations(): StateRelation {
   const turnTranslations = new ActionStateMappings();
+
   turnTranslations._setMappings([
-    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
   ]);
 
   const defaultConditions: Array<condition> = [TurnDefaultWalk, defaultIdle];
@@ -1021,31 +808,37 @@ function InitTurnTranslations(): ActionStateMappings {
 
   turnTranslations._setDefault(defaultConditions);
 
-  return turnTranslations;
+  const turnWalk = new StateRelation(STATE_IDS.TURN_S, turnTranslations);
+
+  return turnWalk;
 }
 
-function InitWalkTranslations(): ActionStateMappings {
+function InitWalkRelations(): StateRelation {
   const walkTranslations = new ActionStateMappings();
+
   walkTranslations._setMappings([
-    { geId: GAME_EVENTS.IDLE_GE, sId: STATES.IDLE_S },
-    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
-    { geId: GAME_EVENTS.DOWN_GE, sId: STATES.CROUCH_S },
+    { geId: GAME_EVENT_IDS.IDLE_GE, sId: STATE_IDS.IDLE_S },
+    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.DOWN_GE, sId: STATE_IDS.CROUCH_S },
   ]);
 
   const conditions: Array<condition> = [WalkToTurn];
 
   walkTranslations._setConditions(conditions);
 
-  return walkTranslations;
+  const walkRelations = new StateRelation(STATE_IDS.WALK_S, walkTranslations);
+
+  return walkRelations;
 }
 
-function InitDashTranslations(): ActionStateMappings {
+function InitDashRelations(): StateRelation {
   const dashTranslations = new ActionStateMappings();
+
   dashTranslations._setMappings([
-    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
-    { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
+    { geId: GAME_EVENT_IDS.FALL_GE, sId: STATE_IDS.N_FALL_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
   ]);
 
   const conditions: Array<condition> = [DashToTurn];
@@ -1056,59 +849,77 @@ function InitDashTranslations(): ActionStateMappings {
 
   dashTranslations._setDefault(defaultConditions);
 
-  return dashTranslations;
+  const dashRelations = new StateRelation(STATE_IDS.DASH_S, dashTranslations);
+
+  return dashRelations;
 }
 
-function InitDashTrunTranslations(): ActionStateMappings {
+function InitDashTurnRelations(): StateRelation {
   const dashTrunTranslations = new ActionStateMappings();
+
   dashTrunTranslations._setMappings([
-    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
   ]);
 
   dashTrunTranslations._setDefault([defaultDash]);
 
-  return dashTrunTranslations;
+  const dashTurnRelations = new StateRelation(
+    STATE_IDS.DASH_TURN_S,
+    dashTrunTranslations
+  );
+
+  return dashTurnRelations;
 }
 
-function InitRunTranslations(): ActionStateMappings {
+function InitRunRelations(): StateRelation {
   const runTranslations = new ActionStateMappings();
+
   runTranslations._setMappings([
-    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
-    { geId: GAME_EVENTS.IDLE_GE, sId: STATES.STOP_RUN_S },
-    { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
-    { geId: GAME_EVENTS.DOWN_GE, sId: STATES.CROUCH_S },
+    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
+    { geId: GAME_EVENT_IDS.IDLE_GE, sId: STATE_IDS.STOP_RUN_S },
+    { geId: GAME_EVENT_IDS.FALL_GE, sId: STATE_IDS.N_FALL_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.DOWN_GE, sId: STATE_IDS.CROUCH_S },
   ]);
 
   const conditions: Array<condition> = [RunToTurn];
 
   runTranslations._setConditions(conditions);
 
-  return runTranslations;
+  const runRelations = new StateRelation(STATE_IDS.RUN_S, runTranslations);
+
+  return runRelations;
 }
 
-function InitRunTurnTranslations(): ActionStateMappings {
-  const runTurnTranslations = new ActionStateMappings();
-  runTurnTranslations._setMappings([
-    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
+function InitRunTurnRelations(): StateRelation {
+  const runTurnMapping = new ActionStateMappings();
+
+  runTurnMapping._setMappings([
+    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
   ]);
 
-  runTurnTranslations._setDefault([defaultRun]);
+  runTurnMapping._setDefault([defaultRun]);
 
-  return runTurnTranslations;
+  const runTurnRelations = new StateRelation(
+    STATE_IDS.RUN_TURN_S,
+    runTurnMapping
+  );
+
+  return runTurnRelations;
 }
 
-function InitStopRunTranslations(): ActionStateMappings {
+function InitStopRunRelations(): StateRelation {
   const stopRunTranslations = new ActionStateMappings();
+
   stopRunTranslations._setMappings([
-    { geId: GAME_EVENTS.MOVE_FAST_GE, sId: STATES.DASH_S },
-    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_SQUAT_S },
-    { geId: GAME_EVENTS.FALL_GE, sId: STATES.N_FALL_S },
-    { geId: GAME_EVENTS.TURN_GE, sId: STATES.RUN_TURN_S },
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
-    { geId: GAME_EVENTS.DOWN_GE, sId: STATES.CROUCH_S },
+    { geId: GAME_EVENT_IDS.MOVE_FAST_GE, sId: STATE_IDS.DASH_S },
+    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
+    { geId: GAME_EVENT_IDS.FALL_GE, sId: STATE_IDS.N_FALL_S },
+    { geId: GAME_EVENT_IDS.TURN_GE, sId: STATE_IDS.RUN_TURN_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.DOWN_GE, sId: STATE_IDS.CROUCH_S },
   ]);
 
   const conditions: Array<condition> = [RunStopToTurn];
@@ -1117,195 +928,308 @@ function InitStopRunTranslations(): ActionStateMappings {
 
   stopRunTranslations._setDefault([defaultIdle]);
 
-  return stopRunTranslations;
+  const stopRunRelations = new StateRelation(
+    STATE_IDS.STOP_RUN_S,
+    stopRunTranslations
+  );
+
+  return stopRunRelations;
 }
 
-function InitJumpSquatTranslations(): ActionStateMappings {
+function InitJumpSquatRelations(): StateRelation {
   const jumpSquatTranslations = new ActionStateMappings();
 
   jumpSquatTranslations._setMappings([
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
   ]);
 
   jumpSquatTranslations._setDefault([defaultJump]);
 
-  return jumpSquatTranslations;
+  const jumpSquatRelations = new StateRelation(
+    STATE_IDS.JUMP_SQUAT_S,
+    jumpSquatTranslations
+  );
+
+  return jumpSquatRelations;
 }
 
-function InitJumpTranslations(): ActionStateMappings {
+function InitJumpRelations(): StateRelation {
   const jumpTranslations = new ActionStateMappings();
 
   jumpTranslations._setMappings([
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
-    { geId: GAME_EVENTS.N_AIR_GE, sId: STATES.N_AIR_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.N_AIR_GE, sId: STATE_IDS.N_AIR_S },
+    { geId: GAME_EVENT_IDS.F_AIR_GE, sId: STATE_IDS.F_AIR_S },
   ]);
 
   const condtions: Array<condition> = [ToJump, ToAirDodge];
 
   jumpTranslations._setConditions(condtions);
+
   jumpTranslations._setDefault([defaultNFall]);
 
-  return jumpTranslations;
+  const jumpRelations = new StateRelation(STATE_IDS.JUMP_S, jumpTranslations);
+
+  return jumpRelations;
 }
 
-function InitNFallTranslations(): ActionStateMappings {
+function InitNeutralFallRelations(): StateRelation {
   const nFallTranslations = new ActionStateMappings();
+
   nFallTranslations._setMappings([
-    { geId: GAME_EVENTS.DOWN_GE, sId: STATES.F_FALL_S },
-    { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
-    { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.SOFT_LAND_S },
-    { geId: GAME_EVENTS.LEDGE_GRAB_GE, sId: STATES.LEDGE_GRAB_S },
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
-    { geId: GAME_EVENTS.N_AIR_GE, sId: STATES.N_AIR_S },
+    { geId: GAME_EVENT_IDS.LAND_GE, sId: STATE_IDS.LAND_S },
+    { geId: GAME_EVENT_IDS.SOFT_LAND_GE, sId: STATE_IDS.SOFT_LAND_S },
+    { geId: GAME_EVENT_IDS.LEDGE_GRAB_GE, sId: STATE_IDS.LEDGE_GRAB_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.N_AIR_GE, sId: STATE_IDS.N_AIR_S },
+    { geId: GAME_EVENT_IDS.F_AIR_GE, sId: STATE_IDS.F_AIR_S },
   ]);
 
-  const condtions: Array<condition> = [ToJump, ToAirDodge];
+  const condtions: Array<condition> = [ToJump, ToAirDodge, FallToFFall];
 
   nFallTranslations._setConditions(condtions);
 
-  return nFallTranslations;
+  const nFallRelations = new StateRelation(
+    STATE_IDS.N_FALL_S,
+    nFallTranslations
+  );
+
+  return nFallRelations;
 }
 
-function InitFastFallTranslations(): ActionStateMappings {
+function InitFastFallRelations(): StateRelation {
   const ffTranslations = new ActionStateMappings();
+
   ffTranslations._setMappings([
-    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_S },
-    { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
-    { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.SOFT_LAND_S },
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
-    { geId: GAME_EVENTS.N_AIR_GE, sId: STATES.N_AIR_S },
+    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_S },
+    { geId: GAME_EVENT_IDS.LAND_GE, sId: STATE_IDS.LAND_S },
+    { geId: GAME_EVENT_IDS.SOFT_LAND_GE, sId: STATE_IDS.SOFT_LAND_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.N_AIR_GE, sId: STATE_IDS.N_AIR_S },
+    { geId: GAME_EVENT_IDS.F_AIR_GE, sId: STATE_IDS.F_AIR_S },
+    { geId: GAME_EVENT_IDS.LEDGE_GRAB_GE, sId: STATE_IDS.LEDGE_GRAB_S },
   ]);
 
   ffTranslations._setConditions([ToAirDodge]);
 
-  return ffTranslations;
+  const fastFallRelations = new StateRelation(
+    STATE_IDS.F_FALL_S,
+    ffTranslations
+  );
+  return fastFallRelations;
 }
 
-function InitLandTranslations(): ActionStateMappings {
+function InitLandRelations(): StateRelation {
   const landTranslations = new ActionStateMappings();
 
   landTranslations._setMappings([
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
   ]);
 
   landTranslations._setDefault([LandToIdle, LandToWalk, LandToTurn]);
 
-  return landTranslations;
+  const landRelations = new StateRelation(STATE_IDS.LAND_S, landTranslations);
+
+  return landRelations;
 }
 
-function InitSoftLandTranslations(): ActionStateMappings {
+function InitSoftLandRelations(): StateRelation {
   const softLandTranslations = new ActionStateMappings();
 
   softLandTranslations._setDefault([LandToIdle, LandToWalk, LandToTurn]);
 
-  return softLandTranslations;
+  const softLandRelations = new StateRelation(
+    STATE_IDS.SOFT_LAND_S,
+    softLandTranslations
+  );
+
+  return softLandRelations;
 }
 
-function InitLedgeGrabTranslations(): ActionStateMappings {
+function InitLedgeGrabRelations(): StateRelation {
   const LedgeGrabTranslations = new ActionStateMappings();
+
   LedgeGrabTranslations._setMappings([
-    { geId: GAME_EVENTS.JUMP_GE, sId: STATES.JUMP_S },
+    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_S },
   ]);
 
-  return LedgeGrabTranslations;
+  const LedgeGrabRelations = new StateRelation(
+    STATE_IDS.LEDGE_GRAB_S,
+    LedgeGrabTranslations
+  );
+
+  return LedgeGrabRelations;
 }
 
-function InitAirDodgeTranslations(): ActionStateMappings {
+function InitAirDodgeRelations(): StateRelation {
   const airDodgeTranslations = new ActionStateMappings();
+
   airDodgeTranslations._setMappings([
-    { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
-    { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.LAND_S },
+    { geId: GAME_EVENT_IDS.LAND_GE, sId: STATE_IDS.LAND_S },
+    { geId: GAME_EVENT_IDS.SOFT_LAND_GE, sId: STATE_IDS.LAND_S },
   ]);
+
   airDodgeTranslations._setDefault([defaultHelpess]);
 
-  return airDodgeTranslations;
+  const AirDodgeRelations = new StateRelation(
+    STATE_IDS.AIR_DODGE_S,
+    airDodgeTranslations
+  );
+
+  return AirDodgeRelations;
 }
 
-function InitHelpessTranslations(): ActionStateMappings {
+function InitHelpessRelations(): StateRelation {
   const helpessTranslations = new ActionStateMappings();
+
   helpessTranslations._setMappings([
-    { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
-    { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.LAND_S },
-    { geId: GAME_EVENTS.LEDGE_GRAB_GE, sId: STATES.LEDGE_GRAB_S },
+    { geId: GAME_EVENT_IDS.LAND_GE, sId: STATE_IDS.LAND_S },
+    { geId: GAME_EVENT_IDS.SOFT_LAND_GE, sId: STATE_IDS.LAND_S },
+    { geId: GAME_EVENT_IDS.LEDGE_GRAB_GE, sId: STATE_IDS.LEDGE_GRAB_S },
   ]);
 
-  return helpessTranslations;
+  const HelplessRelations = new StateRelation(
+    STATE_IDS.HELPESS_S,
+    helpessTranslations
+  );
+
+  return HelplessRelations;
 }
 
-function InitAttackTranslations(): ActionStateMappings {
+function InitAttackRelations(): StateRelation {
   const attackTranslations = new ActionStateMappings();
+
   attackTranslations._setDefault([defaultIdle]);
 
-  return attackTranslations;
+  const attackRelations = new StateRelation(
+    STATE_IDS.ATTACK_S,
+    attackTranslations
+  );
+
+  return attackRelations;
 }
 
-function InitAirAttackTranslations(): ActionStateMappings {
+function InitAirAttackRelations(): StateRelation {
   const airAttackTranslations = new ActionStateMappings();
-  airAttackTranslations._setDefault([defaultNFall]);
+
+  airAttackTranslations._setDefault([defaultToFastFall, defaultNFall]);
+
   airAttackTranslations._setMappings([
-    { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
-    { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.SOFT_LAND_S },
+    { geId: GAME_EVENT_IDS.LAND_GE, sId: STATE_IDS.LAND_S },
+    { geId: GAME_EVENT_IDS.SOFT_LAND_GE, sId: STATE_IDS.SOFT_LAND_S },
   ]);
 
-  return airAttackTranslations;
+  const airAttackRelations = new StateRelation(
+    STATE_IDS.N_AIR_S,
+    airAttackTranslations
+  );
+
+  return airAttackRelations;
 }
 
-function InitDownSpecialTrnaslations(): ActionStateMappings {
+function InitFAirAttackRelations(): StateRelation {
+  const fAirAttackTranslations = new ActionStateMappings();
+
+  fAirAttackTranslations._setDefault([defaultNFall]);
+
+  fAirAttackTranslations._setMappings([
+    { geId: GAME_EVENT_IDS.SOFT_LAND_GE, sId: STATE_IDS.SOFT_LAND_S },
+    { geId: GAME_EVENT_IDS.LAND_GE, sId: STATE_IDS.LAND_S },
+  ]);
+
+  const fAirTranslations = new StateRelation(
+    STATE_IDS.F_AIR_S,
+    fAirAttackTranslations
+  );
+
+  return fAirTranslations;
+}
+
+function InitDownSpecialRelations(): StateRelation {
   const downSpecialTranslations = new ActionStateMappings();
 
   downSpecialTranslations._setDefault([defaultIdle]);
 
-  return downSpecialTranslations;
+  const downSpecRelations = new StateRelation(
+    STATE_IDS.DOWN_SPECIAL_S,
+    downSpecialTranslations
+  );
+
+  return downSpecRelations;
 }
 
-function InitHitStopTranslations(): ActionStateMappings {
+function InitHitStopRelations(): StateRelation {
   const hitStopTranslations = new ActionStateMappings();
 
   const hitStopConditions = [HitStopToLaunch];
 
   hitStopTranslations._setConditions(hitStopConditions);
 
-  return hitStopTranslations;
+  const hitStunRelations = new StateRelation(
+    STATE_IDS.HIT_STOP_S,
+    hitStopTranslations
+  );
+
+  return hitStunRelations;
 }
 
-function InitTumbleTranslations(): ActionStateMappings {
+function InitTumbleRelations(): StateRelation {
   const TumbleTranslations = new ActionStateMappings();
+
   TumbleTranslations._setMappings([
-    { geId: GAME_EVENTS.LAND_GE, sId: STATES.LAND_S },
-    { geId: GAME_EVENTS.SOFT_LAND_GE, sId: STATES.LAND_S },
+    { geId: GAME_EVENT_IDS.LAND_GE, sId: STATE_IDS.LAND_S },
+    { geId: GAME_EVENT_IDS.SOFT_LAND_GE, sId: STATE_IDS.LAND_S },
   ]);
 
   TumbleTranslations._setConditions([ToJump]);
 
-  return TumbleTranslations;
+  const TumbleRelations = new StateRelation(
+    STATE_IDS.TUMBLE_S,
+    TumbleTranslations
+  );
+
+  return TumbleRelations;
 }
 
-function InitLaunchTranslations(): ActionStateMappings {
+function InitLaunchRelations(): StateRelation {
   const launchTranslations = new ActionStateMappings();
 
   launchTranslations._setConditions([LaunchToTumble]);
 
-  return launchTranslations;
+  const launchRelations = new StateRelation(
+    STATE_IDS.LAUNCH_S,
+    launchTranslations
+  );
+
+  return launchRelations;
 }
 
-function InitCoruchTranslations(): ActionStateMappings {
-  const crounchTranslations = new ActionStateMappings();
-  crounchTranslations._setMappings([
-    { geId: GAME_EVENTS.IDLE_GE, sId: STATES.IDLE_S },
-    { geId: GAME_EVENTS.HIT_STOP_GE, sId: STATES.HIT_STOP_S },
-    { geId: GAME_EVENTS.MOVE_GE, sId: STATES.START_WALK_S },
-    { geId: GAME_EVENTS.MOVE_FAST_GE, sId: STATES.START_WALK_S },
+function InitCrouchRelations(): StateRelation {
+  const crouchTranslations = new ActionStateMappings();
+
+  crouchTranslations._setMappings([
+    { geId: GAME_EVENT_IDS.IDLE_GE, sId: STATE_IDS.IDLE_S },
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
+    { geId: GAME_EVENT_IDS.MOVE_GE, sId: STATE_IDS.START_WALK_S },
+    { geId: GAME_EVENT_IDS.MOVE_FAST_GE, sId: STATE_IDS.START_WALK_S },
+    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
   ]);
 
-  crounchTranslations._setConditions([ToDownSpecial]);
+  crouchTranslations._setConditions([ToDownSpecial]);
 
-  return crounchTranslations;
+  const crouchRelations = new StateRelation(
+    STATE_IDS.CROUCH_S,
+    crouchTranslations
+  );
+
+  return crouchRelations;
 }
+
 // STATES ==================================================================
 
 export const Idle: FSMState = {
   StateName: 'IDLE',
-  StateId: STATES.IDLE_S,
+  StateId: STATE_IDS.IDLE_S,
   OnEnter: (p: Player, w: World) => {
     p.Flags.SetCanWalkOffFalse();
   },
@@ -1317,7 +1241,7 @@ export const Idle: FSMState = {
 
 export const StartWalk: FSMState = {
   StateName: 'START_WALK',
-  StateId: STATES.START_WALK_S,
+  StateId: STATE_IDS.START_WALK_S,
   OnEnter: (p: Player, w: World) => {
     p.Flags.SetCanWalkOffFalse();
     const ia = w.GetPlayerCurrentInput(p.ID);
@@ -1335,7 +1259,7 @@ export const StartWalk: FSMState = {
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     if (ia != undefined) {
-      PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
+      p.AddWalkImpulseToPlayer(ia.LXAxsis); //PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
     }
   },
   OnExit: (p: Player, w: World) => {
@@ -1345,14 +1269,15 @@ export const StartWalk: FSMState = {
 
 export const Walk: FSMState = {
   StateName: 'WALK',
-  StateId: STATES.WALK_S,
+  StateId: STATE_IDS.WALK_S,
   OnEnter: (p: Player, w: World) => {
     p.Flags.SetCanWalkOffFalse();
   },
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     if (ia != undefined) {
-      PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
+      p.AddWalkImpulseToPlayer(ia.LXAxsis);
+      //PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
     }
   },
   OnExit: (p: Player, w: World) => {
@@ -1362,7 +1287,7 @@ export const Walk: FSMState = {
 
 export const Turn: FSMState = {
   StateName: 'TURN',
-  StateId: STATES.TURN_S,
+  StateId: STATE_IDS.TURN_S,
   OnEnter: (p: Player, W: World) => {},
   OnUpdate: (p: Player, w: World) => {},
   OnExit: (p: Player, w: World) => {
@@ -1372,7 +1297,7 @@ export const Turn: FSMState = {
 
 export const Dash: FSMState = {
   StateName: 'DASH',
-  StateId: STATES.DASH_S,
+  StateId: STATE_IDS.DASH_S,
   OnEnter: (p: Player, w: World) => {
     const flags = p.Flags;
     const MaxDashSpeed = p.Speeds.MaxDashSpeed;
@@ -1394,7 +1319,7 @@ export const Dash: FSMState = {
 
 export const DashTurn: FSMState = {
   StateName: 'DASH_TURN',
-  StateId: STATES.DASH_TURN_S,
+  StateId: STATE_IDS.DASH_TURN_S,
   OnEnter: (p: Player, w: World) => {
     p.Velocity.X = 0;
     p.Flags.ChangeDirections();
@@ -1405,12 +1330,16 @@ export const DashTurn: FSMState = {
 
 export const Run: FSMState = {
   StateName: 'RUN',
-  StateId: STATES.RUN_S,
+  StateId: STATE_IDS.RUN_S,
   OnEnter: (p: Player, w: World) => {},
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     if (ia != undefined) {
-      PlayerHelpers.AddRunImpulseToPlayer(p, ia.LXAxsis);
+      const speeds = p.Speeds;
+      p.Velocity.AddClampedXImpulse(
+        speeds.MaxRunSpeed,
+        ia.LXAxsis * speeds.RunSpeedMultiplier
+      );
     }
   },
   OnExit: (p: Player, w: World) => {},
@@ -1418,7 +1347,7 @@ export const Run: FSMState = {
 
 export const RunTurn: FSMState = {
   StateName: 'RUN_TURN',
-  StateId: STATES.RUN_TURN_S,
+  StateId: STATE_IDS.RUN_TURN_S,
   OnEnter: (p: Player, w: World) => {
     p.Flags.SetCanWalkOffFalse();
   },
@@ -1431,7 +1360,7 @@ export const RunTurn: FSMState = {
 
 export const RunStop: FSMState = {
   StateName: 'RUN_STOP',
-  StateId: STATES.STOP_RUN_S,
+  StateId: STATE_IDS.STOP_RUN_S,
   OnEnter: (p: Player, w: World) => {
     p.Flags.SetCanWalkOffFalse();
   },
@@ -1443,7 +1372,7 @@ export const RunStop: FSMState = {
 
 export const JumpSquat: FSMState = {
   StateName: 'JUMPSQUAT',
-  StateId: STATES.JUMP_SQUAT_S,
+  StateId: STATE_IDS.JUMP_SQUAT_S,
   OnEnter: (p: Player, w: World) => {},
   OnUpdate: (p: Player, w: World) => {},
   OnExit: (p: Player, w: World) => {},
@@ -1451,11 +1380,12 @@ export const JumpSquat: FSMState = {
 
 export const Jump: FSMState = {
   StateName: 'JUMP',
-  StateId: STATES.JUMP_S,
+  StateId: STATE_IDS.JUMP_S,
   OnEnter: (p: Player, w: World) => {
     const jumpComp = p.Jump;
     if (jumpComp.HasJumps()) {
-      PlayerHelpers.AddToPlayerYPosition(p, -0.5);
+      p.Flags.FastFallOff();
+      p.AddToPlayerYPosition(-0.5); //PlayerHelpers.AddToPlayerYPosition(p, -0.5);
       p.Velocity.Y = -jumpComp.JumpVelocity;
       jumpComp.IncrementJumps();
     }
@@ -1476,16 +1406,16 @@ export const Jump: FSMState = {
 
 export const NeutralFall: FSMState = {
   StateName: 'NFALL',
-  StateId: STATES.N_FALL_S,
+  StateId: STATE_IDS.N_FALL_S,
   OnEnter: (p: Player, w: World) => {
     p.ECB.SetECBShape(-25, 60, 70);
   },
   OnUpdate: (p: Player, w: World) => {
-    const ia = w.GetPlayerCurrentInput(p.ID);
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
     const speedsComp = p.Speeds;
     p.Velocity.AddClampedXImpulse(
       speedsComp.AerialSpeedInpulseLimit,
-      (ia?.LXAxsis ?? 0) * speedsComp.ArielVelocityMultiplier
+      ia.LXAxsis * speedsComp.ArielVelocityMultiplier
     );
   },
   OnExit: (p: Player, w: World) => {
@@ -1495,7 +1425,7 @@ export const NeutralFall: FSMState = {
 
 export const FastFall: FSMState = {
   StateName: 'FastFall',
-  StateId: STATES.F_FALL_S,
+  StateId: STATE_IDS.F_FALL_S,
   OnEnter: (p: Player, w: World) => {
     p.ECB.SetECBShape(0, 50, 60);
     p.Flags.FastFallOn();
@@ -1509,15 +1439,16 @@ export const FastFall: FSMState = {
     );
   },
   OnExit: (p: Player, w: World) => {
-    p.Flags.FastFallOff();
+    //p.Flags.FastFallOff();
     p.ECB.SetECBShape(0, 100, 100);
   },
 };
 
 export const Land: FSMState = {
   StateName: 'Land',
-  StateId: STATES.LAND_S,
+  StateId: STATE_IDS.LAND_S,
   OnEnter: (p: Player, w: World) => {
+    p.Flags.FastFallOff();
     p.Jump.ResetJumps();
     p.Velocity.Y = 0;
   },
@@ -1527,8 +1458,9 @@ export const Land: FSMState = {
 
 export const SoftLand: FSMState = {
   StateName: 'SoftLand',
-  StateId: STATES.SOFT_LAND_S,
+  StateId: STATE_IDS.SOFT_LAND_S,
   OnEnter: (p: Player, w: World) => {
+    p.Flags.FastFallOff();
     p.Jump.ResetJumps();
     p.Velocity.Y = 0;
   },
@@ -1538,8 +1470,9 @@ export const SoftLand: FSMState = {
 
 export const LedgeGrab: FSMState = {
   StateName: 'LedgeGrab',
-  StateId: STATES.LEDGE_GRAB_S,
+  StateId: STATE_IDS.LEDGE_GRAB_S,
   OnEnter: (p: Player, w: World) => {
+    p.Flags.FastFallOff();
     p.Flags.GravityOff();
     const jumpComp = p.Jump;
     jumpComp.ResetJumps();
@@ -1553,8 +1486,9 @@ export const LedgeGrab: FSMState = {
 
 export const AirDodge: FSMState = {
   StateName: 'AirDodge',
-  StateId: STATES.AIR_DODGE_S,
+  StateId: STATE_IDS.AIR_DODGE_S,
   OnEnter: (p: Player, w: World) => {
+    p.Flags.FastFallOff();
     p.Flags.GravityOff();
     const pVel = p.Velocity;
     const ia = w.GetPlayerCurrentInput(p.ID)!;
@@ -1564,8 +1498,8 @@ export const AirDodge: FSMState = {
     pVel.Y = -Math.sin(angle) * speed;
   },
   OnUpdate: (p: Player, w: World) => {
-    const frameLength = p.FSMInfo.GetFrameLengthOrUndefined(
-      STATES.AIR_DODGE_S
+    const frameLength = p.FSMInfo.GetFrameLengthForState(
+      STATE_IDS.AIR_DODGE_S
     )!;
     const currentFrameForState = p.FSMInfo.CurrentStateFrame;
     const normalizedTime = Math.min(currentFrameForState / frameLength, 1);
@@ -1581,7 +1515,7 @@ export const AirDodge: FSMState = {
 
 export const Helpess: FSMState = {
   StateName: 'Helpess',
-  StateId: STATES.HELPESS_S,
+  StateId: STATE_IDS.HELPESS_S,
   OnEnter: (p: Player, w: World) => {},
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
@@ -1595,11 +1529,9 @@ export const Helpess: FSMState = {
 
 export const Attack: FSMState = {
   StateName: 'Attack',
-  StateId: STATES.ATTACK_S,
+  StateId: STATE_IDS.ATTACK_S,
   OnEnter: (p: Player, w: World) => {
-    const attackComp = p.Attacks;
-    const ia = w.GetPlayerCurrentInput(p.ID)!;
-    attackComp.SetCurrentAttack(ia);
+    p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.ATTACK_GE);
   },
   OnUpdate: (p: Player, w: World) => {
     const attackComp = p.Attacks;
@@ -1630,41 +1562,59 @@ export const Attack: FSMState = {
 
 export const AerialAttack: FSMState = {
   StateName: 'AerialAttack',
-  StateId: STATES.N_AIR_S,
+  StateId: STATE_IDS.N_AIR_S,
   OnEnter: (p: Player, w: World) => {
-    const attackComp = p.Attacks;
-    const ia = w.GetPlayerCurrentInput(p.ID)!;
-    attackComp.SetCurrentAttack(ia);
+    p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.N_AIR_GE);
+    p.ECB.SetECBShape(-25, 60, 70);
   },
   OnUpdate: (p: Player, w: World) => {
-    const ia = w.GetPlayerCurrentInput(p.ID);
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
+    const prevIa = w.GetPlayerPreviousInput(p.ID)!;
     const speeds = p.Speeds;
     const airSpeed = speeds.AerialSpeedInpulseLimit;
     const airMult = speeds.AirDogeSpeed;
     p.Velocity.AddClampedXImpulse(airSpeed, (ia!.LXAxsis * airMult) / 2);
+    if (ia.LYAxsis < -0.8 && prevIa.LYAxsis > -0.8) {
+      p.Flags.FastFallOn();
+    }
   },
   OnExit(p, world) {
     const attackComp = p.Attacks;
-    p.Attacks.GetAttack()!.ResetPlayeIdHitArray();
+    attackComp.GetAttack()!.ResetPlayeIdHitArray();
     attackComp.ZeroCurrentAttack();
+    p.ECB.SetECBShape(0, 100, 100);
   },
 };
 
 export const FAerialAttack: FSMState = {
   StateName: 'FAir',
-  StateId: STATES.F_AIR_S,
-  OnEnter: (p, w) => {},
-  OnUpdate(p, world) {},
-  OnExit(p, world) {},
+  StateId: STATE_IDS.F_AIR_S,
+  OnEnter: (p, w) => {
+    p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.F_AIR_GE);
+    p.ECB.SetECBShape(-25, 60, 70);
+  },
+  OnUpdate: (p, w) => {
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
+    const speedsComp = p.Speeds;
+    p.Velocity.AddClampedXImpulse(
+      speedsComp.AerialSpeedInpulseLimit,
+      ia.LXAxsis * speedsComp.ArielVelocityMultiplier
+    );
+  },
+  OnExit: (p, w) => {
+    const attackComp = p.Attacks;
+    p.Attacks.GetAttack()!.ResetPlayeIdHitArray();
+    attackComp.ZeroCurrentAttack();
+    p.ECB.SetECBShape(0, 100, 100);
+  },
 };
 
 export const DownSpecial: FSMState = {
   StateName: 'DownSpecial',
-  StateId: STATES.DOWN_SPECIAL_S,
+  StateId: STATE_IDS.DOWN_SPECIAL_S,
   OnEnter: (p: Player, w: World) => {
     const attackComp = p.Attacks;
-    const ia = w.GetPlayerCurrentInput(p.ID)!;
-    attackComp.SetCurrentAttack(ia);
+    attackComp.SetCurrentAttack(GAME_EVENT_IDS.DOWN_SPECIAL_GE);
     const gravity = attackComp.GetAttack()!.GravityActive;
     if (gravity === false) {
       p.Flags.GravityOff();
@@ -1700,8 +1650,9 @@ export const DownSpecial: FSMState = {
 
 export const hitStop: FSMState = {
   StateName: 'HitStop',
-  StateId: STATES.HIT_STOP_S,
+  StateId: STATE_IDS.HIT_STOP_S,
   OnEnter: (p: Player, world: World) => {
+    p.Flags.FastFallOff();
     p.Flags.GravityOff();
     p.Velocity.X = 0;
     p.Velocity.Y = 0;
@@ -1717,7 +1668,7 @@ export const hitStop: FSMState = {
 
 export const Launch: FSMState = {
   StateName: 'Launch',
-  StateId: STATES.LAUNCH_S,
+  StateId: STATE_IDS.LAUNCH_S,
   OnEnter: (p, w) => {
     const pVel = p.Velocity;
     const hitStun = p.HitStun;
@@ -1734,7 +1685,7 @@ export const Launch: FSMState = {
 
 export const Tumble: FSMState = {
   StateName: 'Tumble',
-  StateId: STATES.TUMBLE_S,
+  StateId: STATE_IDS.TUMBLE_S,
   OnEnter: (p, w) => {
     p.Jump.ResetJumps();
     p.Jump.IncrementJumps();
@@ -1751,7 +1702,7 @@ export const Tumble: FSMState = {
 
 export const Crouch: FSMState = {
   StateName: 'Crouch',
-  StateId: STATES.CROUCH_S,
+  StateId: STATE_IDS.CROUCH_S,
   OnEnter: (p: Player, w: World) => {
     p.ECB.SetECBShape(0, 50, 100);
     p.Flags.SetCanWalkOffFalse();
@@ -1762,3 +1713,93 @@ export const Crouch: FSMState = {
     p.Flags.SetCanWalkOffTrue();
   },
 };
+
+//================================================
+export const IDLE_STATE_RELATIONS = InitIdleRelations();
+export const START_WALK_RELATIONS = InitStartWalkRelations();
+export const TURN_RELATIONS = InitTurnRelations();
+export const WALK_RELATIONS = InitWalkRelations();
+export const DASH_RELATIONS = InitDashRelations();
+export const DASH_TURN_RELATIONS = InitDashTurnRelations();
+export const RUN_RELATIONS = InitRunRelations();
+export const RUN_TURN_RELATIONS = InitRunTurnRelations();
+export const STOP_RUN_RELATIONS = InitStopRunRelations();
+export const JUMP_SQUAT_RELATIONS = InitJumpSquatRelations();
+export const JUMP_RELATIONS = InitJumpRelations();
+export const NFALL_RELATIONS = InitNeutralFallRelations();
+export const FFALL_RELATIONS = InitFastFallRelations();
+export const LAND_RELATIONS = InitLandRelations();
+export const SOFT_LAND_RELATIONS = InitSoftLandRelations();
+export const LEDGE_GRAB_RELATIONS = InitLedgeGrabRelations();
+export const AIR_DODGE_RELATIONS = InitAirDodgeRelations();
+export const HELPESS_RELATIONS = InitHelpessRelations();
+export const ATTACK_RELATIONS = InitAttackRelations();
+export const AIR_ATK_RELATIONS = InitAirAttackRelations();
+export const F_AIR_ATK_RELATIONS = InitFAirAttackRelations();
+export const DOWN_SPECIAL_RELATIONS = InitDownSpecialRelations();
+export const HIT_STOP_RELATIONS = InitHitStopRelations();
+export const TUMBLE_RELATIONS = InitTumbleRelations();
+export const LAUNCH_RELATIONS = InitLaunchRelations();
+export const CROUCH_RELATIONS = InitCrouchRelations();
+
+export const ActionMappings = new Map<stateId, ActionStateMappings>()
+  .set(IDLE_STATE_RELATIONS.stateId, IDLE_STATE_RELATIONS.mappings)
+  .set(START_WALK_RELATIONS.stateId, START_WALK_RELATIONS.mappings)
+  .set(TURN_RELATIONS.stateId, TURN_RELATIONS.mappings)
+  .set(WALK_RELATIONS.stateId, WALK_RELATIONS.mappings)
+  .set(DASH_RELATIONS.stateId, DASH_RELATIONS.mappings)
+  .set(DASH_TURN_RELATIONS.stateId, DASH_TURN_RELATIONS.mappings)
+  .set(RUN_RELATIONS.stateId, RUN_RELATIONS.mappings)
+  .set(RUN_TURN_RELATIONS.stateId, RUN_TURN_RELATIONS.mappings)
+  .set(STOP_RUN_RELATIONS.stateId, STOP_RUN_RELATIONS.mappings)
+  .set(JUMP_SQUAT_RELATIONS.stateId, JUMP_SQUAT_RELATIONS.mappings)
+  .set(JUMP_RELATIONS.stateId, JUMP_RELATIONS.mappings)
+  .set(NFALL_RELATIONS.stateId, NFALL_RELATIONS.mappings)
+  .set(FFALL_RELATIONS.stateId, FFALL_RELATIONS.mappings)
+  .set(LAND_RELATIONS.stateId, LAND_RELATIONS.mappings)
+  .set(SOFT_LAND_RELATIONS.stateId, SOFT_LAND_RELATIONS.mappings)
+  .set(LEDGE_GRAB_RELATIONS.stateId, LEDGE_GRAB_RELATIONS.mappings)
+  .set(AIR_DODGE_RELATIONS.stateId, AIR_DODGE_RELATIONS.mappings)
+  .set(HELPESS_RELATIONS.stateId, HELPESS_RELATIONS.mappings)
+  .set(ATTACK_RELATIONS.stateId, ATTACK_RELATIONS.mappings)
+  .set(AIR_ATK_RELATIONS.stateId, AIR_ATK_RELATIONS.mappings)
+  .set(F_AIR_ATK_RELATIONS.stateId, F_AIR_ATK_RELATIONS.mappings)
+  .set(DOWN_SPECIAL_RELATIONS.stateId, DOWN_SPECIAL_RELATIONS.mappings)
+  .set(HIT_STOP_RELATIONS.stateId, HIT_STOP_RELATIONS.mappings)
+  .set(TUMBLE_RELATIONS.stateId, TUMBLE_RELATIONS.mappings)
+  .set(LAUNCH_RELATIONS.stateId, LAUNCH_RELATIONS.mappings)
+  .set(CROUCH_RELATIONS.stateId, CROUCH_RELATIONS.mappings);
+
+export const FSMStates = new Map<stateId, FSMState>()
+  .set(Idle.StateId, Idle)
+  .set(StartWalk.StateId, StartWalk)
+  .set(Turn.StateId, Turn)
+  .set(Walk.StateId, Walk)
+  .set(Run.StateId, Run)
+  .set(RunTurn.StateId, RunTurn)
+  .set(RunStop.StateId, RunStop)
+  .set(Dash.StateId, Dash)
+  .set(DashTurn.StateId, DashTurn)
+  .set(JumpSquat.StateId, JumpSquat)
+  .set(Jump.StateId, Jump)
+  .set(NeutralFall.StateId, NeutralFall)
+  .set(FastFall.StateId, FastFall)
+  .set(Land.StateId, Land)
+  .set(SoftLand.StateId, SoftLand)
+  .set(LedgeGrab.StateId, LedgeGrab)
+  .set(AirDodge.StateId, AirDodge)
+  .set(Helpess.StateId, Helpess)
+  .set(Attack.StateId, Attack)
+  .set(AerialAttack.StateId, AerialAttack)
+  .set(FAerialAttack.StateId, FAerialAttack)
+  .set(DownSpecial.StateId, DownSpecial)
+  .set(hitStop.StateId, hitStop)
+  .set(Tumble.StateId, Tumble)
+  .set(Launch.StateId, Launch)
+  .set(Crouch.StateId, Crouch);
+
+export const AttackGameEventMappings = new Map<gameEventId, attackId>()
+  .set(GAME_EVENT_IDS.ATTACK_GE, ATTACK_IDS.NUETRAL_ATTACK)
+  .set(GAME_EVENT_IDS.N_AIR_GE, ATTACK_IDS.N_AIR_ATTACK)
+  .set(GAME_EVENT_IDS.F_AIR_GE, ATTACK_IDS.F_AIR_ATTACK)
+  .set(GAME_EVENT_IDS.DOWN_SPECIAL_GE, ATTACK_IDS.DOWN_SPECIAL);
