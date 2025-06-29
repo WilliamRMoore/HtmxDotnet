@@ -43,3 +43,17 @@ export function EaseIn(t: number) {
 export function EaseInPower(t: number, p: number) {
   return Math.pow(t, p);
 }
+
+export class Sequencer {
+  private seq: number = 0;
+
+  public set SeqStart(val: number) {
+    this.seq = val;
+  }
+
+  public get Next(): number {
+    const next = this.seq;
+    this.seq++;
+    return next;
+  }
+}

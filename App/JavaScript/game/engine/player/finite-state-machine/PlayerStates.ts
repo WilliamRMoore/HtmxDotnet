@@ -1,126 +1,131 @@
 import { Player } from '../playerOrchestrator';
-import { EaseIn } from '../../utils';
+import { EaseIn, Sequencer } from '../../utils';
 import { World } from '../../world/world';
 import { FSMState } from './PlayerStateMachine';
 
 // Aliases =========================================================================
 
-export type gameEventId = number;
-export type stateId = number;
-export type attackId = number;
+export type GameEventId = number;
+export type StateId = number;
+export type AttackId = number;
 
 // Constants =======================================================================
 
+const seq = new Sequencer();
+
 //Postfixed with _GE for game event. So you know you are looking at game event Ids.
-class _GameEvents {
-  public readonly UP_SPECIAL_GE = 0;
-  public readonly DOWN_SPECIAL_GE = 1;
-  public readonly SIDE_SPECIAL_GE = 2;
-  public readonly SPECIAL_GE = 3;
-  public readonly UP_ATTACK_GE = 4;
-  public readonly DOWN_ATTACK_GE = 5;
-  public readonly SIDE_ATTACK_GE = 6;
-  public readonly ATTACK_GE = 7;
-  public readonly N_AIR_GE = 8;
-  public readonly F_AIR_GE = 9;
-  public readonly B_AIR_GE = 10;
-  public readonly U_AIR_GE = 11;
-  public readonly D_AIR_GE = 12;
-  public readonly IDLE_GE = 13;
-  public readonly MOVE_GE = 14;
-  public readonly MOVE_FAST_GE = 15;
-  public readonly JUMP_GE = 16;
-  public readonly GRAB_GE = 17;
-  public readonly GUARD_GE = 18;
-  public readonly DOWN_GE = 19;
-  public readonly TURN_GE = 20;
+class GameEvents {
+  public readonly UP_SPECIAL_GE = seq.Next as GameEventId;
+  public readonly DOWN_SPECIAL_GE = seq.Next as GameEventId;
+  public readonly SIDE_SPECIAL_GE = seq.Next as GameEventId;
+  public readonly SPECIAL_GE = seq.Next as GameEventId;
+  public readonly UP_ATTACK_GE = seq.Next as GameEventId;
+  public readonly DOWN_ATTACK_GE = seq.Next as GameEventId;
+  public readonly SIDE_ATTACK_GE = seq.Next as GameEventId;
+  public readonly ATTACK_GE = seq.Next as GameEventId;
+  public readonly N_AIR_GE = seq.Next as GameEventId;
+  public readonly F_AIR_GE = seq.Next as GameEventId;
+  public readonly B_AIR_GE = seq.Next as GameEventId;
+  public readonly U_AIR_GE = seq.Next as GameEventId;
+  public readonly D_AIR_GE = seq.Next as GameEventId;
+  public readonly IDLE_GE = seq.Next as GameEventId;
+  public readonly MOVE_GE = seq.Next as GameEventId;
+  public readonly MOVE_FAST_GE = seq.Next as GameEventId;
+  public readonly JUMP_GE = seq.Next as GameEventId;
+  public readonly GRAB_GE = seq.Next as GameEventId;
+  public readonly GUARD_GE = seq.Next as GameEventId;
+  public readonly DOWN_GE = seq.Next as GameEventId;
+  public readonly TURN_GE = seq.Next as GameEventId;
   // End of GameEvents that can be source from player input
-  public readonly LAND_GE = 21;
-  public readonly SOFT_LAND_GE = 22;
-  public readonly FALL_GE = 23;
-  public readonly LEDGE_GRAB_GE = 24;
-  public readonly HIT_STOP_GE = 25;
-  public readonly LAUNCH_GE = 26;
-  public readonly TUBMLE_GE = 27;
+  public readonly LAND_GE = seq.Next as GameEventId;
+  public readonly SOFT_LAND_GE = seq.Next as GameEventId;
+  public readonly FALL_GE = seq.Next as GameEventId;
+  public readonly LEDGE_GRAB_GE = seq.Next as GameEventId;
+  public readonly HIT_STOP_GE = seq.Next as GameEventId;
+  public readonly LAUNCH_GE = seq.Next as GameEventId;
+  public readonly TUBMLE_GE = seq.Next as GameEventId;
 }
 
-export const GAME_EVENT_IDS = new _GameEvents();
+export const GAME_EVENT_IDS = new GameEvents();
+
+seq.SeqStart = 0;
 
 //Postfixed _S for state, so you know you are looking at state Ids.
-class _STATES {
-  public readonly IDLE_S = 0 as stateId;
-  public readonly START_WALK_S = 1 as stateId;
-  public readonly TURN_S = 2 as stateId;
-  public readonly WALK_S = 3 as stateId;
-  public readonly DASH_S = 4 as stateId;
-  public readonly DASH_TURN_S = 5 as stateId;
-  public readonly STOP_RUN_S = 6 as stateId;
-  public readonly RUN_TURN_S = 7 as stateId;
-  public readonly STOP_RUN_TURN_S = 8 as stateId;
-  public readonly RUN_S = 9 as stateId;
-  public readonly JUMP_SQUAT_S = 10 as stateId;
-  public readonly JUMP_S = 11 as stateId;
-  public readonly N_FALL_S = 12 as stateId;
-  public readonly F_FALL_S = 13 as stateId;
-  public readonly LAND_S = 14 as stateId;
-  public readonly SOFT_LAND_S = 15 as stateId;
-  public readonly LEDGE_GRAB_S = 16 as stateId;
-  public readonly AIR_DODGE_S = 17 as stateId;
-  public readonly HELPESS_S = 18 as stateId;
-  public readonly ATTACK_S = 19 as stateId;
-  public readonly N_AIR_S = 20 as stateId;
-  public readonly F_AIR_S = 21 as stateId;
-  public readonly B_AIR_S = 22 as stateId;
-  public readonly U_AIR_S = 23 as stateId;
-  public readonly D_AIR_S = 24 as stateId;
-  public readonly DOWN_SPECIAL_S = 25 as stateId;
-  public readonly HIT_STOP_S = 26 as stateId;
-  public readonly LAUNCH_S = 27 as stateId;
-  public readonly TUMBLE_S = 28 as stateId;
-  public readonly CROUCH_S = 29 as stateId;
+class STATES {
+  public readonly IDLE_S = seq.Next as StateId;
+  public readonly START_WALK_S = seq.Next as StateId;
+  public readonly TURN_S = seq.Next as StateId;
+  public readonly WALK_S = seq.Next as StateId;
+  public readonly DASH_S = seq.Next as StateId;
+  public readonly DASH_TURN_S = seq.Next as StateId;
+  public readonly STOP_RUN_S = seq.Next as StateId;
+  public readonly RUN_TURN_S = seq.Next as StateId;
+  public readonly STOP_RUN_TURN_S = seq.Next as StateId;
+  public readonly RUN_S = seq.Next as StateId;
+  public readonly JUMP_SQUAT_S = seq.Next as StateId;
+  public readonly JUMP_S = seq.Next as StateId;
+  public readonly N_FALL_S = seq.Next as StateId;
+  public readonly LAND_S = seq.Next as StateId;
+  public readonly SOFT_LAND_S = seq.Next as StateId;
+  public readonly LEDGE_GRAB_S = seq.Next as StateId;
+  public readonly AIR_DODGE_S = seq.Next as StateId;
+  public readonly HELPESS_S = seq.Next as StateId;
+  public readonly ATTACK_S = seq.Next as StateId;
+  public readonly N_AIR_S = seq.Next as StateId;
+  public readonly F_AIR_S = seq.Next as StateId;
+  public readonly B_AIR_S = seq.Next as StateId;
+  public readonly U_AIR_S = seq.Next as StateId;
+  public readonly D_AIR_S = seq.Next as StateId;
+  public readonly DOWN_SPECIAL_S = seq.Next as StateId;
+  public readonly HIT_STOP_S = seq.Next as StateId;
+  public readonly LAUNCH_S = seq.Next as StateId;
+  public readonly TUMBLE_S = seq.Next as StateId;
+  public readonly CROUCH_S = seq.Next as StateId;
 }
 
-export const STATE_IDS = new _STATES();
+export const STATE_IDS = new STATES();
 
-class _ATTACKS {
-  public readonly NUETRAL_ATTACK = 0 as attackId;
-  public readonly SIDE_ATTACK = 1 as attackId;
-  public readonly UP_ATTACK = 2 as attackId;
-  public readonly DOWN_ATTACK = 3 as attackId;
-  public readonly SIDE_TILT = 4 as attackId;
-  public readonly UP_TILT = 5 as attackId;
-  public readonly DOWN_TILT = 6 as attackId;
-  public readonly N_AIR_ATTACK = 7 as attackId;
-  public readonly F_AIR_ATTACK = 8 as attackId;
-  public readonly B_AIR_ATTACK = 9 as attackId;
-  public readonly U_AIR_ATTACK = 10 as attackId;
-  public readonly D_AIR_ATTACK = 11 as attackId;
-  public readonly NUETRAL_SPECIAL = 12 as stateId;
-  public readonly SIDE_SPECIAL = 13 as stateId;
-  public readonly UP_SPECAIL = 14 as stateId;
-  public readonly DOWN_SPECIAL = 15 as attackId;
+seq.SeqStart = 0;
+
+class ATTACKS {
+  public readonly NUETRAL_ATTACK = seq.Next as AttackId;
+  public readonly SIDE_ATTACK = seq.Next as AttackId;
+  public readonly UP_ATTACK = seq.Next as AttackId;
+  public readonly DOWN_ATTACK = seq.Next as AttackId;
+  public readonly SIDE_TILT = seq.Next as AttackId;
+  public readonly UP_TILT = seq.Next as AttackId;
+  public readonly DOWN_TILT = seq.Next as AttackId;
+  public readonly N_AIR_ATTACK = seq.Next as AttackId;
+  public readonly F_AIR_ATTACK = seq.Next as AttackId;
+  public readonly B_AIR_ATTACK = seq.Next as AttackId;
+  public readonly U_AIR_ATTACK = seq.Next as AttackId;
+  public readonly D_AIR_ATTACK = seq.Next as AttackId;
+  public readonly NUETRAL_SPECIAL = seq.Next as StateId;
+  public readonly SIDE_SPECIAL = seq.Next as StateId;
+  public readonly UP_SPECAIL = seq.Next as StateId;
+  public readonly DOWN_SPECIAL = seq.Next as AttackId;
 }
 
-export const ATTACK_IDS = new _ATTACKS();
+export const ATTACK_IDS = new ATTACKS();
 
 // State mapping classes ===========================================================
 
 class StateRelation {
-  readonly stateId: stateId;
+  readonly stateId: StateId;
   readonly mappings: ActionStateMappings;
 
-  constructor(stateId: stateId, actionStateTranslations: ActionStateMappings) {
+  constructor(stateId: StateId, actionStateTranslations: ActionStateMappings) {
     this.stateId = stateId;
     this.mappings = actionStateTranslations;
   }
 }
 
 export class ActionStateMappings {
-  private readonly mappings = new Map<gameEventId, stateId>();
+  private readonly mappings = new Map<GameEventId, StateId>();
   private defaultConditions?: Array<condition>;
   private condtions?: Array<condition>;
 
-  public GetMapping(geId: gameEventId): stateId | undefined {
+  public GetMapping(geId: GameEventId): StateId | undefined {
     return this.mappings.get(geId);
   }
 
@@ -144,7 +149,7 @@ export class ActionStateMappings {
     return this.mappings.size > 0;
   }
 
-  _setMappings(mappingsArray: { geId: gameEventId; sId: stateId }[]) {
+  _setMappings(mappingsArray: { geId: GameEventId; sId: StateId }[]) {
     mappingsArray.forEach((actSt) => {
       this.mappings.set(actSt.geId, actSt.sId);
     });
@@ -168,20 +173,20 @@ type conditionFunc = (world: World, playerIndex: number) => boolean;
 type condition = {
   Name: string;
   ConditionFunc: conditionFunc;
-  StateId: stateId;
+  StateId: StateId;
 };
 
 type attackCondition = {
   Name: string;
   ConditionFunc: conditionFunc;
-  AttackId: attackId;
+  AttackId: AttackId;
 };
 
 export function RunCondition(
   c: condition,
   w: World,
   playerIndex: number
-): stateId | undefined {
+): StateId | undefined {
   if (c.ConditionFunc(w, playerIndex)) {
     return c.StateId;
   }
@@ -192,7 +197,7 @@ export function RunAttackCondition(
   c: attackCondition,
   w: World,
   playerIndex: number
-): attackId | undefined {
+): AttackId | undefined {
   if (c.ConditionFunc(w, playerIndex)) {
     return c.AttackId;
   }
@@ -202,7 +207,7 @@ export function RunAttackCondition(
 
 const IdleToDashturn: condition = {
   Name: 'IdleToTurnDash',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const p = w.GetPlayer(playerIndex)!;
     const input = w.GetPlayerCurrentInput(playerIndex)!;
     if (input.LXAxsis < -0.5 && p.Flags.IsFacingRight) {
@@ -219,7 +224,7 @@ const IdleToDashturn: condition = {
 
 const IdleToTurn: condition = {
   Name: 'IdleToTurn',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const p = w.GetPlayer(playerIndex)!;
     const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
@@ -239,7 +244,7 @@ const IdleToTurn: condition = {
 
 const WalkToTurn: condition = {
   Name: 'WalkToTurn',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const p = w.GetPlayer(playerIndex)!;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
     const prevIa = w.GetPlayerPreviousInput(playerIndex);
@@ -269,7 +274,7 @@ const WalkToTurn: condition = {
 
 const RunToTurn: condition = {
   Name: 'RunToTurn',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const p = w.GetPlayer(playerIndex)!;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
     const prevIa = w.GetPlayerPreviousInput(playerIndex);
@@ -300,7 +305,7 @@ const RunToTurn: condition = {
 
 const DashToTurn: condition = {
   Name: 'DashToTurn',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const p = w.GetPlayer(playerIndex)!;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
     const prevIa = w.GetPlayerPreviousInput(playerIndex);
@@ -336,23 +341,9 @@ const DashToTurn: condition = {
   StateId: STATE_IDS.DASH_TURN_S,
 };
 
-const FallToFFall: condition = {
-  Name: 'FallToFFall',
-  ConditionFunc: (w, playerIndex) => {
-    const currentInput = w.GetPlayerCurrentInput(playerIndex)!;
-    const previousInput = w.GetPlayerPreviousInput(playerIndex)!;
-
-    if (currentInput.LYAxsis < -0.8 && previousInput.LYAxsis > -0.8) {
-      return true;
-    }
-    return false;
-  },
-  StateId: STATE_IDS.F_FALL_S,
-};
-
 const ToJump: condition = {
   Name: 'ToJump',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const player = w.GetPlayer(playerIndex);
     const currentInput = w.GetPlayerCurrentInput(playerIndex)!;
     const prevInput = w.GetPlayerPreviousInput(playerIndex);
@@ -373,7 +364,7 @@ const ToJump: condition = {
 
 const ToAirDodge: condition = {
   Name: 'ToAirDodge',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const currentInput = w.GetPlayerCurrentInput(playerIndex);
     if (currentInput?.Action == GAME_EVENT_IDS.GUARD_GE) {
       return true;
@@ -385,7 +376,7 @@ const ToAirDodge: condition = {
 
 const DashDefaultRun: condition = {
   Name: 'DashDefaultRun',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const p = w.GetPlayer(playerIndex)!;
     const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
@@ -405,7 +396,7 @@ const DashDefaultRun: condition = {
 
 const DashDefaultIdle: condition = {
   Name: 'DashDefaultIdle',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
     if (ia.LXAxsis === 0) {
@@ -419,7 +410,7 @@ const DashDefaultIdle: condition = {
 
 const TurnDefaultWalk: condition = {
   Name: 'TurnDefaultWalk',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const ia = w.GetPlayerCurrentInput(playerIndex);
     const p = w.GetPlayer(playerIndex);
     const facingRight = p?.Flags.IsFacingRight;
@@ -434,7 +425,7 @@ const TurnDefaultWalk: condition = {
 
 const TurnToDash: condition = {
   Name: 'TurnToDash',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const p = w.GetPlayer(playerIndex)!;
     const stateFrame = p.FSMInfo.CurrentStateFrame;
 
@@ -459,7 +450,7 @@ const TurnToDash: condition = {
 
 const LandToJumpSquat: condition = {
   Name: 'LandToJumpSquat',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const ia = w.GetPlayerCurrentInput(playerIndex);
     const prevIa = w.GetPlayerPreviousInput(playerIndex);
     const p = w.GetPlayer(playerIndex);
@@ -486,21 +477,9 @@ const LandToJumpSquat: condition = {
   StateId: STATE_IDS.JUMP_SQUAT_S,
 };
 
-const defaultToFastFall: condition = {
-  Name: 'AttackToFastFall',
-  ConditionFunc: (w: World, playerIndex: number) => {
-    const p = w.GetPlayer(playerIndex)!;
-    if (p.Flags.IsFastFalling) {
-      return true;
-    }
-    return false;
-  },
-  StateId: STATE_IDS.F_FALL_S,
-};
-
 const defaultWalk: condition = {
   Name: 'Walk',
-  ConditionFunc: (w: World) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     return true;
   },
   StateId: STATE_IDS.WALK_S,
@@ -508,7 +487,7 @@ const defaultWalk: condition = {
 
 const defaultRun: condition = {
   Name: 'Run',
-  ConditionFunc: (w: World) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     return true;
   },
   StateId: STATE_IDS.RUN_S,
@@ -516,7 +495,7 @@ const defaultRun: condition = {
 
 const defaultIdle: condition = {
   Name: 'Idle',
-  ConditionFunc: (w: World) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     return true;
   },
   StateId: STATE_IDS.IDLE_S,
@@ -524,7 +503,7 @@ const defaultIdle: condition = {
 
 const defaultDash: condition = {
   Name: 'Dash',
-  ConditionFunc: (w: World) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     return true;
   },
   StateId: STATE_IDS.DASH_S,
@@ -532,7 +511,7 @@ const defaultDash: condition = {
 
 const defaultJump: condition = {
   Name: 'Jump',
-  ConditionFunc: (w: World) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     return true;
   },
   StateId: STATE_IDS.JUMP_S,
@@ -540,7 +519,7 @@ const defaultJump: condition = {
 
 const defaultNFall: condition = {
   Name: 'NFall',
-  ConditionFunc: (w: World) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     return true;
   },
   StateId: STATE_IDS.N_FALL_S,
@@ -548,7 +527,7 @@ const defaultNFall: condition = {
 
 const defaultHelpess: condition = {
   Name: 'Helpless',
-  ConditionFunc: (w: World) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     return true;
   },
   StateId: STATE_IDS.HELPESS_S,
@@ -556,7 +535,7 @@ const defaultHelpess: condition = {
 
 const LandToIdle: condition = {
   Name: 'LandToIdle',
-  ConditionFunc: (w: World, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const ia = w.GetInputManager(playerIndex).GetInputForFrame(w.localFrame)!;
 
     if (ia.LXAxsis === 0) {
@@ -570,7 +549,7 @@ const LandToIdle: condition = {
 
 const LandToWalk: condition = {
   Name: 'LandToWalk',
-  ConditionFunc: (w: World, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const p = w.GetPlayer(playerIndex)!;
     const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
@@ -590,7 +569,7 @@ const LandToWalk: condition = {
 
 const LandToTurn: condition = {
   Name: 'LandToTurn',
-  ConditionFunc: (w: World, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const p = w.GetPlayer(playerIndex)!;
     const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
@@ -610,7 +589,7 @@ const LandToTurn: condition = {
 
 const RunStopToTurn: condition = {
   Name: 'RunStopToTurn',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const p = w.GetPlayer(playerIndex)!;
     const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
@@ -630,7 +609,7 @@ const RunStopToTurn: condition = {
 
 const IdleToAttack: condition = {
   Name: 'IdleToAttack',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const ia = w.GetPlayerCurrentInput(playerIndex);
     const lastIa = w.GetPlayerPreviousInput(playerIndex);
 
@@ -648,7 +627,7 @@ const IdleToAttack: condition = {
 
 const ToDownSpecial: condition = {
   Name: 'IdleToDownSpecial',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const ia = w.GetPlayerCurrentInput(playerIndex);
     const lastIa = w.GetPlayerPreviousInput(playerIndex);
 
@@ -667,7 +646,7 @@ const ToDownSpecial: condition = {
 
 const HitStopToLaunch: condition = {
   Name: 'HitStopToLaunch',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const p = w.GetPlayer(playerIndex)!;
 
     if (p.HitStop.HitStopFrames > 0) {
@@ -681,7 +660,7 @@ const HitStopToLaunch: condition = {
 
 const LaunchToTumble: condition = {
   Name: 'LaunchToHitStun',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const p = w.GetPlayer(playerIndex)!;
 
     if (p.HitStun.FramesOfHitStun > 0) {
@@ -697,7 +676,7 @@ const LaunchToTumble: condition = {
 
 const attackToNeutral: attackCondition = {
   Name: 'AttackToNurtal',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
     const p = w.GetPlayer(playerIndex)!;
     const grounded = p.IsPlayerGroundedOnStage(w.Stage);
@@ -715,7 +694,7 @@ export const AttackDecisions = [attackToNeutral];
 
 const toNuetralAir: attackCondition = {
   Name: 'ToNeutralAir',
-  ConditionFunc: (p, w) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     return true;
   },
   AttackId: ATTACK_IDS.N_AIR_ATTACK,
@@ -725,7 +704,7 @@ export const NeutralAirConditions = [toNuetralAir];
 
 const downSpecialToDownSpecialGrounded: attackCondition = {
   Name: 'DownSpecialToDownSpeacialGrounded',
-  ConditionFunc: (w, playerIndex) => {
+  ConditionFunc: (w: World, playerIndex: number) => {
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
     const p = w.GetPlayer(playerIndex)!;
     const grounded = p.IsPlayerGroundedOnStage(w.Stage!);
@@ -958,8 +937,6 @@ function InitJumpRelations(): StateRelation {
 
   jumpTranslations._setMappings([
     { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
-    //{ geId: GAME_EVENT_IDS.N_AIR_GE, sId: STATE_IDS.N_AIR_S },
-    //{ geId: GAME_EVENT_IDS.F_AIR_GE, sId: STATE_IDS.F_AIR_S },
   ]);
 
   const condtions: Array<condition> = [ToJump, ToAirDodge];
@@ -983,9 +960,12 @@ function InitNeutralFallRelations(): StateRelation {
     { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
     { geId: GAME_EVENT_IDS.N_AIR_GE, sId: STATE_IDS.N_AIR_S },
     { geId: GAME_EVENT_IDS.F_AIR_GE, sId: STATE_IDS.F_AIR_S },
+    { geId: GAME_EVENT_IDS.U_AIR_GE, sId: STATE_IDS.U_AIR_S },
+    { geId: GAME_EVENT_IDS.B_AIR_GE, sId: STATE_IDS.B_AIR_S },
+    { geId: GAME_EVENT_IDS.D_AIR_GE, sId: STATE_IDS.D_AIR_S },
   ]);
 
-  const condtions: Array<condition> = [ToJump, ToAirDodge, FallToFFall];
+  const condtions: Array<condition> = [ToJump, ToAirDodge];
 
   nFallTranslations._setConditions(condtions);
 
@@ -995,28 +975,6 @@ function InitNeutralFallRelations(): StateRelation {
   );
 
   return nFallRelations;
-}
-
-function InitFastFallRelations(): StateRelation {
-  const ffTranslations = new ActionStateMappings();
-
-  ffTranslations._setMappings([
-    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_S },
-    { geId: GAME_EVENT_IDS.LAND_GE, sId: STATE_IDS.LAND_S },
-    { geId: GAME_EVENT_IDS.SOFT_LAND_GE, sId: STATE_IDS.SOFT_LAND_S },
-    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
-    { geId: GAME_EVENT_IDS.N_AIR_GE, sId: STATE_IDS.N_AIR_S },
-    { geId: GAME_EVENT_IDS.F_AIR_GE, sId: STATE_IDS.F_AIR_S },
-    { geId: GAME_EVENT_IDS.LEDGE_GRAB_GE, sId: STATE_IDS.LEDGE_GRAB_S },
-  ]);
-
-  ffTranslations._setConditions([ToAirDodge]);
-
-  const fastFallRelations = new StateRelation(
-    STATE_IDS.F_FALL_S,
-    ffTranslations
-  );
-  return fastFallRelations;
 }
 
 function InitLandRelations(): StateRelation {
@@ -1112,11 +1070,12 @@ function InitAttackRelations(): StateRelation {
 function InitAirAttackRelations(): StateRelation {
   const airAttackTranslations = new ActionStateMappings();
 
-  airAttackTranslations._setDefault([defaultToFastFall, defaultNFall]);
+  airAttackTranslations._setDefault([defaultNFall]);
 
   airAttackTranslations._setMappings([
     { geId: GAME_EVENT_IDS.LAND_GE, sId: STATE_IDS.LAND_S },
     { geId: GAME_EVENT_IDS.SOFT_LAND_GE, sId: STATE_IDS.SOFT_LAND_S },
+    { geId: GAME_EVENT_IDS.LEDGE_GRAB_GE, sId: STATE_IDS.LEDGE_GRAB_S },
   ]);
 
   const airAttackRelations = new StateRelation(
@@ -1135,6 +1094,7 @@ function InitFAirAttackRelations(): StateRelation {
   fAirAttackTranslations._setMappings([
     { geId: GAME_EVENT_IDS.SOFT_LAND_GE, sId: STATE_IDS.SOFT_LAND_S },
     { geId: GAME_EVENT_IDS.LAND_GE, sId: STATE_IDS.LAND_S },
+    { geId: GAME_EVENT_IDS.LEDGE_GRAB_GE, sId: STATE_IDS.LEDGE_GRAB_S },
   ]);
 
   const fAirTranslations = new StateRelation(
@@ -1143,6 +1103,54 @@ function InitFAirAttackRelations(): StateRelation {
   );
 
   return fAirTranslations;
+}
+
+function InitUAirRelations(): StateRelation {
+  const uAirTranslations = new ActionStateMappings();
+
+  uAirTranslations._setMappings([
+    { geId: GAME_EVENT_IDS.LAND_GE, sId: STATE_IDS.LAND_S },
+    { geId: GAME_EVENT_IDS.SOFT_LAND_GE, sId: STATE_IDS.SOFT_LAND_S },
+    { geId: GAME_EVENT_IDS.LEDGE_GRAB_GE, sId: STATE_IDS.LEDGE_GRAB_S },
+  ]);
+
+  uAirTranslations._setDefault([defaultNFall]);
+
+  const uAirRelations = new StateRelation(STATE_IDS.U_AIR_S, uAirTranslations);
+
+  return uAirRelations;
+}
+
+function InitBAirRelations(): StateRelation {
+  const bAirTranslations = new ActionStateMappings();
+
+  bAirTranslations._setMappings([
+    { geId: GAME_EVENT_IDS.LAND_GE, sId: STATE_IDS.LAND_S },
+    { geId: GAME_EVENT_IDS.SOFT_LAND_GE, sId: STATE_IDS.SOFT_LAND_S },
+    { geId: GAME_EVENT_IDS.LEDGE_GRAB_GE, sId: STATE_IDS.LEDGE_GRAB_S },
+  ]);
+
+  bAirTranslations._setDefault([defaultNFall]);
+
+  const bAirRelations = new StateRelation(STATE_IDS.B_AIR_S, bAirTranslations);
+
+  return bAirRelations;
+}
+
+function InitDAirRelations(): StateRelation {
+  const dAirTranslations = new ActionStateMappings();
+
+  dAirTranslations._setMappings([
+    { geId: GAME_EVENT_IDS.LAND_GE, sId: STATE_IDS.LAND_S },
+    { geId: GAME_EVENT_IDS.SOFT_LAND_GE, sId: STATE_IDS.SOFT_LAND_S },
+    { geId: GAME_EVENT_IDS.LEDGE_GRAB_GE, sId: STATE_IDS.LEDGE_GRAB_S },
+  ]);
+
+  dAirTranslations._setDefault([defaultNFall]);
+
+  const bAirRelations = new StateRelation(STATE_IDS.D_AIR_S, dAirTranslations);
+
+  return bAirRelations;
 }
 
 function InitDownSpecialRelations(): StateRelation {
@@ -1246,7 +1254,7 @@ export const StartWalk: FSMState = {
     p.Flags.SetCanWalkOffFalse();
     const ia = w.GetPlayerCurrentInput(p.ID);
     const axis = ia?.LXAxsis ?? 0;
-    if (ia != undefined) {
+    if (ia !== undefined) {
       const flags = p.Flags;
       if (axis < 0 && flags.IsFacingRight) {
         flags.ChangeDirections();
@@ -1258,8 +1266,8 @@ export const StartWalk: FSMState = {
   },
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
-    if (ia != undefined) {
-      p.AddWalkImpulseToPlayer(ia.LXAxsis); //PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
+    if (ia !== undefined) {
+      p.AddWalkImpulseToPlayer(ia.LXAxsis);
     }
   },
   OnExit: (p: Player, w: World) => {
@@ -1275,9 +1283,8 @@ export const Walk: FSMState = {
   },
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
-    if (ia != undefined) {
+    if (ia !== undefined) {
       p.AddWalkImpulseToPlayer(ia.LXAxsis);
-      //PlayerHelpers.AddWalkImpulseToPlayer(p, ia.LXAxsis);
     }
   },
   OnExit: (p: Player, w: World) => {
@@ -1334,7 +1341,7 @@ export const Run: FSMState = {
   OnEnter: (p: Player, w: World) => {},
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
-    if (ia != undefined) {
+    if (ia !== undefined) {
       const speeds = p.Speeds;
       p.Velocity.AddClampedXImpulse(
         speeds.MaxRunSpeed,
@@ -1385,21 +1392,21 @@ export const Jump: FSMState = {
     const jumpComp = p.Jump;
     if (jumpComp.HasJumps()) {
       p.Flags.FastFallOff();
-      p.AddToPlayerYPosition(-0.5); //PlayerHelpers.AddToPlayerYPosition(p, -0.5);
-      // p.Velocity.Y = -jumpComp.JumpVelocity;
+      p.AddToPlayerYPosition(-0.5);
       jumpComp.IncrementJumps();
     }
     p.ECB.SetECBShape(-25, 60, 70);
   },
   OnUpdate: (p: Player, w: World) => {
     if (p.FSMInfo.CurrentStateFrame === 0 && p.Jump.OnFirstJump()) {
-      p.AddToPlayerYPosition(-p.ECB.YOffset + 20);
+      p.AddToPlayerYPosition(-p.ECB.YOffset);
       return;
     }
 
     if (p.FSMInfo.CurrentStateFrame === 1) {
       p.Velocity.Y = -p.Jump.JumpVelocity;
     }
+
     const inputAction = w.GetPlayerCurrentInput(p.ID);
     const speedsComp = p.Speeds;
     p.Velocity.AddClampedXImpulse(
@@ -1408,7 +1415,7 @@ export const Jump: FSMState = {
     );
   },
   OnExit: (p: Player, w: World) => {
-    p.ECB.SetECBShape(0, 100, 100);
+    p.ECB.ResetECBShape();
   },
 };
 
@@ -1417,38 +1424,26 @@ export const NeutralFall: FSMState = {
   StateId: STATE_IDS.N_FALL_S,
   OnEnter: (p: Player, w: World) => {
     p.ECB.SetECBShape(-25, 60, 70);
+    if (p.Jump.JumpCountIsZero()) {
+      p.Jump.IncrementJumps();
+    }
   },
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID)!;
     const speedsComp = p.Speeds;
-    p.Velocity.AddClampedXImpulse(
-      speedsComp.AerialSpeedInpulseLimit,
-      ia.LXAxsis * speedsComp.ArielVelocityMultiplier
-    );
-  },
-  OnExit: (p: Player, w: World) => {
-    p.ECB.SetECBShape(0, 100, 100);
-  },
-};
+    const prevIa = w.GetPlayerPreviousInput(p.ID)!;
 
-export const FastFall: FSMState = {
-  StateName: 'FastFall',
-  StateId: STATE_IDS.F_FALL_S,
-  OnEnter: (p: Player, w: World) => {
-    p.ECB.SetECBShape(-25, 50, 60);
-    p.Flags.FastFallOn();
-  },
-  OnUpdate: (p: Player, w: World) => {
-    const ia = w.GetPlayerCurrentInput(p.ID)!;
-    const speedsComp = p.Speeds;
+    if (p.Velocity.Y > 0 && ia.LYAxsis < -0.8 && prevIa.LYAxsis > -0.8) {
+      p.Flags.FastFallOn();
+    }
+
     p.Velocity.AddClampedXImpulse(
       speedsComp.AerialSpeedInpulseLimit,
       ia.LXAxsis * speedsComp.ArielVelocityMultiplier
     );
   },
   OnExit: (p: Player, w: World) => {
-    //p.Flags.FastFallOff();
-    p.ECB.SetECBShape(0, 100, 100);
+    p.ECB.ResetECBShape();
   },
 };
 
@@ -1482,6 +1477,8 @@ export const LedgeGrab: FSMState = {
   OnEnter: (p: Player, w: World) => {
     p.Flags.FastFallOff();
     p.Flags.GravityOff();
+    p.Velocity.X = 0;
+    p.Velocity.Y = 0;
     const jumpComp = p.Jump;
     jumpComp.ResetJumps();
     jumpComp.IncrementJumps();
@@ -1524,7 +1521,11 @@ export const AirDodge: FSMState = {
 export const Helpess: FSMState = {
   StateName: 'Helpess',
   StateId: STATE_IDS.HELPESS_S,
-  OnEnter: (p: Player, w: World) => {},
+  OnEnter: (p: Player, w: World) => {
+    if (p.Jump.OnFirstJump()) {
+      p.Jump.IncrementJumps();
+    }
+  },
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     const speeds = p.Speeds;
@@ -1563,7 +1564,6 @@ export const Attack: FSMState = {
   },
   OnExit: (p: Player, w: World) => {
     const attackComp = p.Attacks;
-    p.Attacks.GetAttack()!.ResetPlayeIdHitArray();
     attackComp.ZeroCurrentAttack();
   },
 };
@@ -1577,20 +1577,19 @@ export const AerialAttack: FSMState = {
   },
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID)!;
-    const prevIa = w.GetPlayerPreviousInput(p.ID)!;
+    const prevIa = w.GetPlayerPreviousInput(p.ID);
     const speeds = p.Speeds;
     const airSpeed = speeds.AerialSpeedInpulseLimit;
     const airMult = speeds.AirDogeSpeed;
     p.Velocity.AddClampedXImpulse(airSpeed, (ia!.LXAxsis * airMult) / 2);
-    if (ia.LYAxsis < -0.8 && prevIa.LYAxsis > -0.8) {
+    if (prevIa !== undefined && ShouldFastFall(ia.LYAxsis, prevIa.LYAxsis)) {
       p.Flags.FastFallOn();
     }
   },
   OnExit(p: Player, w: World) {
     const attackComp = p.Attacks;
-    attackComp.GetAttack()!.ResetPlayeIdHitArray();
     attackComp.ZeroCurrentAttack();
-    p.ECB.SetECBShape(0, 100, 100);
+    p.ECB.ResetECBShape();
   },
 };
 
@@ -1603,17 +1602,20 @@ export const FAerialAttack: FSMState = {
   },
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID)!;
+    const prevIa = w.GetPlayerPreviousInput(p.ID);
     const speedsComp = p.Speeds;
     p.Velocity.AddClampedXImpulse(
       speedsComp.AerialSpeedInpulseLimit,
       ia.LXAxsis * speedsComp.ArielVelocityMultiplier
     );
+    if (prevIa !== undefined && ShouldFastFall(ia.LYAxsis, prevIa.LYAxsis)) {
+      p.Flags.FastFallOn();
+    }
   },
   OnExit: (p: Player, w: World) => {
     const attackComp = p.Attacks;
-    attackComp.GetAttack()!.ResetPlayeIdHitArray();
     attackComp.ZeroCurrentAttack();
-    p.ECB.SetECBShape(0, 100, 100);
+    p.ECB.ResetECBShape();
   },
 };
 
@@ -1626,17 +1628,71 @@ export const UAirAttack: FSMState = {
   },
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID)!;
+    const prevIa = w.GetPlayerPreviousInput(p.ID);
     const speedsComp = p.Speeds;
     p.Velocity.AddClampedXImpulse(
       speedsComp.AerialSpeedInpulseLimit,
       ia.LXAxsis * speedsComp.ArielVelocityMultiplier
     );
+    if (prevIa !== undefined && ShouldFastFall(ia.LYAxsis, prevIa.LYAxsis)) {
+      p.Flags.FastFallOn();
+    }
   },
   OnExit: (p: Player, w: World) => {
     const attackComp = p.Attacks;
-    attackComp.GetAttack()!.ResetPlayeIdHitArray();
     attackComp.ZeroCurrentAttack();
-    p.ECB.SetECBShape(0, 100, 100);
+    p.ECB.ResetECBShape();
+  },
+};
+
+export const BAirAttack: FSMState = {
+  StateName: 'BAir',
+  StateId: STATE_IDS.B_AIR_S,
+  OnEnter: (p: Player, w: World) => {
+    p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.B_AIR_GE);
+    p.ECB.SetECBShape(-25, 60, 60);
+  },
+  OnUpdate: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
+    const prevIa = w.GetPlayerPreviousInput(p.ID);
+    const speedsComp = p.Speeds;
+    p.Velocity.AddClampedXImpulse(
+      speedsComp.AerialSpeedInpulseLimit,
+      ia.LXAxsis * speedsComp.ArielVelocityMultiplier
+    );
+    if (prevIa !== undefined && ShouldFastFall(ia.LYAxsis, prevIa.LYAxsis)) {
+      p.Flags.FastFallOn();
+    }
+  },
+  OnExit: (p: Player, w: World) => {
+    const attackComp = p.Attacks;
+    attackComp.ZeroCurrentAttack();
+    p.ECB.ResetECBShape();
+  },
+};
+
+export const DAirAttack: FSMState = {
+  StateName: 'DAir',
+  StateId: STATE_IDS.D_AIR_S,
+  OnEnter: (p: Player, w: World) => {
+    p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.D_AIR_GE);
+    p.ECB.SetECBShape(-10, 90, 60);
+  },
+  OnUpdate: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
+    const prevIa = w.GetPlayerPreviousInput(p.ID);
+    const speedsComp = p.Speeds;
+    p.Velocity.AddClampedXImpulse(
+      speedsComp.AerialSpeedInpulseLimit,
+      ia.LXAxsis * speedsComp.ArielVelocityMultiplier
+    );
+    if (prevIa !== undefined && ShouldFastFall(ia.LYAxsis, prevIa.LYAxsis)) {
+      p.Flags.FastFallOn();
+    }
+  },
+  OnExit: (p: Player, w: World) => {
+    p.Attacks.ZeroCurrentAttack();
+    p.ECB.ResetECBShape();
   },
 };
 
@@ -1705,6 +1761,9 @@ export const Launch: FSMState = {
     const hitStun = p.HitStun;
     pVel.X = hitStun.VX;
     pVel.Y = hitStun.VY;
+    if (p.Jump.OnFirstJump()) {
+      p.Jump.IncrementJumps();
+    }
   },
   OnUpdate: (p: Player, w: World) => {
     p.HitStun.DecrementHitStun();
@@ -1740,40 +1799,49 @@ export const Crouch: FSMState = {
   },
   OnUpdate: (p: Player, w: World) => {},
   OnExit: (p: Player, w: World) => {
-    p.ECB.SetECBShape(0, 100, 100);
+    p.ECB.ResetECBShape();
     p.Flags.SetCanWalkOffTrue();
   },
 };
 
-//================================================
-export const IDLE_STATE_RELATIONS = InitIdleRelations();
-export const START_WALK_RELATIONS = InitStartWalkRelations();
-export const TURN_RELATIONS = InitTurnRelations();
-export const WALK_RELATIONS = InitWalkRelations();
-export const DASH_RELATIONS = InitDashRelations();
-export const DASH_TURN_RELATIONS = InitDashTurnRelations();
-export const RUN_RELATIONS = InitRunRelations();
-export const RUN_TURN_RELATIONS = InitRunTurnRelations();
-export const STOP_RUN_RELATIONS = InitStopRunRelations();
-export const JUMP_SQUAT_RELATIONS = InitJumpSquatRelations();
-export const JUMP_RELATIONS = InitJumpRelations();
-export const NFALL_RELATIONS = InitNeutralFallRelations();
-export const FFALL_RELATIONS = InitFastFallRelations();
-export const LAND_RELATIONS = InitLandRelations();
-export const SOFT_LAND_RELATIONS = InitSoftLandRelations();
-export const LEDGE_GRAB_RELATIONS = InitLedgeGrabRelations();
-export const AIR_DODGE_RELATIONS = InitAirDodgeRelations();
-export const HELPESS_RELATIONS = InitHelpessRelations();
-export const ATTACK_RELATIONS = InitAttackRelations();
-export const AIR_ATK_RELATIONS = InitAirAttackRelations();
-export const F_AIR_ATK_RELATIONS = InitFAirAttackRelations();
-export const DOWN_SPECIAL_RELATIONS = InitDownSpecialRelations();
-export const HIT_STOP_RELATIONS = InitHitStopRelations();
-export const TUMBLE_RELATIONS = InitTumbleRelations();
-export const LAUNCH_RELATIONS = InitLaunchRelations();
-export const CROUCH_RELATIONS = InitCrouchRelations();
+function ShouldFastFall(curLYAxsis: number, prevLYAxsis: number): boolean {
+  if (curLYAxsis < -0.8 && prevLYAxsis > -0.8) {
+    return true;
+  }
+  return false;
+}
 
-export const ActionMappings = new Map<stateId, ActionStateMappings>()
+//================================================
+const IDLE_STATE_RELATIONS = InitIdleRelations();
+const START_WALK_RELATIONS = InitStartWalkRelations();
+const TURN_RELATIONS = InitTurnRelations();
+const WALK_RELATIONS = InitWalkRelations();
+const DASH_RELATIONS = InitDashRelations();
+const DASH_TURN_RELATIONS = InitDashTurnRelations();
+const RUN_RELATIONS = InitRunRelations();
+const RUN_TURN_RELATIONS = InitRunTurnRelations();
+const STOP_RUN_RELATIONS = InitStopRunRelations();
+const JUMP_SQUAT_RELATIONS = InitJumpSquatRelations();
+const JUMP_RELATIONS = InitJumpRelations();
+const NFALL_RELATIONS = InitNeutralFallRelations();
+const LAND_RELATIONS = InitLandRelations();
+const SOFT_LAND_RELATIONS = InitSoftLandRelations();
+const LEDGE_GRAB_RELATIONS = InitLedgeGrabRelations();
+const AIR_DODGE_RELATIONS = InitAirDodgeRelations();
+const HELPESS_RELATIONS = InitHelpessRelations();
+const ATTACK_RELATIONS = InitAttackRelations();
+const AIR_ATK_RELATIONS = InitAirAttackRelations();
+const F_AIR_ATK_RELATIONS = InitFAirAttackRelations();
+const U_AIR_ATK_RELATIONS = InitUAirRelations();
+const B_AIR_ATK_RELATIONS = InitBAirRelations();
+const D_AIR_ATK_RELATIONS = InitDAirRelations();
+const DOWN_SPECIAL_RELATIONS = InitDownSpecialRelations();
+const HIT_STOP_RELATIONS = InitHitStopRelations();
+const TUMBLE_RELATIONS = InitTumbleRelations();
+const LAUNCH_RELATIONS = InitLaunchRelations();
+const CROUCH_RELATIONS = InitCrouchRelations();
+
+export const ActionMappings = new Map<StateId, ActionStateMappings>()
   .set(IDLE_STATE_RELATIONS.stateId, IDLE_STATE_RELATIONS.mappings)
   .set(START_WALK_RELATIONS.stateId, START_WALK_RELATIONS.mappings)
   .set(TURN_RELATIONS.stateId, TURN_RELATIONS.mappings)
@@ -1786,7 +1854,6 @@ export const ActionMappings = new Map<stateId, ActionStateMappings>()
   .set(JUMP_SQUAT_RELATIONS.stateId, JUMP_SQUAT_RELATIONS.mappings)
   .set(JUMP_RELATIONS.stateId, JUMP_RELATIONS.mappings)
   .set(NFALL_RELATIONS.stateId, NFALL_RELATIONS.mappings)
-  .set(FFALL_RELATIONS.stateId, FFALL_RELATIONS.mappings)
   .set(LAND_RELATIONS.stateId, LAND_RELATIONS.mappings)
   .set(SOFT_LAND_RELATIONS.stateId, SOFT_LAND_RELATIONS.mappings)
   .set(LEDGE_GRAB_RELATIONS.stateId, LEDGE_GRAB_RELATIONS.mappings)
@@ -1795,13 +1862,16 @@ export const ActionMappings = new Map<stateId, ActionStateMappings>()
   .set(ATTACK_RELATIONS.stateId, ATTACK_RELATIONS.mappings)
   .set(AIR_ATK_RELATIONS.stateId, AIR_ATK_RELATIONS.mappings)
   .set(F_AIR_ATK_RELATIONS.stateId, F_AIR_ATK_RELATIONS.mappings)
+  .set(U_AIR_ATK_RELATIONS.stateId, U_AIR_ATK_RELATIONS.mappings)
+  .set(B_AIR_ATK_RELATIONS.stateId, B_AIR_ATK_RELATIONS.mappings)
+  .set(D_AIR_ATK_RELATIONS.stateId, D_AIR_ATK_RELATIONS.mappings)
   .set(DOWN_SPECIAL_RELATIONS.stateId, DOWN_SPECIAL_RELATIONS.mappings)
   .set(HIT_STOP_RELATIONS.stateId, HIT_STOP_RELATIONS.mappings)
   .set(TUMBLE_RELATIONS.stateId, TUMBLE_RELATIONS.mappings)
   .set(LAUNCH_RELATIONS.stateId, LAUNCH_RELATIONS.mappings)
   .set(CROUCH_RELATIONS.stateId, CROUCH_RELATIONS.mappings);
 
-export const FSMStates = new Map<stateId, FSMState>()
+export const FSMStates = new Map<StateId, FSMState>()
   .set(Idle.StateId, Idle)
   .set(StartWalk.StateId, StartWalk)
   .set(Turn.StateId, Turn)
@@ -1814,7 +1884,6 @@ export const FSMStates = new Map<stateId, FSMState>()
   .set(JumpSquat.StateId, JumpSquat)
   .set(Jump.StateId, Jump)
   .set(NeutralFall.StateId, NeutralFall)
-  .set(FastFall.StateId, FastFall)
   .set(Land.StateId, Land)
   .set(SoftLand.StateId, SoftLand)
   .set(LedgeGrab.StateId, LedgeGrab)
@@ -1823,14 +1892,20 @@ export const FSMStates = new Map<stateId, FSMState>()
   .set(Attack.StateId, Attack)
   .set(AerialAttack.StateId, AerialAttack)
   .set(FAerialAttack.StateId, FAerialAttack)
+  .set(UAirAttack.StateId, UAirAttack)
+  .set(BAirAttack.StateId, BAirAttack)
+  .set(DAirAttack.StateId, DAirAttack)
   .set(DownSpecial.StateId, DownSpecial)
   .set(hitStop.StateId, hitStop)
   .set(Tumble.StateId, Tumble)
   .set(Launch.StateId, Launch)
   .set(Crouch.StateId, Crouch);
 
-export const AttackGameEventMappings = new Map<gameEventId, attackId>()
+export const AttackGameEventMappings = new Map<GameEventId, AttackId>()
   .set(GAME_EVENT_IDS.ATTACK_GE, ATTACK_IDS.NUETRAL_ATTACK)
   .set(GAME_EVENT_IDS.N_AIR_GE, ATTACK_IDS.N_AIR_ATTACK)
   .set(GAME_EVENT_IDS.F_AIR_GE, ATTACK_IDS.F_AIR_ATTACK)
+  .set(GAME_EVENT_IDS.U_AIR_GE, ATTACK_IDS.U_AIR_ATTACK)
+  .set(GAME_EVENT_IDS.B_AIR_GE, ATTACK_IDS.B_AIR_ATTACK)
+  .set(GAME_EVENT_IDS.D_AIR_GE, ATTACK_IDS.D_AIR_ATTACK)
   .set(GAME_EVENT_IDS.DOWN_SPECIAL_GE, ATTACK_IDS.DOWN_SPECIAL);

@@ -150,7 +150,7 @@ export function StageCollisionDetection(
         continue;
       }
 
-      if (Math.abs(normalX) > 0 && normalY > 0) {
+      if (Math.abs(normalX) > 0 && normalY < 0) {
         playerPosDTO.Add(move);
         p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
 
@@ -218,8 +218,8 @@ export function LedgeGrabDetection(
       if (intersectsLeftLedge.Collision) {
         sm.UpdateFromWorld(GAME_EVENT_IDS.LEDGE_GRAB_GE);
         p.SetPlayerPosition(
-          leftLedge[0].X - 25,
-          leftLedge[0].Y + (ecb.Bottom.Y - ecb.Top.Y)
+          leftLedge[0].X - ecb.Width / 2 /*25*/,
+          p.Position.Y
         );
       }
 
@@ -234,10 +234,7 @@ export function LedgeGrabDetection(
     );
     if (intersectsRightLedge.Collision) {
       sm.UpdateFromWorld(GAME_EVENT_IDS.LEDGE_GRAB_GE);
-      p.SetPlayerPosition(
-        rightLedge[0].X + 25,
-        rightLedge[0].Y + (ecb.Bottom.Y - ecb.Top.Y)
-      );
+      p.SetPlayerPosition(rightLedge[0].X + ecb.Width / 2, p.Position.Y);
     }
   }
 }

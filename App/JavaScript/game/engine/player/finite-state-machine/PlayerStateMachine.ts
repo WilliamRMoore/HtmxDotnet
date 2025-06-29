@@ -4,10 +4,10 @@ import { InputAction } from '../../../loops/Input';
 import {
   ActionStateMappings,
   FSMStates,
-  gameEventId,
+  GameEventId,
   Idle,
   RunCondition,
-  stateId,
+  StateId,
   ActionMappings,
 } from './PlayerStates';
 import { FSMInfoComponent } from '../playerComponents';
@@ -23,8 +23,8 @@ export type FSMState = {
 export class StateMachine {
   private player: Player;
   private world: World;
-  private stateMappings: Map<stateId, ActionStateMappings>;
-  private states: Map<stateId, FSMState>;
+  private stateMappings: Map<StateId, ActionStateMappings>;
+  private states: Map<StateId, FSMState>;
 
   constructor(p: Player, world: World) {
     this.player = p;
@@ -34,11 +34,11 @@ export class StateMachine {
     this.states = FSMStates;
   }
 
-  public SetInitialState(stateId: stateId) {
+  public SetInitialState(stateId: StateId) {
     this.changeState(this.states.get(stateId)!, this.player.FSMInfo);
   }
 
-  public UpdateFromWorld(gameEventId: gameEventId) {
+  public UpdateFromWorld(gameEventId: GameEventId) {
     // world events should still have to follow mapping rules
     const state = this.GetTranslation(gameEventId);
     if (state === undefined) {
@@ -51,7 +51,7 @@ export class StateMachine {
     fsmInfo.IncrementStateFrame();
   }
 
-  public ForceState(sateId: stateId) {
+  public ForceState(sateId: StateId) {
     //ignore mapping rules and force a state change
     const state = this.states.get(sateId);
 
@@ -165,7 +165,7 @@ export class StateMachine {
     return true;
   }
 
-  private GetTranslation(gameEventId: gameEventId): FSMState | undefined {
+  private GetTranslation(gameEventId: GameEventId): FSMState | undefined {
     const stateMappings = this.stateMappings.get(
       this.player.FSMInfo.CurrentStatetId
     );
@@ -179,7 +179,7 @@ export class StateMachine {
     return undefined;
   }
 
-  private GetDefaultState(stateId: stateId, w: World): FSMState | undefined {
+  private GetDefaultState(stateId: StateId, w: World): FSMState | undefined {
     const stateMapping = this.stateMappings.get(stateId);
 
     if (stateMapping == undefined) {

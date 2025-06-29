@@ -1,9 +1,9 @@
 import {
   AttackGameEventMappings,
-  attackId,
-  gameEventId,
+  AttackId,
+  GameEventId,
   Idle,
-  stateId,
+  StateId,
   STATE_IDS,
 } from './finite-state-machine/PlayerStates';
 import { FSMState } from './finite-state-machine/PlayerStateMachine';
@@ -246,16 +246,16 @@ export class VelocityComponent implements IHistoryEnabled<FlatVec> {
 export type FSMInfoSnapShot = {
   State: FSMState;
   StateFrame: number;
-  frameLengths: Map<stateId, number>;
+  frameLengths: Map<StateId, number>;
 };
 
 export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
   private currentState: FSMState = Idle;
-  private currentStateId: stateId = STATE_IDS.IDLE_S;
+  private currentStateId: StateId = STATE_IDS.IDLE_S;
   private currentStateFrame: number = 0;
-  private readonly frameLengths: Map<stateId, number>;
+  private readonly frameLengths: Map<StateId, number>;
 
-  public constructor(frameLengths: Map<stateId, number>) {
+  public constructor(frameLengths: Map<StateId, number>) {
     this.frameLengths = frameLengths;
   }
 
@@ -267,7 +267,7 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
     return this.currentState;
   }
 
-  public get CurrentStatetId(): stateId {
+  public get CurrentStatetId(): StateId {
     return this.currentStateId;
   }
 
@@ -284,7 +284,7 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
     this.currentStateFrame = 0;
   }
 
-  public GetFrameLengthForState(stateId: stateId): number | undefined {
+  public GetFrameLengthForState(stateId: StateId): number | undefined {
     return this.frameLengths.get(stateId);
   }
 
@@ -292,7 +292,7 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
     return this.frameLengths.get(this.currentStateId);
   }
 
-  public SetFrameLength(stateId: stateId, frameLength: number): void {
+  public SetFrameLength(stateId: StateId, frameLength: number): void {
     this.frameLengths.set(stateId, frameLength);
   }
 
@@ -645,12 +645,18 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   private color: string;
   private height: number;
   private width: number;
+  private readonly originalHeight: number;
+  private readonly originalWidth: number;
+  private readonly originalYOffset: number;
   private yOffset: number;
 
   constructor(height: number = 100, width: number = 100, yOffset: number = 0) {
     this.color = 'orange';
     this.height = height;
     this.width = width;
+    this.originalHeight = height;
+    this.originalWidth = width;
+    this.originalYOffset = yOffset;
     this.yOffset = yOffset;
     FillArrayWithFlatVec(this.curVerts);
     FillArrayWithFlatVec(this.prevVerts);
@@ -864,6 +870,14 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     return this.prevVerts[3];
   }
 
+  public get Height(): number {
+    return this.height;
+  }
+
+  public get Width(): number {
+    return this.width;
+  }
+
   public get YOffset(): number {
     return this.yOffset;
   }
@@ -874,6 +888,12 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
 
   public SetColor(color: string): void {
     this.color = color;
+  }
+
+  public ResetECBShape(): void {
+    this.height = this.originalHeight;
+    this.width = this.originalWidth;
+    this.yOffset = this.originalYOffset;
   }
 
   public SnapShot(): ECBSnapShot {
@@ -1114,6 +1134,10 @@ export class JumpComponent implements IHistoryEnabled<number> {
 
   public OnFirstJump(): boolean {
     return this.jumpCount === 1;
+  }
+
+  public JumpCountIsZero(): boolean {
+    return this.jumpCount === 0;
   }
 
   public IncrementJumps(): void {
@@ -1359,10 +1383,10 @@ export class AttackBuilder {
 
 export type AttackSnapShot = Attack | undefined;
 export class AttackComponment implements IHistoryEnabled<AttackSnapShot> {
-  private attacks: Map<attackId, Attack>;
+  private attacks: Map<AttackId, Attack>;
   private currentAttack: Attack | undefined = undefined;
 
-  public constructor(attacks: Map<attackId, Attack>) {
+  public constructor(attacks: Map<AttackId, Attack>) {
     this.attacks = attacks;
   }
 
@@ -1370,7 +1394,7 @@ export class AttackComponment implements IHistoryEnabled<AttackSnapShot> {
     return this.currentAttack;
   }
 
-  public SetCurrentAttack(gameEventId: gameEventId): void {
+  public SetCurrentAttack(gameEventId: GameEventId): void {
     const attackId = AttackGameEventMappings.get(gameEventId);
     if (attackId === undefined) {
       return;
@@ -1385,6 +1409,10 @@ export class AttackComponment implements IHistoryEnabled<AttackSnapShot> {
   }
 
   public ZeroCurrentAttack(): void {
+    if (this.currentAttack === undefined) {
+      return;
+    }
+    this.currentAttack.ResetPlayeIdHitArray();
     this.currentAttack = undefined;
   }
 

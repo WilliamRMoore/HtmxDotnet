@@ -155,6 +155,16 @@ function handleAerialAction(
       inputAction.Action = GAME_EVENT_IDS.B_AIR_GE;
       return inputAction;
     }
+
+    if (!isFacingRight) {
+      if (LXAxis < 0) {
+        inputAction.Action = GAME_EVENT_IDS.F_AIR_GE;
+        return inputAction;
+      }
+
+      inputAction.Action = GAME_EVENT_IDS.B_AIR_GE;
+      return inputAction;
+    }
   }
 
   // up or down
