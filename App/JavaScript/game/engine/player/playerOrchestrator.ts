@@ -12,6 +12,7 @@ import {
   PlayerFlagsComponent,
   PlayerPointsComponent,
   PositionComponent,
+  SensorComponent,
   SpeedsComponent,
   SpeedsComponentBuilder,
   VelocityComponent,
@@ -46,6 +47,7 @@ export class Player {
   private readonly jump: JumpComponent;
   private readonly fsmInfo: FSMInfoComponent;
   private readonly ledgeDetector: LedgeDetectorComponent;
+  private readonly sensors: SensorComponent;
   private readonly attacks: AttackComponment;
   public readonly ID: number = 0;
 
@@ -79,6 +81,7 @@ export class Player {
       CharacterConfig.LedgeBoxHeight,
       CharacterConfig.ledgeBoxYOffset
     );
+    this.sensors = new SensorComponent();
     this.attacks = new AttackComponment(CharacterConfig.attacks);
   }
 
@@ -132,6 +135,10 @@ export class Player {
 
   public get LedgeDetector(): LedgeDetectorComponent {
     return this.ledgeDetector;
+  }
+
+  public get Sensors(): SensorComponent {
+    return this.sensors;
   }
 
   public get Attacks(): AttackComponment {

@@ -345,6 +345,110 @@ export function PlayerInput(
   }
 }
 
+export function PlayerSensors(
+  world: World,
+  playerCount: number,
+  players: Array<Player>,
+  vecPool: Pool<PooledVector>,
+  closestPointsPool: Pool<ClosestPointsResult>,
+  collisionResultPool: Pool<CollisionResult>
+): void {
+  if (playerCount < 2) {
+    return;
+  }
+  for (let playerIndex = 0; playerIndex < playerCount - 1; playerIndex++) {
+    const pA = players[playerIndex];
+    const pB = players[playerIndex + 1];
+    const pAVspB = sesnsorDetect(
+      pA,
+      pB,
+      vecPool,
+      collisionResultPool,
+      closestPointsPool
+    );
+    const pBVspA = sesnsorDetect(
+      pB,
+      pA,
+      vecPool,
+      collisionResultPool,
+      closestPointsPool
+    );
+
+    if (pAVspB) {
+      pA.Sensors.ReactAction(world, pA, pB);
+    }
+
+    if (pBVspA) {
+      pB.Sensors.ReactAction(world, pB, pB);
+    }
+  }
+}
+
+function sesnsorDetect(
+  pA: Player,
+  pB: Player,
+  vecPool: Pool<PooledVector>,
+  colResPool: Pool<CollisionResult>,
+  closestPointsPool: Pool<ClosestPointsResult>
+) {
+  const pSensors = pA.Sensors;
+  const pAPos = pA.Position;
+  const pAHurtCaps = pA.HurtBubbles.HurtCapsules;
+  const pAFacingRight = pA.Flags.IsFacingRight;
+
+  const pACapsLenght = pAHurtCaps.length;
+  const sesnsorLength = pSensors.Sensors.length;
+  for (let hurtCapIndex = 0; hurtCapIndex < pACapsLenght; hurtCapIndex++) {
+    const pHurtCap = pAHurtCaps[hurtCapIndex];
+    const hurtCapStart = pHurtCap.GetStartPosition(pAPos.X, pAPos.Y, vecPool);
+    const hurtCapEnd = pHurtCap.GetEndPosition(pAPos.X, pAPos.Y, vecPool);
+    for (let sensorIndex = 0; sensorIndex < sesnsorLength; sensorIndex++) {
+      const sensor = pSensors.Sensors[sensorIndex];
+
+      if (sensor.IsActive === false) {
+        continue;
+      }
+
+      const sensorPostion = sensor.GetGlobalPosition(
+        vecPool,
+        pAPos.X,
+        pAPos.Y,
+        pAFacingRight
+      );
+
+      const closestPoints = closestPointsBetweenSegments(
+        sensorPostion,
+        sensorPostion,
+        hurtCapStart,
+        hurtCapEnd,
+        vecPool,
+        closestPointsPool
+      );
+
+      const testPoint1 = vecPool
+        .Rent()
+        .SetXY(closestPoints.C1X, closestPoints.C1Y);
+
+      const testPoint2 = vecPool
+        .Rent()
+        .SetXY(closestPoints.C2X, closestPoints.C2Y);
+
+      const collisionResult = IntersectsCircles(
+        colResPool,
+        testPoint1,
+        testPoint2,
+        sensor.Radius,
+        pHurtCap.Radius
+      );
+
+      if (collisionResult.Collision) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export function PlayerAttacks(
   playerCount: number,
   players: Array<Player>,
@@ -480,7 +584,7 @@ function p1VsP2(
     activeHbPool.Rent()
   );
 
-  if (pAHitBubbles === undefined) {
+  if (pAHitBubbles.Length === 0) {
     return atkResPool.Rent();
   }
 
@@ -636,7 +740,7 @@ export function ApplyVelocty(
     }
 
     const speeds = p.Speeds;
-    const grounded = p.IsPlayerGroundedOnStage(stage); //PlayerHelpers.IsPlayerGroundedOnStage(p, stage);
+    const grounded = p.IsPlayerGroundedOnStage(stage);
     const playerVelocity = p.Velocity;
     const pvx = playerVelocity.X;
     const pvy = playerVelocity.Y;
@@ -647,7 +751,6 @@ export function ApplyVelocty(
     const aerialVelocityDecay = speeds.AerialVelocityDecay;
 
     p.AddToPlayerPosition(pvx, pvy);
-    //PlayerHelpers.AddToPlayerPosition(p, pvx, pvy);
 
     if (grounded) {
       if (pvx > 0) {
@@ -744,7 +847,7 @@ export function OutOfBoundsCheck(
 
 function KillPlayer(p: Player, sm: StateMachine) {
   // reset player to spawn point
-  p.SetPlayerInitialPosition(610, 300); //.SetPlayerInitialPosition(610, 300);
+  p.SetPlayerInitialPosition(610, 300);
   // reset any stats
   p.Jump.ResetJumps();
   p.Jump.IncrementJumps();

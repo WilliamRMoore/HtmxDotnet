@@ -8,9 +8,15 @@ import { FlatVec } from '../engine/physics/vector';
 import {
   Attack,
   AttackBuilder,
+  AttackOnEnter,
+  AttackOnExit,
+  AttackOnUpdate,
   HurtCapsule,
+  SensorReactor,
   SpeedsComponentBuilder,
 } from '../engine/player/playerComponents';
+import { World } from '../engine/world/world';
+import { Player } from '../engine/player/playerOrchestrator';
 
 type frameNumber = number;
 
@@ -53,6 +59,7 @@ export class DefaultCharacterConfig {
     const uAir = GetUAir();
     const bAir = GetBAir();
     const dAir = GetDAir();
+    const sideSpecial = GetSideSpecial();
 
     this.FrameLengths.set(STATE_IDS.START_WALK_S, 5)
       .set(STATE_IDS.JUMP_SQUAT_S, 5)
@@ -97,13 +104,13 @@ export class DefaultCharacterConfig {
     this.LedgeBoxWidth = 80;
     this.ledgeBoxYOffset = -130;
     this.attacks
-      .set(ATTACK_IDS.NUETRAL_ATTACK, neutralAttack)
-      .set(ATTACK_IDS.DOWN_SPECIAL, DownSpecial)
-      .set(ATTACK_IDS.N_AIR_ATTACK, neutralAir)
-      .set(ATTACK_IDS.F_AIR_ATTACK, fAir)
-      .set(ATTACK_IDS.U_AIR_ATTACK, uAir)
-      .set(ATTACK_IDS.B_AIR_ATTACK, bAir)
-      .set(ATTACK_IDS.D_AIR_ATTACK, dAir);
+      .set(ATTACK_IDS.N_GRND_ATK, neutralAttack)
+      .set(ATTACK_IDS.D_SPCL_ATK, DownSpecial)
+      .set(ATTACK_IDS.N_AIR_ATK, neutralAir)
+      .set(ATTACK_IDS.F_AIR_ATK, fAir)
+      .set(ATTACK_IDS.U_AIR_ATK, uAir)
+      .set(ATTACK_IDS.B_AIR_ATK, bAir)
+      .set(ATTACK_IDS.D_AIR_ATK, dAir);
   }
 
   private populateHurtCircles() {
@@ -427,6 +434,42 @@ function GetDAir() {
     .WithHitBubble(damage, radius, 0, launchAngle, hb1OffSets)
     .WithHitBubble(damage, radius, 1, launchAngle, hb2OffSets)
     .WithHitBubble(damage, radius, 2, launchAngle, hb3offSets);
+
+  return bldr.Build();
+}
+
+function GetSideSpecial() {
+  const activeFrames = 80;
+  const impulses = new Map<frameNumber, FlatVec>();
+  const onEnter: AttackOnEnter = (w, p) => {};
+  const onUpdate: AttackOnUpdate = (w, p, fN) => {
+    if (fN === 15) {
+      p.Sensors.ActivateSensor(15, 35, 25)
+        .ActivateSensor(50, 35, 25)
+        .ActivateSensor(75, 35, 25);
+    }
+  };
+  const onExit: AttackOnExit = (w, p) => {
+    p.Sensors.DeactivateSensors();
+  };
+  const reactor: SensorReactor = (w, sensorOwner, detectedPlayer) => {
+    console.log('SENSOR DETECTED');
+    // change the state here
+  };
+
+  impulses.set(5, new FlatVec(-4, 0)).set(6, new FlatVec(-2, 0));
+  for (let i = 14; i < 35; i++) {
+    impulses.set(i, new FlatVec(4, 0));
+  }
+
+  const bldr = new AttackBuilder('SideSpecial');
+
+  bldr
+    .WithUpdateAction(onUpdate)
+    .WithExitAction(onExit)
+    .WithImpulses(impulses, 13)
+    .WithTotalFrames(activeFrames)
+    .WithGravity(false);
 
   return bldr.Build();
 }

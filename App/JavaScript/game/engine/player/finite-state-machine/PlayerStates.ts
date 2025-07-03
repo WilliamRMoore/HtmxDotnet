@@ -2,6 +2,7 @@ import { Player } from '../playerOrchestrator';
 import { EaseIn, Sequencer } from '../../utils';
 import { World } from '../../world/world';
 import { FSMState } from './PlayerStateMachine';
+import { InputAction } from '../../../loops/Input';
 
 // Aliases =========================================================================
 
@@ -23,6 +24,7 @@ class GameEvents {
   public readonly DOWN_ATTACK_GE = seq.Next as GameEventId;
   public readonly SIDE_ATTACK_GE = seq.Next as GameEventId;
   public readonly ATTACK_GE = seq.Next as GameEventId;
+  public readonly D_TILT_GE = seq.Next as GameEventId;
   public readonly N_AIR_GE = seq.Next as GameEventId;
   public readonly F_AIR_GE = seq.Next as GameEventId;
   public readonly B_AIR_GE = seq.Next as GameEventId;
@@ -71,11 +73,13 @@ class STATES {
   public readonly AIR_DODGE_S = seq.Next as StateId;
   public readonly HELPESS_S = seq.Next as StateId;
   public readonly ATTACK_S = seq.Next as StateId;
+  public readonly DOWN_TILT_S = seq.Next as StateId;
   public readonly N_AIR_S = seq.Next as StateId;
   public readonly F_AIR_S = seq.Next as StateId;
   public readonly B_AIR_S = seq.Next as StateId;
   public readonly U_AIR_S = seq.Next as StateId;
   public readonly D_AIR_S = seq.Next as StateId;
+  public readonly SIDE_SPECIAL_S = seq.Next as StateId;
   public readonly DOWN_SPECIAL_S = seq.Next as StateId;
   public readonly HIT_STOP_S = seq.Next as StateId;
   public readonly LAUNCH_S = seq.Next as StateId;
@@ -88,22 +92,22 @@ export const STATE_IDS = new STATES();
 seq.SeqStart = 0;
 
 class ATTACKS {
-  public readonly NUETRAL_ATTACK = seq.Next as AttackId;
-  public readonly SIDE_ATTACK = seq.Next as AttackId;
-  public readonly UP_ATTACK = seq.Next as AttackId;
-  public readonly DOWN_ATTACK = seq.Next as AttackId;
-  public readonly SIDE_TILT = seq.Next as AttackId;
-  public readonly UP_TILT = seq.Next as AttackId;
-  public readonly DOWN_TILT = seq.Next as AttackId;
-  public readonly N_AIR_ATTACK = seq.Next as AttackId;
-  public readonly F_AIR_ATTACK = seq.Next as AttackId;
-  public readonly B_AIR_ATTACK = seq.Next as AttackId;
-  public readonly U_AIR_ATTACK = seq.Next as AttackId;
-  public readonly D_AIR_ATTACK = seq.Next as AttackId;
-  public readonly NUETRAL_SPECIAL = seq.Next as StateId;
-  public readonly SIDE_SPECIAL = seq.Next as StateId;
-  public readonly UP_SPECAIL = seq.Next as StateId;
-  public readonly DOWN_SPECIAL = seq.Next as AttackId;
+  public readonly N_GRND_ATK = seq.Next as AttackId;
+  public readonly S_GRND_ATK = seq.Next as AttackId;
+  public readonly U_GRND_ATK = seq.Next as AttackId;
+  public readonly D_GRND_ATK = seq.Next as AttackId;
+  public readonly S_TILT_ATK = seq.Next as AttackId;
+  public readonly U_TILT_ATK = seq.Next as AttackId;
+  public readonly DOWN_TILT_ATK = seq.Next as AttackId;
+  public readonly N_AIR_ATK = seq.Next as AttackId;
+  public readonly F_AIR_ATK = seq.Next as AttackId;
+  public readonly B_AIR_ATK = seq.Next as AttackId;
+  public readonly U_AIR_ATK = seq.Next as AttackId;
+  public readonly D_AIR_ATK = seq.Next as AttackId;
+  public readonly N_SPCL_ATK = seq.Next as StateId;
+  public readonly S_SPCL_ATK = seq.Next as StateId;
+  public readonly U_SPCL_ATK = seq.Next as StateId;
+  public readonly D_SPCL_ATK = seq.Next as AttackId;
 }
 
 export const ATTACK_IDS = new ATTACKS();
@@ -625,6 +629,33 @@ const IdleToAttack: condition = {
   StateId: STATE_IDS.ATTACK_S,
 };
 
+const ToSideSpecial: condition = {
+  Name: 'ToSideSpecial',
+  ConditionFunc: (w: World, playerIndex: number) => {
+    const ia = w.GetPlayerCurrentInput(playerIndex)!;
+    const lastIa = w.GetPlayerPreviousInput(playerIndex);
+    return inputMacthesTargetNotRepeating(
+      GAME_EVENT_IDS.SIDE_SPECIAL_GE,
+      ia,
+      lastIa
+    );
+  },
+  StateId: STATE_IDS.SIDE_SPECIAL_S,
+};
+
+// const ToSideSpecialFromDash: condtion = {
+//   Name: 'DashToSideSpecial',
+//   ConditionFunc: (w: World, playerIndex: number) => {
+//     const p = w.GetPlayer(playerIndex)!;
+//     if(p.FSMInfo.CurrentStateFrame > 3 ){
+//       return false;
+//     }
+//     const ia = w.GetPlayerCurrentInput(playerIndex);
+//     const prevIa = w.GetPlayerPreviousInput(playerIndex);
+
+//   }
+// }
+
 const ToDownSpecial: condition = {
   Name: 'IdleToDownSpecial',
   ConditionFunc: (w: World, playerIndex: number) => {
@@ -687,7 +718,7 @@ const attackToNeutral: attackCondition = {
 
     return false;
   },
-  AttackId: ATTACK_IDS.NUETRAL_ATTACK,
+  AttackId: ATTACK_IDS.N_GRND_ATK,
 };
 
 export const AttackDecisions = [attackToNeutral];
@@ -697,7 +728,7 @@ const toNuetralAir: attackCondition = {
   ConditionFunc: (w: World, playerIndex: number) => {
     return true;
   },
-  AttackId: ATTACK_IDS.N_AIR_ATTACK,
+  AttackId: ATTACK_IDS.N_AIR_ATK,
 };
 
 export const NeutralAirConditions = [toNuetralAir];
@@ -714,7 +745,7 @@ const downSpecialToDownSpecialGrounded: attackCondition = {
     }
     return false;
   },
-  AttackId: ATTACK_IDS.DOWN_SPECIAL,
+  AttackId: ATTACK_IDS.D_SPCL_ATK,
 };
 
 export const DownSpecialConditions = [downSpecialToDownSpecialGrounded];
@@ -1153,6 +1184,23 @@ function InitDAirRelations(): StateRelation {
   return bAirRelations;
 }
 
+function InitSideSpecialRelations(): StateRelation {
+  const sideSpclTranslations = new ActionStateMappings();
+
+  sideSpclTranslations._setMappings([
+    { geId: GAME_EVENT_IDS.FALL_GE, sId: STATE_IDS.HELPESS_S },
+  ]);
+
+  sideSpclTranslations._setDefault([defaultIdle]);
+
+  const sideSpecialRelations = new StateRelation(
+    STATE_IDS.SIDE_SPECIAL_S,
+    sideSpclTranslations
+  );
+
+  return sideSpecialRelations;
+}
+
 function InitDownSpecialRelations(): StateRelation {
   const downSpecialTranslations = new ActionStateMappings();
 
@@ -1568,6 +1616,38 @@ export const Attack: FSMState = {
   },
 };
 
+export const DownTilt: FSMState = {
+  StateName: 'DownTilt',
+  StateId: STATE_IDS.DOWN_SPECIAL_S,
+  OnEnter: (p: Player, w: World) => {
+    p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.ATTACK_GE);
+  },
+  OnUpdate: (p: Player, w: World) => {
+    const attackComp = p.Attacks;
+    const attack = attackComp.GetAttack();
+    const impulse = attack?.GetActiveImpulseForFrame(
+      p.FSMInfo.CurrentStateFrame
+    );
+
+    if (impulse === undefined) {
+      return;
+    }
+
+    const x = p.Flags.IsFacingRight ? impulse.X : -impulse.X;
+    const y = impulse.Y;
+    const clamp = attack?.ImpulseClamp;
+    const pVel = p.Velocity;
+    if (clamp !== undefined) {
+      pVel.AddClampedXImpulse(clamp, x);
+      pVel.AddClampedYImpulse(clamp, y);
+    }
+  },
+  OnExit: (p: Player, w: World) => {
+    const attackComp = p.Attacks;
+    attackComp.ZeroCurrentAttack();
+  },
+};
+
 export const AerialAttack: FSMState = {
   StateName: 'AerialAttack',
   StateId: STATE_IDS.N_AIR_S,
@@ -1696,6 +1776,48 @@ export const DAirAttack: FSMState = {
   },
 };
 
+export const SideSpecial: FSMState = {
+  StateName: 'SideSpecial',
+  StateId: STATE_IDS.SIDE_SPECIAL_S,
+  OnEnter: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
+    const lxAxis = ia.LXAxsis;
+
+    if (lxAxis < 0) {
+      p.Flags.FaceLeft();
+    }
+    if (lxAxis >= 0) {
+      p.Flags.FaceRight();
+    }
+
+    p.Flags.SetCanWalkOffTrue();
+    const attackComp = p.Attacks;
+    attackComp.SetCurrentAttack(GAME_EVENT_IDS.SIDE_SPECIAL_GE);
+    const atk = attackComp.GetAttack()!;
+    atk.OnEnter(w, p);
+  },
+  OnUpdate: (p: Player, w: World) => {
+    const attack = p.Attacks.GetAttack()!;
+    const currentStateFrame = p.FSMInfo.CurrentStateFrame;
+    const impulse = attack.GetActiveImpulseForFrame(currentStateFrame);
+
+    if (impulse !== undefined) {
+      const x = p.Flags.IsFacingRight ? impulse.X : -impulse.X;
+      const y = impulse.Y;
+      const clamp = attack?.ImpulseClamp;
+      const pVel = p.Velocity;
+      if (clamp !== undefined) {
+        pVel.AddClampedXImpulse(clamp, x);
+        pVel.AddClampedYImpulse(clamp, y);
+      }
+    }
+    attack.OnUpdate(w, p, currentStateFrame);
+  },
+  OnExit: (p: Player, w: World) => {
+    p.Flags.SetCanWalkOffFalse();
+  },
+};
+
 export const DownSpecial: FSMState = {
   StateName: 'DownSpecial',
   StateId: STATE_IDS.DOWN_SPECIAL_S,
@@ -1730,7 +1852,6 @@ export const DownSpecial: FSMState = {
   OnExit: (p: Player, w: World) => {
     const attackComp = p.Attacks;
     p.Flags.GravityOn();
-    p.Attacks.GetAttack()!.ResetPlayeIdHitArray();
     attackComp.ZeroCurrentAttack();
   },
 };
@@ -1809,6 +1930,28 @@ function ShouldFastFall(curLYAxsis: number, prevLYAxsis: number): boolean {
     return true;
   }
   return false;
+}
+
+//==================== Utils =====================
+
+function inputMacthesTargetNotRepeating(
+  targetGeId: GameEventId,
+  ia: InputAction,
+  prevIa: InputAction | undefined
+) {
+  if (ia.Action !== targetGeId) {
+    return false;
+  }
+
+  if (prevIa === undefined) {
+    return true;
+  }
+
+  if (ia.Action === prevIa.Action) {
+    return false;
+  }
+
+  return true;
 }
 
 //================================================
@@ -1902,10 +2045,10 @@ export const FSMStates = new Map<StateId, FSMState>()
   .set(Crouch.StateId, Crouch);
 
 export const AttackGameEventMappings = new Map<GameEventId, AttackId>()
-  .set(GAME_EVENT_IDS.ATTACK_GE, ATTACK_IDS.NUETRAL_ATTACK)
-  .set(GAME_EVENT_IDS.N_AIR_GE, ATTACK_IDS.N_AIR_ATTACK)
-  .set(GAME_EVENT_IDS.F_AIR_GE, ATTACK_IDS.F_AIR_ATTACK)
-  .set(GAME_EVENT_IDS.U_AIR_GE, ATTACK_IDS.U_AIR_ATTACK)
-  .set(GAME_EVENT_IDS.B_AIR_GE, ATTACK_IDS.B_AIR_ATTACK)
-  .set(GAME_EVENT_IDS.D_AIR_GE, ATTACK_IDS.D_AIR_ATTACK)
-  .set(GAME_EVENT_IDS.DOWN_SPECIAL_GE, ATTACK_IDS.DOWN_SPECIAL);
+  .set(GAME_EVENT_IDS.ATTACK_GE, ATTACK_IDS.N_GRND_ATK)
+  .set(GAME_EVENT_IDS.N_AIR_GE, ATTACK_IDS.N_AIR_ATK)
+  .set(GAME_EVENT_IDS.F_AIR_GE, ATTACK_IDS.F_AIR_ATK)
+  .set(GAME_EVENT_IDS.U_AIR_GE, ATTACK_IDS.U_AIR_ATK)
+  .set(GAME_EVENT_IDS.B_AIR_GE, ATTACK_IDS.B_AIR_ATK)
+  .set(GAME_EVENT_IDS.D_AIR_GE, ATTACK_IDS.D_AIR_ATK)
+  .set(GAME_EVENT_IDS.DOWN_SPECIAL_GE, ATTACK_IDS.D_SPCL_ATK);

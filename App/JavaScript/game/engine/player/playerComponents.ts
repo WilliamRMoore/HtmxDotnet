@@ -19,6 +19,7 @@ import { Circle } from '../physics/circle';
 import { PooledVector } from '../pools/PooledVector';
 import { Pool } from '../pools/Pool';
 import { ActiveHitBubblesDTO } from '../pools/ActiveAttackHitBubbles';
+import { World } from '../world/world';
 
 /**
  * This file contains everything pertaining to player components.
@@ -56,6 +57,7 @@ export class ComponentHistory {
   readonly EcbHistory: Array<ECBSnapShot> = [];
   readonly JumpHistroy: Array<number> = [];
   readonly LedgeDetectorHistory: Array<LedgeDetectorSnapShot> = [];
+  readonly SensorsHistory: Array<SensorSnapShot> = [];
   readonly AttackHistory: Array<AttackSnapShot> = [];
 
   public SetPlayerToFrame(p: Player, frameNumber: number) {
@@ -1225,6 +1227,10 @@ export class HitBubble {
   }
 }
 
+export type AttackOnUpdate = (w: World, p: Player, frameNumber: number) => void;
+export type AttackOnEnter = (w: World, p: Player) => void;
+export type AttackOnExit = (w: World, p: Player) => void;
+
 export class Attack {
   public readonly Name: string;
   public readonly TotalFrameLength: number;
@@ -1234,11 +1240,14 @@ export class Attack {
   public readonly KnockBackScaling: number;
   public readonly ImpulseClamp: number | undefined;
   public readonly PlayerIdsHit: Array<number> = [];
-  public readonly impulses: Map<frameNumber, FlatVec> = new Map<
+  public readonly Impulses: Map<frameNumber, FlatVec> = new Map<
     frameNumber,
     FlatVec
   >();
   public readonly HitBubbles: Array<HitBubble>;
+  private onEnter: AttackOnEnter = (w, p) => {};
+  private onUpdate: AttackOnUpdate = (w, p, fN) => {};
+  private onExit: AttackOnExit = (w, p) => {};
 
   constructor(
     name: string,
@@ -1249,7 +1258,10 @@ export class Attack {
     impulseClamp: number | undefined,
     hitBubbles: Array<HitBubble>,
     gravityActive: boolean = true,
-    impulses: Map<frameNumber, FlatVec> | undefined = undefined
+    impulses: Map<frameNumber, FlatVec> | undefined = undefined,
+    onEnter: AttackOnEnter | undefined,
+    onUpdate: AttackOnUpdate | undefined,
+    onExit: AttackOnExit | undefined
   ) {
     this.Name = name;
     this.TotalFrameLength = totalFrameLength;
@@ -1261,12 +1273,36 @@ export class Attack {
     this.HitBubbles = hitBubbles.sort((a, b) => a.Priority - b.Priority);
 
     if (impulses !== undefined) {
-      this.impulses = impulses;
+      this.Impulses = impulses;
+    }
+
+    if (onEnter !== undefined) {
+      this.onEnter = onEnter;
+    }
+
+    if (onUpdate !== undefined) {
+      this.onUpdate = onUpdate;
+    }
+
+    if (onExit !== undefined) {
+      this.onExit = onExit;
     }
   }
 
+  public get OnEnter(): AttackOnEnter {
+    return this.onEnter;
+  }
+
+  public get OnUpdate(): AttackOnUpdate {
+    return this.onUpdate;
+  }
+
+  public get OnExit(): AttackOnExit {
+    return this.onExit;
+  }
+
   public GetActiveImpulseForFrame(frameNumber: number): FlatVec | undefined {
-    return this.impulses.get(frameNumber);
+    return this.Impulses.get(frameNumber);
   }
 
   public GetActiveHitBubblesForFrame(
@@ -1274,6 +1310,9 @@ export class Attack {
     activeHBs: ActiveHitBubblesDTO
   ): ActiveHitBubblesDTO {
     const hitBubbleslength = this.HitBubbles.length;
+    if (hitBubbleslength === 0) {
+      return activeHBs;
+    }
     for (let i = 0; i < hitBubbleslength; i++) {
       const hb = this.HitBubbles[i];
       if (hb.IsActive(frameNumber)) {
@@ -1307,6 +1346,9 @@ export class AttackBuilder {
   private impulseClamp: number | undefined;
   private impulses: Map<frameNumber, FlatVec> | undefined;
   private hitBubbles: Array<HitBubble> = [];
+  private onEnter: AttackOnEnter | undefined;
+  private onUpdate: AttackOnUpdate | undefined;
+  private onExit: AttackOnExit | undefined;
 
   constructor(name: string) {
     this.name = name;
@@ -1346,6 +1388,21 @@ export class AttackBuilder {
     return this;
   }
 
+  public WithEnterAction(action: AttackOnEnter): AttackBuilder {
+    this.onEnter = action;
+    return this;
+  }
+
+  public WithUpdateAction(action: AttackOnUpdate): AttackBuilder {
+    this.onUpdate = action;
+    return this;
+  }
+
+  public WithExitAction(action: AttackOnExit): AttackBuilder {
+    this.onExit = action;
+    return this;
+  }
+
   public WithHitBubble(
     damage: number,
     radius: number,
@@ -1376,7 +1433,10 @@ export class AttackBuilder {
       this.impulseClamp,
       this.hitBubbles,
       this.hasGravtity,
-      this.impulses
+      this.impulses,
+      this.onEnter,
+      this.onUpdate,
+      this.onExit
     );
   }
 }
@@ -1422,6 +1482,173 @@ export class AttackComponment implements IHistoryEnabled<AttackSnapShot> {
 
   public SetFromSnapShot(snapShot: Attack | undefined): void {
     this.currentAttack = snapShot;
+  }
+}
+
+class Sensor {
+  private xOffset: number = 0;
+  private yOffset: number = 0;
+  private radius: number = 0;
+  private active: boolean = false;
+
+  public GetGlobalPosition(
+    vecPool: Pool<PooledVector>,
+    globalX: number,
+    globalY: number,
+    facingRight: boolean
+  ): PooledVector {
+    const x = facingRight ? globalX + this.xOffset : globalX - this.xOffset;
+    const y = globalY + this.yOffset;
+    return vecPool.Rent().SetXY(x, y);
+  }
+
+  public get Radius(): number {
+    return this.radius;
+  }
+
+  public set Radius(value: number) {
+    this.radius = value;
+  }
+
+  public set XOffSet(value: number) {
+    this.xOffset = value;
+  }
+
+  public set YOffset(value: number) {
+    this.yOffset = value;
+  }
+
+  public get IsActive(): boolean {
+    return this.active;
+  }
+
+  public Activate(): void {
+    this.active = true;
+  }
+
+  public Deactivate(): void {
+    this.xOffset = 0;
+    this.yOffset = 0;
+    this.radius = 0;
+    this.active = false;
+  }
+}
+
+export type SensorReactor = (
+  w: World,
+  sensorOwner: Player,
+  detectedPlayer: Player
+) => void;
+
+type SensorSnapShot = {
+  sensors: Array<{
+    xOffset: number;
+    yOffset: number;
+    radius: number;
+  }>;
+  reactor: SensorReactor;
+};
+
+const defaultReactor: SensorReactor = (
+  w: World,
+  sensorOwner: Player,
+  detectedPlayer: Player
+) => {};
+
+export class SensorComponent implements IHistoryEnabled<SensorSnapShot> {
+  private currentSensorIdx: number = 0;
+  private readonly sensors: Array<Sensor> = new Array<Sensor>(10);
+  private sensorReactor: SensorReactor = defaultReactor;
+
+  constructor() {
+    for (let i = 0; i < this.sensors.length; i++) {
+      this.sensors[i] = new Sensor();
+    }
+  }
+
+  public ReactAction(
+    world: World,
+    pOwnerOfSensors: Player,
+    playerDetectedBySensor: Player
+  ): void {
+    return this.sensorReactor(world, pOwnerOfSensors, playerDetectedBySensor);
+  }
+
+  public SetSensorReactor(sr: SensorReactor): void {
+    this.sensorReactor = sr;
+  }
+
+  public ActivateSensor(yOffset: number, xOffset: number, radius: number) {
+    if (this.currentSensorIdx >= this.sensors.length) {
+      throw new Error('No more sensors available to activate.');
+    }
+    this.activateSensor(yOffset, xOffset, radius);
+    return this;
+  }
+
+  private activateSensor(
+    yOffset: number,
+    xOffset: number,
+    radius: number
+  ): void {
+    const sensor = this.sensors[this.currentSensorIdx];
+    sensor.XOffSet = xOffset;
+    sensor.YOffset = yOffset;
+    sensor.Radius = radius;
+    sensor.Activate();
+    this.currentSensorIdx++;
+  }
+
+  public DeactivateSensors(): void {
+    const length = this.sensors.length;
+    for (let i = 0; i < length; i++) {
+      const sensor = this.sensors[i];
+      if (sensor.IsActive) {
+        sensor.Deactivate();
+      }
+    }
+    this.sensorReactor = defaultReactor;
+    this.currentSensorIdx = 0;
+  }
+
+  public get Sensors(): Array<Sensor> {
+    return this.sensors;
+  }
+
+  public SnapShot(): SensorSnapShot {
+    const snapShot: SensorSnapShot = {
+      sensors: [],
+      reactor: this.sensorReactor,
+    };
+
+    const length = this.sensors.length;
+    for (let i = 0; i < length; i++) {
+      const sensor = this.sensors[i];
+      if (sensor.IsActive) {
+        snapShot.sensors.push({
+          yOffset: sensor.YOffset,
+          xOffset: sensor.XOffSet,
+          radius: sensor.Radius,
+        });
+      }
+    }
+
+    return snapShot;
+  }
+
+  public SetFromSnapShot(snapShot: SensorSnapShot): void {
+    this.DeactivateSensors();
+    const snapShotSensorLength = snapShot.sensors.length;
+    for (let i = 0; i < snapShotSensorLength; i++) {
+      const snapShotSensor = snapShot.sensors[i];
+      this.activateSensor(
+        snapShotSensor.yOffset,
+        snapShotSensor.xOffset,
+        snapShotSensor.radius
+      );
+    }
+    this.sensorReactor = snapShot.reactor || defaultReactor;
+    this.currentSensorIdx = snapShot.sensors.length;
   }
 }
 

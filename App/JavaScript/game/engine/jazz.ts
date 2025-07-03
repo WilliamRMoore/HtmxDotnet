@@ -14,6 +14,7 @@ import {
   PlayerInput,
   RecordHistory,
   StageCollisionDetection,
+  PlayerSensors,
 } from './systems/systems';
 import { World } from './world/world';
 
@@ -100,8 +101,11 @@ export class Jazz implements IJazz {
     }
 
     PlayerInput(playerCount, players, stateMachines, world);
+
     Gravity(playerCount, players, stage);
+
     ApplyVelocty(playerCount, players, stage);
+
     PlayerCollisionDetection(
       playerCount,
       players,
@@ -109,6 +113,7 @@ export class Jazz implements IJazz {
       colResPool,
       projResPool
     );
+
     LedgeGrabDetection(
       playerCount,
       players,
@@ -118,6 +123,7 @@ export class Jazz implements IJazz {
       colResPool,
       projResPool
     );
+
     StageCollisionDetection(
       playerCount,
       players,
@@ -127,6 +133,16 @@ export class Jazz implements IJazz {
       colResPool,
       projResPool
     );
+
+    // PlayerSensors(
+    //   world,
+    //   playerCount,
+    //   players,
+    //   vecPool,
+    //   clstsPntsResPool,
+    //   colResPool
+    // );
+
     PlayerAttacks(
       playerCount,
       players,
@@ -139,8 +155,11 @@ export class Jazz implements IJazz {
       clstsPntsResPool,
       histories
     );
+
     OutOfBoundsCheck(playerCount, players, stateMachines, stage);
+
     TimedFlags(playerCount, players);
+
     RecordHistory(frame, playerCount, players, histories, world);
   }
 }

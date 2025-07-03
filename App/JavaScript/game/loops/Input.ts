@@ -1,4 +1,8 @@
-import { GAME_EVENT_IDS } from '../engine/player/finite-state-machine/PlayerStates';
+import {
+  GAME_EVENT_IDS,
+  STATE_IDS,
+} from '../engine/player/finite-state-machine/PlayerStates';
+import { Player } from '../engine/player/playerOrchestrator';
 import { World } from '../engine/world/world';
 
 export type InputAction = {
@@ -185,6 +189,7 @@ function handleAerialAction(
 
 function handleGroundedAction(
   inputAction: InputAction,
+  prevInputAction: InputAction,
   LXAxis: number,
   LYAxis: number,
   isFacingRight: boolean
@@ -195,7 +200,13 @@ function handleGroundedAction(
       inputAction.Action = GAME_EVENT_IDS.UP_ATTACK_GE;
       return inputAction;
     }
+
     // down
+    // const diff = LYAxis - prevInputAction.LYAxsis;
+    // if (LYAxis < -0.7 && p.FSMInfo.CurrentStatetId === STATE_IDS.CROUCH_S){
+    //   inputAction
+    // }
+
     inputAction.Action = GAME_EVENT_IDS.DOWN_ATTACK_GE;
     return inputAction;
   }
@@ -213,6 +224,7 @@ function handleGroundedAction(
 
 function handlAction(
   inputAction: InputAction,
+  previousInputAction: InputAction,
   input: GamePadInput,
   isAerial: boolean,
   isFacingRight: boolean,
@@ -223,7 +235,13 @@ function handlAction(
     return handleAerialAction(inputAction, LXAxis, LYAxis, isFacingRight);
   }
   // If grounded
-  return handleGroundedAction(inputAction, LXAxis, LYAxis, isFacingRight);
+  return handleGroundedAction(
+    inputAction,
+    previousInputAction,
+    LXAxis,
+    LYAxis,
+    isFacingRight
+  );
 }
 
 function transcribeInput(
@@ -266,6 +284,7 @@ function transcribeInput(
   if (input.action) {
     return handlAction(
       inputAction,
+      previousInput ?? inputAction,
       input,
       isAerial,
       isFacingRight,
