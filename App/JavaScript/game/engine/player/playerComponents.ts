@@ -70,6 +70,7 @@ export class ComponentHistory {
     p.Flags.SetFromSnapShot(this.FlagsHistory[frameNumber]);
     p.ECB.SetFromSnapShot(this.EcbHistory[frameNumber]);
     p.LedgeDetector.SetFromSnapShot(this.LedgeDetectorHistory[frameNumber]);
+    p.Sensors.SetFromSnapShot(this.SensorsHistory[frameNumber]);
     p.Jump.SetFromSnapShot(this.JumpHistroy[frameNumber]);
     p.Attacks.SetFromSnapShot(this.AttackHistory[frameNumber]);
   }
@@ -635,7 +636,7 @@ export type ECBSnapShot = {
 };
 
 export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
-  private readonly sesnsorDepth: number = 0.2;
+  private readonly sesnsorDepth: number = 1;
   private x: number = 0;
   private y: number = 0;
   private prevX: number = 0;
@@ -1502,20 +1503,28 @@ class Sensor {
     return vecPool.Rent().SetXY(x, y);
   }
 
-  public get Radius(): number {
-    return this.radius;
-  }
-
   public set Radius(value: number) {
     this.radius = value;
   }
 
-  public set XOffSet(value: number) {
+  public set XOffset(value: number) {
     this.xOffset = value;
   }
 
   public set YOffset(value: number) {
     this.yOffset = value;
+  }
+
+  public get Radius(): number {
+    return this.radius;
+  }
+
+  public get XOffset(): number {
+    return this.xOffset;
+  }
+
+  public get YOffset(): number {
+    return this.yOffset;
   }
 
   public get IsActive(): boolean {
@@ -1540,7 +1549,7 @@ export type SensorReactor = (
   detectedPlayer: Player
 ) => void;
 
-type SensorSnapShot = {
+export type SensorSnapShot = {
   sensors: Array<{
     xOffset: number;
     yOffset: number;
@@ -1592,7 +1601,7 @@ export class SensorComponent implements IHistoryEnabled<SensorSnapShot> {
     radius: number
   ): void {
     const sensor = this.sensors[this.currentSensorIdx];
-    sensor.XOffSet = xOffset;
+    sensor.XOffset = xOffset;
     sensor.YOffset = yOffset;
     sensor.Radius = radius;
     sensor.Activate();
@@ -1615,6 +1624,10 @@ export class SensorComponent implements IHistoryEnabled<SensorSnapShot> {
     return this.sensors;
   }
 
+  public get NumberActive(): number {
+    return this.currentSensorIdx;
+  }
+
   public SnapShot(): SensorSnapShot {
     const snapShot: SensorSnapShot = {
       sensors: [],
@@ -1627,7 +1640,7 @@ export class SensorComponent implements IHistoryEnabled<SensorSnapShot> {
       if (sensor.IsActive) {
         snapShot.sensors.push({
           yOffset: sensor.YOffset,
-          xOffset: sensor.XOffSet,
+          xOffset: sensor.XOffset,
           radius: sensor.Radius,
         });
       }

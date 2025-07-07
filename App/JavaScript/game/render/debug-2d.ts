@@ -10,6 +10,7 @@ import {
   HurtCapsule,
   HurtCirclesSnapShot,
   LedgeDetectorSnapShot,
+  SensorSnapShot,
   StaticHistory,
 } from '../engine/player/playerComponents';
 import { ActiveHitBubblesDTO } from '../engine/pools/ActiveAttackHitBubbles';
@@ -207,6 +208,19 @@ function drawPlayer(
 
   for (let i = 0; i < playerCount; i++) {
     const playerHistory = world.GetComponentHistory(i);
+    const sensorsWrapper = playerHistory!.SensorsHistory[currentFrame];
+    const sensors = sensorsWrapper.sensors;
+    if (sensors.length === 0) {
+      continue;
+    }
+    const pos = playerHistory!.PositionHistory[currentFrame];
+    const lastPos = playerHistory!.PositionHistory[lastFrame];
+    const flags = playerHistory!.FlagsHistory[currentFrame];
+    drawSensors(ctx, alpha, pos, lastPos, flags, sensorsWrapper);
+  }
+
+  for (let i = 0; i < playerCount; i++) {
+    const playerHistory = world.GetComponentHistory(i);
     const pos = playerHistory!.PositionHistory[currentFrame];
     const lastPos = playerHistory!.PositionHistory[lastFrame];
     const flags = playerHistory!.FlagsHistory[currentFrame];
@@ -214,6 +228,38 @@ function drawPlayer(
     const fsm = playerHistory!.FsmInfoHistory[currentFrame];
     drawHitCircles(ctx, attack, fsm, flags, pos, lastPos, alpha);
   }
+}
+
+function drawSensors(
+  ctx: CanvasRenderingContext2D,
+  alpha: number,
+  curPos: FlatVec,
+  lastPos: FlatVec,
+  flags: FlagsSnapShot,
+  sensorsWrapper: SensorSnapShot
+) {
+  ctx.strokeStyle = 'white';
+  ctx.fillStyle = 'white';
+  ctx.globalAlpha = 0.4;
+
+  const sensors = sensorsWrapper.sensors;
+  const interpolatedX = Lerp(lastPos.X, curPos.X, alpha);
+  const interpolatedY = Lerp(lastPos.Y, curPos.Y, alpha);
+  const facingRight = flags.FacingRight;
+  const sensorLength = sensors.length;
+
+  for (let i = 0; i < sensorLength; i++) {
+    const s = sensors[i];
+    const x = interpolatedX + (facingRight ? s.xOffset : -s.xOffset);
+    const y = interpolatedY + s.yOffset;
+    ctx.beginPath();
+    ctx.arc(x, y, s.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+  }
+
+  ctx.globalAlpha = 1.0;
 }
 
 function drawLedgeDetectors(

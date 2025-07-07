@@ -34,9 +34,7 @@ export function IntersectsPolygons(
     const vbProj = projectVerticies(verticiesB, axis, vecPool, projResPool);
 
     if (vaProj.Min >= vbProj.Max || vbProj.Min >= vaProj.Max) {
-      const res = colResPool.Rent();
-      res._setCollisionFalse();
-      return res;
+      return colResPool.Rent();
     }
 
     const axisDepth = Math.min(
@@ -67,9 +65,7 @@ export function IntersectsPolygons(
     const vbProj = projectVerticies(verticiesB, axis, vecPool, projResPool);
 
     if (vaProj.Min >= vbProj.Max || vbProj.Min >= vaProj.Max) {
-      const res = colResPool.Rent();
-      res._setCollisionFalse();
-      return res;
+      return colResPool.Rent();
     }
     const axisDepth = Math.min(
       vbProj.Max - vaProj.Min,
@@ -119,7 +115,7 @@ export function IntersectsCircles(
   return returnValue;
 }
 
-export function closestPointsBetweenSegments(
+export function ClosestPointsBetweenSegments(
   p1: PooledVector,
   q1: PooledVector,
   p2: PooledVector,

@@ -1,5 +1,5 @@
 import {
-  closestPointsBetweenSegments,
+  ClosestPointsBetweenSegments,
   IntersectsCircles,
   IntersectsPolygons,
 } from '../physics/collisions';
@@ -20,7 +20,7 @@ import { ComponentHistory } from '../player/playerComponents';
 import { ClosestPointsResult } from '../pools/ClosestPointsResult';
 import { ActiveHitBubblesDTO } from '../pools/ActiveAttackHitBubbles';
 
-const correctionDepth: number = 0.01;
+const correctionDepth: number = 0.1;
 export function StageCollisionDetection(
   playerCount: number,
   players: Array<Player>,
@@ -40,6 +40,21 @@ export function StageCollisionDetection(
     const prvGrnd = p.IsPlayerPreviouslyGroundedOnStage(stage);
     const pFlags = p.Flags;
 
+    const stageGround = stage.StageVerticies.GetGround();
+    const leftStagePoint = stageGround[0];
+    const rightStagePoint = stageGround[1];
+    const stangingOnLeftLedge = Math.abs(p.Position.X - leftStagePoint.X) <= 1;
+    const standingOnRightLedge =
+      Math.abs(p.Position.X - rightStagePoint.X) <= 1;
+
+    if (grnd === true && stangingOnLeftLedge) {
+      p.SetPlayerPosition(leftStagePoint.X + 2, p.Position.Y);
+    }
+
+    if (grnd === true && standingOnRightLedge) {
+      p.SetPlayerPosition(rightStagePoint.X - 2, p.Position.Y);
+    }
+
     if (
       grnd === false &&
       prvGrnd === true &&
@@ -55,9 +70,9 @@ export function StageCollisionDetection(
         Math.abs(position.X - leftStagePoint.X) <
         Math.abs(position.X - rightStagePoint.X)
       ) {
-        p.SetPlayerPosition(leftStagePoint.X + 0.1, leftStagePoint.Y);
+        p.SetPlayerPosition(leftStagePoint.X + 2, leftStagePoint.Y);
       } else {
-        p.SetPlayerPosition(rightStagePoint.X - 0.1, rightStagePoint.Y);
+        p.SetPlayerPosition(rightStagePoint.X - 2, rightStagePoint.Y);
       }
       sm.UpdateFromWorld(GAME_EVENT_IDS.LAND_GE);
       continue;
@@ -86,25 +101,10 @@ export function StageCollisionDetection(
 
       //Ground correction
       if (normalX == 0 && normalY > 0) {
-        move.AddToY(yOffset);
-        move.AddToY(correctionDepth);
-
-        if (
-          prvGrnd === false &&
-          (Math.abs(normalX) > 0 && Math.abs(normalY) > 0) === false
-        ) {
-          move.AddToY(p.ECB.YOffset);
-
-          // ECB will change after landing, so compensate for the new offset
-          // Example: airborne yOffset = -25, grounded yOffset = 0
-          const futureYOffset = 0; // grounded ECB yOffset HARD CODED FOR NOW
-          const currentYOffset = p.ECB.YOffset;
-          const yOffsetDiff = futureYOffset - currentYOffset;
-          move.AddToY(yOffsetDiff);
-        }
+        move.AddToY(+yOffset);
 
         playerPosDTO.Add(move);
-        p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
+        p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y + correctionDepth);
         sm.UpdateFromWorld(
           p.Velocity.Y < 8
             ? GAME_EVENT_IDS.SOFT_LAND_GE
@@ -391,19 +391,20 @@ function sesnsorDetect(
   colResPool: Pool<CollisionResult>,
   closestPointsPool: Pool<ClosestPointsResult>
 ) {
-  const pSensors = pA.Sensors;
+  const pASensors = pA.Sensors;
   const pAPos = pA.Position;
-  const pAHurtCaps = pA.HurtBubbles.HurtCapsules;
+  const pBPos = pB.Position;
+  const pBHurtCaps = pB.HurtBubbles.HurtCapsules;
   const pAFacingRight = pA.Flags.IsFacingRight;
 
-  const pACapsLenght = pAHurtCaps.length;
-  const sesnsorLength = pSensors.Sensors.length;
-  for (let hurtCapIndex = 0; hurtCapIndex < pACapsLenght; hurtCapIndex++) {
-    const pHurtCap = pAHurtCaps[hurtCapIndex];
-    const hurtCapStart = pHurtCap.GetStartPosition(pAPos.X, pAPos.Y, vecPool);
-    const hurtCapEnd = pHurtCap.GetEndPosition(pAPos.X, pAPos.Y, vecPool);
+  const pBCapsLenght = pBHurtCaps.length;
+  const sesnsorLength = pASensors.NumberActive;
+  for (let hurtCapIndex = 0; hurtCapIndex < pBCapsLenght; hurtCapIndex++) {
+    const pBHurtCap = pBHurtCaps[hurtCapIndex];
+    const hurtCapStart = pBHurtCap.GetStartPosition(pBPos.X, pBPos.Y, vecPool);
+    const hurtCapEnd = pBHurtCap.GetEndPosition(pBPos.X, pBPos.Y, vecPool);
     for (let sensorIndex = 0; sensorIndex < sesnsorLength; sensorIndex++) {
-      const sensor = pSensors.Sensors[sensorIndex];
+      const sensor = pASensors.Sensors[sensorIndex];
 
       if (sensor.IsActive === false) {
         continue;
@@ -416,7 +417,7 @@ function sesnsorDetect(
         pAFacingRight
       );
 
-      const closestPoints = closestPointsBetweenSegments(
+      const closestPoints = ClosestPointsBetweenSegments(
         sensorPostion,
         sensorPostion,
         hurtCapStart,
@@ -438,7 +439,7 @@ function sesnsorDetect(
         testPoint1,
         testPoint2,
         sensor.Radius,
-        pHurtCap.Radius
+        pBHurtCap.Radius
       );
 
       if (collisionResult.Collision) {
@@ -643,7 +644,7 @@ function p1VsP2(
         vecPool
       );
 
-      const pointsToTest = closestPointsBetweenSegments(
+      const pointsToTest = ClosestPointsBetweenSegments(
         pAHitBubblePreviousPos,
         pAhitBubbleCurrentPos,
         pBStartHurtDto,
@@ -877,6 +878,8 @@ export function RecordHistory(
     history.LedgeDetectorHistory[frameNumber] = p.LedgeDetector.SnapShot();
     history.PlayerHitStopHistory[frameNumber] = p.HitStop.SnapShot();
     history.PlayerHitStunHistory[frameNumber] = p.HitStun.SnapShot();
+    history.LedgeDetectorHistory[frameNumber] = p.LedgeDetector.SnapShot();
+    history.SensorsHistory[frameNumber] = p.Sensors.SnapShot();
     history.EcbHistory[frameNumber] = p.ECB.SnapShot();
     history.JumpHistroy[frameNumber] = p.Jump.SnapShot();
     history.AttackHistory[frameNumber] = p.Attacks.SnapShot();

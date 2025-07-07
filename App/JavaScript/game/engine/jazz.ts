@@ -134,14 +134,14 @@ export class Jazz implements IJazz {
       projResPool
     );
 
-    // PlayerSensors(
-    //   world,
-    //   playerCount,
-    //   players,
-    //   vecPool,
-    //   clstsPntsResPool,
-    //   colResPool
-    // );
+    PlayerSensors(
+      world,
+      playerCount,
+      players,
+      vecPool,
+      clstsPntsResPool,
+      colResPool
+    );
 
     PlayerAttacks(
       playerCount,

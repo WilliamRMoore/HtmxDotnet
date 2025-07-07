@@ -3,6 +3,8 @@ import {
   ATTACK_IDS,
   StateId,
   STATE_IDS,
+  GAME_EVENT_IDS,
+  SideSpecialExtension,
 } from '../engine/player/finite-state-machine/PlayerStates';
 import { FlatVec } from '../engine/physics/vector';
 import {
@@ -15,8 +17,8 @@ import {
   SensorReactor,
   SpeedsComponentBuilder,
 } from '../engine/player/playerComponents';
-import { World } from '../engine/world/world';
 import { Player } from '../engine/player/playerOrchestrator';
+import { World } from '../engine/world/world';
 
 type frameNumber = number;
 
@@ -59,10 +61,11 @@ export class DefaultCharacterConfig {
     const uAir = GetUAir();
     const bAir = GetBAir();
     const dAir = GetDAir();
+    const sideSpecialEx = GetSideSpecialExtension();
     const sideSpecial = GetSideSpecial();
 
     this.FrameLengths.set(STATE_IDS.START_WALK_S, 5)
-      .set(STATE_IDS.JUMP_SQUAT_S, 5)
+      .set(STATE_IDS.JUMP_SQUAT_S, 4)
       .set(STATE_IDS.TURN_S, 3)
       .set(STATE_IDS.DASH_S, 20)
       .set(STATE_IDS.DASH_TURN_S, 1)
@@ -78,7 +81,9 @@ export class DefaultCharacterConfig {
       .set(STATE_IDS.U_AIR_S, uAir.TotalFrameLength)
       .set(STATE_IDS.B_AIR_S, bAir.TotalFrameLength)
       .set(STATE_IDS.D_AIR_S, dAir.TotalFrameLength)
-      .set(STATE_IDS.DOWN_SPECIAL_S, DownSpecial.TotalFrameLength);
+      .set(STATE_IDS.SIDE_SPCL_S, sideSpecial.TotalFrameLength)
+      .set(STATE_IDS.SIDE_SPCL_EX_S, sideSpecialEx.TotalFrameLength)
+      .set(STATE_IDS.DOWN_SPCL_S, DownSpecial.TotalFrameLength);
 
     this.SCB = new SpeedsComponentBuilder();
     this.SCB.SetWalkSpeeds(6, 1.6);
@@ -105,6 +110,8 @@ export class DefaultCharacterConfig {
     this.ledgeBoxYOffset = -130;
     this.attacks
       .set(ATTACK_IDS.N_GRND_ATK, neutralAttack)
+      .set(ATTACK_IDS.S_SPCL_ATK, sideSpecial)
+      .set(ATTACK_IDS.S_SPCL_EX_ATK, sideSpecialEx)
       .set(ATTACK_IDS.D_SPCL_ATK, DownSpecial)
       .set(ATTACK_IDS.N_AIR_ATK, neutralAir)
       .set(ATTACK_IDS.F_AIR_ATK, fAir)
@@ -206,8 +213,8 @@ function GetNeutralAir() {
     .set(26, new FlatVec(10, -50));
 
   const bldr = new AttackBuilder('NAir')
-    .WithBaseKnockBack(59)
-    .WithKnockBackScaling(60)
+    .WithBaseKnockBack(10)
+    .WithKnockBackScaling(50)
     .WithGravity(true)
     .WithTotalFrames(activeFrames)
     .WithHitBubble(12, 20, 0, 25, hb1OffSets)
@@ -262,7 +269,7 @@ function GetUAir() {
     .WithTotalFrames(uairTotalFrames)
     .WithInteruptableFrame(uairTotalFrames)
     .WithBaseKnockBack(uairBaseKnockBack)
-    .WithKnockBackScaling(59)
+    .WithKnockBackScaling(50)
     .WithGravity(true)
     .WithHitBubble(uairDamage, uairRadius, 2, uAirLaunchAngle, bubble1Offsets)
     .WithHitBubble(uairDamage, uairRadius, 1, uAirLaunchAngle, bubble2Offsets)
@@ -286,8 +293,8 @@ function GetFAir() {
   const fairFramesActive = fairActiveEnd - fairActiveStart + 1;
   const fairRadius = 25;
   const fairDamage = 17;
-  const fairBaseKnockback = 63;
-  const fairLaunchAngle = 10;
+  const fairBaseKnockback = 55;
+  const fairLaunchAngle = 30;
 
   // Bubble 1: closer to player, rotates from above to below, retracts inward
   const bubble1Offsets = generateClockwiseBubbleOffsets(
@@ -335,10 +342,10 @@ function GetBAir() {
   const activeEnd = 15;
   const framesActive = activeEnd - activeStart + 1;
   const baseKnockBack = 17;
-  const knockBackScaling = 59;
+  const knockBackScaling = 50;
   const damage = 16;
   const radius = 27;
-  const launchAngle = 20;
+  const launchAngle = 150;
 
   const hb1OffSets = new Map<frameNumber, FlatVec>();
   const hb1Frame9Offset = new FlatVec(-40, -45);
@@ -414,16 +421,16 @@ function GetDAir() {
     .set(16, new FlatVec(-8, -6))
     .set(17, new FlatVec(-10, -7))
     .set(18, new FlatVec(-12, -10))
-    .set(19, new FlatVec(-9, -9))
-    .set(20, new FlatVec(-7, -8));
+    .set(19, new FlatVec(-9, -10))
+    .set(20, new FlatVec(-7, -9));
 
   const hb3offSets = new Map<frameNumber, FlatVec>()
-    .set(15, new FlatVec(-1, 15))
-    .set(16, new FlatVec(-4, 17))
-    .set(17, new FlatVec(-7, 20))
-    .set(18, new FlatVec(-6, 23))
-    .set(19, new FlatVec(-4, 21))
-    .set(20, new FlatVec(-4, 19));
+    .set(15, new FlatVec(0, 15))
+    .set(16, new FlatVec(0, 17))
+    .set(17, new FlatVec(0, 20))
+    .set(18, new FlatVec(0, 23))
+    .set(19, new FlatVec(0, 21))
+    .set(20, new FlatVec(0, 19));
 
   const bldr = new AttackBuilder('DAir')
     .WithBaseKnockBack(baseKnockBack)
@@ -441,20 +448,30 @@ function GetDAir() {
 function GetSideSpecial() {
   const activeFrames = 80;
   const impulses = new Map<frameNumber, FlatVec>();
-  const onEnter: AttackOnEnter = (w, p) => {};
+  const reactor: SensorReactor = (w, sensorOwner, detectedPlayer) => {
+    console.log('SENSOR DETECTED');
+    const sm = w.GetStateMachine(sensorOwner.ID)!;
+    sm.UpdateFromWorld(GAME_EVENT_IDS.SIDE_SPCL_EX_GE);
+    // change the state here
+  };
+  const onEnter: AttackOnEnter = (w, p) => {
+    const vel = p.Velocity;
+    vel.X = 0;
+    p.Sensors.SetSensorReactor(reactor);
+  };
   const onUpdate: AttackOnUpdate = (w, p, fN) => {
     if (fN === 15) {
-      p.Sensors.ActivateSensor(15, 35, 25)
-        .ActivateSensor(50, 35, 25)
-        .ActivateSensor(75, 35, 25);
+      p.Sensors.ActivateSensor(-15, 45, 30)
+        .ActivateSensor(-50, 45, 30)
+        .ActivateSensor(-75, 45, 30);
+    }
+
+    if (fN === 40) {
+      p.Sensors.DeactivateSensors();
     }
   };
   const onExit: AttackOnExit = (w, p) => {
     p.Sensors.DeactivateSensors();
-  };
-  const reactor: SensorReactor = (w, sensorOwner, detectedPlayer) => {
-    console.log('SENSOR DETECTED');
-    // change the state here
   };
 
   impulses.set(5, new FlatVec(-4, 0)).set(6, new FlatVec(-2, 0));
@@ -467,9 +484,40 @@ function GetSideSpecial() {
   bldr
     .WithUpdateAction(onUpdate)
     .WithExitAction(onExit)
+    .WithEnterAction(onEnter)
     .WithImpulses(impulses, 13)
     .WithTotalFrames(activeFrames)
     .WithGravity(false);
+
+  return bldr.Build();
+}
+
+function GetSideSpecialExtension() {
+  const totalFrameLength = 25;
+  const hb1Offsets = new Map<frameNumber, FlatVec>();
+  const damage = 16;
+  const radius = 40;
+  const baseKnockBack = 30;
+  const knockBackScaling = 45;
+
+  hb1Offsets
+    .set(3, new FlatVec(80, -50))
+    .set(4, new FlatVec(90, -65))
+    .set(5, new FlatVec(100, -85))
+    .set(6, new FlatVec(65, -105))
+    .set(7, new FlatVec(25, -125));
+
+  const bldr = new AttackBuilder('SideSpecialExtension');
+
+  bldr
+    .WithTotalFrames(totalFrameLength)
+    .WithBaseKnockBack(baseKnockBack)
+    .WithKnockBackScaling(knockBackScaling)
+    .WithEnterAction((w: World, p: Player) => {
+      p.Velocity.X = 0;
+      p.Velocity.Y = 0;
+    })
+    .WithHitBubble(damage, radius, 0, 89, hb1Offsets);
 
   return bldr.Build();
 }

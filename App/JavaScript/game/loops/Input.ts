@@ -123,20 +123,20 @@ function handleSpecial(
   //are we more vertical than horizontal?
   if (Math.abs(LYAxis) > Math.abs(LXAxis)) {
     if (LYAxis > 0) {
-      inputAction.Action = GAME_EVENT_IDS.UP_SPECIAL_GE;
+      inputAction.Action = GAME_EVENT_IDS.UP_SPCL_GE;
       return inputAction;
     }
-    inputAction.Action = GAME_EVENT_IDS.DOWN_SPECIAL_GE;
+    inputAction.Action = GAME_EVENT_IDS.DOWN_SPCL_GE;
     return inputAction;
   }
   // Is it a special on the x axis?
   if (LXAxis != 0) {
-    inputAction.Action = GAME_EVENT_IDS.SIDE_SPECIAL_GE;
+    inputAction.Action = GAME_EVENT_IDS.SIDE_SPCL_GE;
     return inputAction;
   }
 
   // It is a nuetral special
-  inputAction.Action = GAME_EVENT_IDS.SPECIAL_GE;
+  inputAction.Action = GAME_EVENT_IDS.SPCL_GE;
   return inputAction;
 }
 
