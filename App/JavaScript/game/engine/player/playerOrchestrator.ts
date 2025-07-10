@@ -6,7 +6,7 @@ import {
   FSMInfoComponent,
   HitStopComponent,
   HitStunComponent,
-  HurtCapsules,
+  HurtCapsulesComponent,
   JumpComponent,
   LedgeDetectorComponent,
   PlayerFlagsComponent,
@@ -43,7 +43,7 @@ export class Player {
   private readonly hitStop: HitStopComponent;
   private readonly speeds: SpeedsComponent;
   private readonly ecb: ECBComponent;
-  private readonly hurtCircles: HurtCapsules;
+  private readonly hurtCircles: HurtCapsulesComponent;
   private readonly jump: JumpComponent;
   private readonly fsmInfo: FSMInfoComponent;
   private readonly ledgeDetector: LedgeDetectorComponent;
@@ -64,11 +64,12 @@ export class Player {
     this.hitStop = new HitStopComponent();
 
     this.ecb = new ECBComponent(
+      CharacterConfig.ECBShapes,
       CharacterConfig.ECBHeight,
       CharacterConfig.ECBWidth,
       CharacterConfig.ECBOffset
     );
-    this.hurtCircles = new HurtCapsules(CharacterConfig.HurtCapsules);
+    this.hurtCircles = new HurtCapsulesComponent(CharacterConfig.HurtCapsules);
     this.jump = new JumpComponent(
       CharacterConfig.JumpVelocity,
       CharacterConfig.NumberOfJumps
@@ -89,7 +90,7 @@ export class Player {
     return this.ecb;
   }
 
-  public get HurtBubbles(): HurtCapsules {
+  public get HurtBubbles(): HurtCapsulesComponent {
     return this.hurtCircles;
   }
 

@@ -15,9 +15,9 @@ import { FSMInfoComponent } from '../playerComponents';
 export type FSMState = {
   StateName: string;
   StateId: number;
-  OnEnter: (p: Player, world: World) => void;
-  OnUpdate: (p: Player, world: World) => void;
-  OnExit: (p: Player, world: World) => void;
+  OnEnter: (p: Player, w: World) => void;
+  OnUpdate: (p: Player, w: World) => void;
+  OnExit: (p: Player, w: World) => void;
 };
 
 export class StateMachine {

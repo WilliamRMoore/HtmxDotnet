@@ -4,7 +4,6 @@ import {
   StateId,
   STATE_IDS,
   GAME_EVENT_IDS,
-  SideSpecialExtension,
 } from '../engine/player/finite-state-machine/PlayerStates';
 import { FlatVec } from '../engine/physics/vector';
 import {
@@ -13,6 +12,7 @@ import {
   AttackOnEnter,
   AttackOnExit,
   AttackOnUpdate,
+  ECBShape,
   HurtCapsule,
   SensorReactor,
   SpeedsComponentBuilder,
@@ -28,6 +28,7 @@ export type CharacterConfig = {
   ECBHeight: number;
   ECBWidth: number;
   ECBOffset: number;
+  ECBShapes: ECBShape;
   HurtCapsules: Array<HurtCapsule>;
   JumpVelocity: number;
   NumberOfJumps: number;
@@ -44,6 +45,10 @@ export class DefaultCharacterConfig {
   public ECBHeight: number;
   public ECBWidth: number;
   public ECBOffset: number;
+  public ECBShapes: ECBShape = new Map<
+    StateId,
+    { height: number; width: number; yOffset: number }
+  >();
   public HurtCapsules: Array<HurtCapsule> = [];
   public JumpVelocity: number;
   public NumberOfJumps: number;
@@ -63,6 +68,7 @@ export class DefaultCharacterConfig {
     const dAir = GetDAir();
     const sideSpecialEx = GetSideSpecialExtension();
     const sideSpecial = GetSideSpecial();
+    const dTilt = GetDownTilt();
 
     this.FrameLengths.set(STATE_IDS.START_WALK_S, 5)
       .set(STATE_IDS.JUMP_SQUAT_S, 4)
@@ -76,6 +82,7 @@ export class DefaultCharacterConfig {
       .set(STATE_IDS.LAND_S, 11)
       .set(STATE_IDS.SOFT_LAND_S, 2)
       .set(STATE_IDS.ATTACK_S, neutralAttack.TotalFrameLength)
+      .set(STATE_IDS.DOWN_TILT_S, dTilt.TotalFrameLength)
       .set(STATE_IDS.N_AIR_S, neutralAir.TotalFrameLength)
       .set(STATE_IDS.F_AIR_S, fAir.TotalFrameLength)
       .set(STATE_IDS.U_AIR_S, uAir.TotalFrameLength)
@@ -84,6 +91,20 @@ export class DefaultCharacterConfig {
       .set(STATE_IDS.SIDE_SPCL_S, sideSpecial.TotalFrameLength)
       .set(STATE_IDS.SIDE_SPCL_EX_S, sideSpecialEx.TotalFrameLength)
       .set(STATE_IDS.DOWN_SPCL_S, DownSpecial.TotalFrameLength);
+
+    this.ECBShapes.set(STATE_IDS.N_FALL_S, {
+      height: 70,
+      width: 70,
+      yOffset: -25,
+    })
+      .set(STATE_IDS.JUMP_S, { height: 60, width: 70, yOffset: 0 })
+      .set(STATE_IDS.N_AIR_S, { height: 60, width: 70, yOffset: -25 })
+      .set(STATE_IDS.F_AIR_S, { height: 60, width: 70, yOffset: -25 })
+      .set(STATE_IDS.U_AIR_S, { height: 60, width: 60, yOffset: -25 })
+      .set(STATE_IDS.B_AIR_S, { height: 60, width: 60, yOffset: -25 })
+      .set(STATE_IDS.D_AIR_S, { height: 90, width: 60, yOffset: -10 })
+      .set(STATE_IDS.DOWN_TILT_S, { height: 50, width: 100, yOffset: 0 })
+      .set(STATE_IDS.CROUCH_S, { height: 50, width: 100, yOffset: 0 });
 
     this.SCB = new SpeedsComponentBuilder();
     this.SCB.SetWalkSpeeds(6, 1.6);
@@ -110,6 +131,7 @@ export class DefaultCharacterConfig {
     this.ledgeBoxYOffset = -130;
     this.attacks
       .set(ATTACK_IDS.N_GRND_ATK, neutralAttack)
+      .set(ATTACK_IDS.D_TILT_ATK, dTilt)
       .set(ATTACK_IDS.S_SPCL_ATK, sideSpecial)
       .set(ATTACK_IDS.S_SPCL_EX_ATK, sideSpecialEx)
       .set(ATTACK_IDS.D_SPCL_ATK, DownSpecial)
@@ -402,9 +424,6 @@ function GetDAir() {
   const damage = 21;
   const baseKnockBack = 20;
   const knockBackScaling = 64;
-  const totaFrames = 42;
-  const activeStart = 15;
-  const activeEnd = 20;
   const launchAngle = 285;
 
   const hb1OffSets = new Map<frameNumber, FlatVec>();
@@ -435,12 +454,61 @@ function GetDAir() {
   const bldr = new AttackBuilder('DAir')
     .WithBaseKnockBack(baseKnockBack)
     .WithKnockBackScaling(knockBackScaling)
-    .WithTotalFrames(totaFrames)
     .WithGravity(true)
     .WithTotalFrames(activeFrames)
     .WithHitBubble(damage, radius, 0, launchAngle, hb1OffSets)
     .WithHitBubble(damage, radius, 1, launchAngle, hb2OffSets)
     .WithHitBubble(damage, radius, 2, launchAngle, hb3offSets);
+
+  return bldr.Build();
+}
+
+function GetDownTilt() {
+  const totalFrames = 33;
+  const damage = 11;
+  const launchAngle = 70;
+  const radius = 27;
+  const baseKnockBack = 20;
+  const knockBackScaling = 30;
+
+  const hb1Offsets = new Map<frameNumber, FlatVec>();
+  const hb2Offsets = new Map<frameNumber, FlatVec>();
+  const hb3Offsets = new Map<frameNumber, FlatVec>();
+
+  hb1Offsets
+    .set(9, new FlatVec(110, -15))
+    .set(10, new FlatVec(110, -15))
+    .set(11, new FlatVec(110, -15))
+    .set(12, new FlatVec(110, -15))
+    .set(13, new FlatVec(110, -15))
+    .set(14, new FlatVec(110, -15));
+
+  hb2Offsets
+    .set(9, new FlatVec(85, -10))
+    .set(10, new FlatVec(85, -10))
+    .set(11, new FlatVec(85, -10))
+    .set(12, new FlatVec(85, -10))
+    .set(13, new FlatVec(85, -10))
+    .set(14, new FlatVec(85, -10));
+
+  hb3Offsets
+    .set(9, new FlatVec(50, -7))
+    .set(10, new FlatVec(50, -7))
+    .set(11, new FlatVec(50, -7))
+    .set(12, new FlatVec(50, -7))
+    .set(13, new FlatVec(50, -7))
+    .set(14, new FlatVec(50, -7));
+
+  const bldr = new AttackBuilder('DownTilt');
+
+  bldr
+    .WithBaseKnockBack(baseKnockBack)
+    .WithKnockBackScaling(knockBackScaling)
+    .WithTotalFrames(totalFrames)
+    .WithGravity(true)
+    .WithHitBubble(damage, radius, 0, launchAngle, hb1Offsets)
+    .WithHitBubble(damage - 1, radius, 1, launchAngle, hb2Offsets)
+    .WithHitBubble(damage - 2, radius, 2, launchAngle, hb3Offsets);
 
   return bldr.Build();
 }
@@ -463,7 +531,7 @@ function GetSideSpecial() {
     if (fN === 15) {
       p.Sensors.ActivateSensor(-15, 45, 30)
         .ActivateSensor(-50, 45, 30)
-        .ActivateSensor(-75, 45, 30);
+        .ActivateSensor(-85, 45, 30);
     }
 
     if (fN === 40) {
@@ -474,7 +542,7 @@ function GetSideSpecial() {
     p.Sensors.DeactivateSensors();
   };
 
-  impulses.set(5, new FlatVec(-4, 0)).set(6, new FlatVec(-2, 0));
+  impulses.set(5, new FlatVec(-6, 0)).set(6, new FlatVec(-2, 0));
   for (let i = 14; i < 35; i++) {
     impulses.set(i, new FlatVec(4, 0));
   }

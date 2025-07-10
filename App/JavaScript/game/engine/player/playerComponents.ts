@@ -470,11 +470,11 @@ export class PlayerPointsComponent
     this.damagePoints += number;
   }
 
-  public SubtrackDamage(number: number): void {
+  public SubtractDamage(number: number): void {
     this.damagePoints -= number;
   }
 
-  public addMatchPoints(number: number): void {
+  public AddMatchPoints(number: number): void {
     this.matchPoints += number;
   }
 
@@ -635,6 +635,11 @@ export type ECBSnapShot = {
   Width: number;
 };
 
+export type ECBShape = Map<
+  StateId,
+  { height: number; width: number; yOffset: number }
+>;
+
 export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   private readonly sesnsorDepth: number = 1;
   private x: number = 0;
@@ -651,9 +656,15 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   private readonly originalHeight: number;
   private readonly originalWidth: number;
   private readonly originalYOffset: number;
+  private readonly ecbStateShapes: ECBShape;
   private yOffset: number;
 
-  constructor(height: number = 100, width: number = 100, yOffset: number = 0) {
+  constructor(
+    shapes: ECBShape,
+    height: number = 100,
+    width: number = 100,
+    yOffset: number = 0
+  ) {
     this.color = 'orange';
     this.height = height;
     this.width = width;
@@ -661,6 +672,7 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     this.originalWidth = width;
     this.originalYOffset = yOffset;
     this.yOffset = yOffset;
+    this.ecbStateShapes = shapes;
     FillArrayWithFlatVec(this.curVerts);
     FillArrayWithFlatVec(this.prevVerts);
     this.loadAllVerts();
@@ -702,10 +714,19 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     this.update();
   }
 
-  public SetECBShape(yOffset: number, height: number, width: number): void {
-    this.yOffset = yOffset;
-    this.height = height;
-    this.width = width;
+  public SetECBShape(stateId: StateId): void {
+    const shape = this.ecbStateShapes.get(stateId);
+    if (shape === undefined) {
+      this.yOffset = this.originalYOffset;
+      this.height = this.originalHeight;
+      this.width = this.originalWidth;
+      this.update();
+      return;
+    }
+
+    this.yOffset = shape.yOffset;
+    this.height = shape.height;
+    this.width = shape.width;
     this.update();
   }
 
@@ -897,6 +918,7 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     this.height = this.originalHeight;
     this.width = this.originalWidth;
     this.yOffset = this.originalYOffset;
+    this.update();
   }
 
   public SnapShot(): ECBSnapShot {
@@ -1011,7 +1033,7 @@ export class HurtCapsule {
   }
 }
 
-export class HurtCapsules {
+export class HurtCapsulesComponent {
   public readonly HurtCapsules: Array<HurtCapsule>;
 
   constructor(hurtCapsules: Array<HurtCapsule>) {
@@ -1022,11 +1044,14 @@ export class HurtCapsules {
 export type LedgeDetectorSnapShot = {
   middleX: number;
   middleY: number;
+  numberOfLedgeGrabs: number;
 };
 
 export class LedgeDetectorComponent
   implements IHistoryEnabled<LedgeDetectorSnapShot>
 {
+  private maxGrabs: number = 15;
+  private numberOfLedgeGrabs: number = 0;
   private yOffset: number;
   private x: number = 0;
   private y: number = 0;
@@ -1083,41 +1108,60 @@ export class LedgeDetectorComponent
     const leftTopRight = this.leftSide[2];
     const leftBottomRight = this.leftSide[3];
 
+    const widthRight = this.x + this.width;
+    const widthLeft = this.x - this.width;
+    const bottomHeight = this.y + this.height;
+
     //bottom left
     rightBottomLeft.X = this.x;
-    rightBottomLeft.Y = this.y + this.height;
+    rightBottomLeft.Y = bottomHeight;
     //top left
     rightTopLeft.X = this.x;
     rightTopLeft.Y = this.y;
     // top right
-    rightTopRight.X = this.x + this.width;
+    rightTopRight.X = widthRight;
     rightTopRight.Y = this.y;
     // bottom right
-    rightBottomRight.X = this.x + this.width;
-    rightBottomRight.Y = this.y + this.height;
+    rightBottomRight.X = widthRight;
+    rightBottomRight.Y = bottomHeight;
 
     //bottom left
-    leftBottomLeft.X = this.x - this.width;
-    leftBottomLeft.Y = this.y + this.height;
+    leftBottomLeft.X = widthLeft;
+    leftBottomLeft.Y = bottomHeight;
     // top left
-    leftTopLeft.X = this.x - this.width;
+    leftTopLeft.X = widthLeft;
     leftTopLeft.Y = this.y;
     // top right
     leftTopRight.X = this.x;
     leftTopRight.Y = this.y;
     // bottom right
     leftBottomRight.X = this.x;
-    leftBottomRight.Y = this.y + this.height;
+    leftBottomRight.Y = bottomHeight;
   }
 
   public SnapShot(): LedgeDetectorSnapShot {
     return {
       middleX: this.x,
       middleY: this.y,
+      numberOfLedgeGrabs: this.numberOfLedgeGrabs,
     } as LedgeDetectorSnapShot;
   }
+
+  public get CanGrabLedge(): boolean {
+    return this.numberOfLedgeGrabs < this.maxGrabs;
+  }
+
+  public IncrementLedgeGrabs() {
+    this.numberOfLedgeGrabs++;
+  }
+
+  public ZeroLedgeGrabCount() {
+    this.numberOfLedgeGrabs = 0;
+  }
+
   public SetFromSnapShot(snapShot: LedgeDetectorSnapShot): void {
     this.MoveTo(snapShot.middleX, snapShot.middleY);
+    this.numberOfLedgeGrabs = snapShot.numberOfLedgeGrabs;
   }
 }
 
@@ -1190,8 +1234,8 @@ export class HitBubble {
       .keys()
       .toArray()
       .sort((a, b) => a - b);
-    this.activeStartFrame = activeframes[0]; //activeStartFrame;
-    this.activeEndFrame = activeframes[activeframes.length - 1]; //activeEndFrame;
+    this.activeStartFrame = activeframes[0];
+    this.activeEndFrame = activeframes[activeframes.length - 1];
     this.frameOffsets = frameOffsets;
   }
 

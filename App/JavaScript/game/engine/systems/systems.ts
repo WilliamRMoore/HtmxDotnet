@@ -21,6 +21,7 @@ import { ClosestPointsResult } from '../pools/ClosestPointsResult';
 import { ActiveHitBubblesDTO } from '../pools/ActiveAttackHitBubbles';
 
 const correctionDepth: number = 0.1;
+const cornerJitterCorrection = 2;
 export function StageCollisionDetection(
   playerCount: number,
   players: Array<Player>,
@@ -34,25 +35,32 @@ export function StageCollisionDetection(
 
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = players[playerIndex];
+
     const sm = stateMachines[playerIndex];
     const playerVerts = p.ECB.GetHull();
     const grnd = p.IsPlayerGroundedOnStage(stage);
     const prvGrnd = p.IsPlayerPreviouslyGroundedOnStage(stage);
     const pFlags = p.Flags;
-
     const stageGround = stage.StageVerticies.GetGround();
     const leftStagePoint = stageGround[0];
     const rightStagePoint = stageGround[1];
-    const stangingOnLeftLedge = Math.abs(p.Position.X - leftStagePoint.X) <= 1;
+    const standingOnLeftLedge =
+      Math.abs(p.Position.X - leftStagePoint.X) <= cornerJitterCorrection;
     const standingOnRightLedge =
-      Math.abs(p.Position.X - rightStagePoint.X) <= 1;
+      Math.abs(p.Position.X - rightStagePoint.X) <= cornerJitterCorrection;
 
-    if (grnd === true && stangingOnLeftLedge) {
-      p.SetPlayerPosition(leftStagePoint.X + 2, p.Position.Y);
+    if (grnd === true && standingOnLeftLedge) {
+      p.SetPlayerPosition(
+        leftStagePoint.X + cornerJitterCorrection,
+        p.Position.Y
+      ); // + 2 to avoid jitter on corner
     }
 
     if (grnd === true && standingOnRightLedge) {
-      p.SetPlayerPosition(rightStagePoint.X - 2, p.Position.Y);
+      p.SetPlayerPosition(
+        rightStagePoint.X - cornerJitterCorrection,
+        p.Position.Y
+      );
     }
 
     if (
@@ -70,9 +78,15 @@ export function StageCollisionDetection(
         Math.abs(position.X - leftStagePoint.X) <
         Math.abs(position.X - rightStagePoint.X)
       ) {
-        p.SetPlayerPosition(leftStagePoint.X + 2, leftStagePoint.Y);
+        p.SetPlayerPosition(
+          leftStagePoint.X + cornerJitterCorrection,
+          leftStagePoint.Y
+        );
       } else {
-        p.SetPlayerPosition(rightStagePoint.X - 2, rightStagePoint.Y);
+        p.SetPlayerPosition(
+          rightStagePoint.X - cornerJitterCorrection,
+          rightStagePoint.Y
+        );
       }
       sm.UpdateFromWorld(GAME_EVENT_IDS.LAND_GE);
       continue;
@@ -184,6 +198,10 @@ export function LedgeGrabDetection(
     const p = players[playerIndex];
 
     if (p.Flags.IsInHitPause) {
+      continue;
+    }
+
+    if (p.LedgeDetector.CanGrabLedge === false) {
       continue;
     }
 
@@ -312,13 +330,13 @@ export function Gravity(
   stage: Stage
 ) {
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
-    const p = playersArr[playerIndex];
+    const p = playersArr[playerIndex]!;
 
-    if (p.Flags.IsInHitPause) {
+    if (p.Flags.IsInHitPause === true || p.Flags.HasGravity === false) {
       continue;
     }
 
-    if (p.Flags.HasGravity && !p.IsPlayerGroundedOnStage(stage)) {
+    if (p.IsPlayerGroundedOnStage(stage) === false) {
       const speeds = p.Speeds;
       const grav = speeds.Gravity;
       const isFF = p.Flags.IsFastFalling;
@@ -616,7 +634,7 @@ function p1VsP2(
         pACurPositionDto.Y,
         pAFacingRight,
         currentStateFrame
-      )!;
+      );
 
       if (pAhitBubbleCurrentPos === undefined) {
         continue;
@@ -629,7 +647,8 @@ function p1VsP2(
           pAPrevPositionDto.Y,
           pAFacingRight,
           currentStateFrame - 1 < 0 ? 0 : currentStateFrame - 1
-        ) ?? vecPool.Rent().SetXY(pACurPositionDto.X, pACurPositionDto.Y);
+        ) ??
+        vecPool.Rent().SetXY(pAhitBubbleCurrentPos.X, pAhitBubbleCurrentPos.Y);
 
       const pBPosition = pB.Position;
 
