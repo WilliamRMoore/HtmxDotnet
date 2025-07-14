@@ -4,6 +4,7 @@ import {
   StateId,
   STATE_IDS,
   GAME_EVENT_IDS,
+  DashAttack,
 } from '../engine/player/finite-state-machine/PlayerStates';
 import { FlatVec } from '../engine/physics/vector';
 import {
@@ -69,6 +70,7 @@ export class DefaultCharacterConfig {
     const sideSpecialEx = GetSideSpecialExtension();
     const sideSpecial = GetSideSpecial();
     const dTilt = GetDownTilt();
+    const dashAtk = GetDashAttack();
 
     this.FrameLengths.set(STATE_IDS.START_WALK_S, 5)
       .set(STATE_IDS.JUMP_SQUAT_S, 4)
@@ -82,6 +84,7 @@ export class DefaultCharacterConfig {
       .set(STATE_IDS.LAND_S, 11)
       .set(STATE_IDS.SOFT_LAND_S, 2)
       .set(STATE_IDS.ATTACK_S, neutralAttack.TotalFrameLength)
+      .set(STATE_IDS.DASH_ATTACK_S, dashAtk.TotalFrameLength)
       .set(STATE_IDS.DOWN_TILT_S, dTilt.TotalFrameLength)
       .set(STATE_IDS.N_AIR_S, neutralAir.TotalFrameLength)
       .set(STATE_IDS.F_AIR_S, fAir.TotalFrameLength)
@@ -139,7 +142,8 @@ export class DefaultCharacterConfig {
       .set(ATTACK_IDS.F_AIR_ATK, fAir)
       .set(ATTACK_IDS.U_AIR_ATK, uAir)
       .set(ATTACK_IDS.B_AIR_ATK, bAir)
-      .set(ATTACK_IDS.D_AIR_ATK, dAir);
+      .set(ATTACK_IDS.D_AIR_ATK, dAir)
+      .set(ATTACK_IDS.DASH_ATK, dashAtk);
   }
 
   private populateHurtCircles() {
@@ -189,6 +193,47 @@ function GetNAtk() {
     .WithInteruptableFrame(15)
     .WithHitBubble(7, 16, 0, 60, hb1OffSets)
     .WithHitBubble(6, 14, 1, 60, hb2OffSets);
+
+  return bldr.Build();
+}
+
+function GetDashAttack() {
+  const basKnowback = 15;
+  const knockBackScaling = 45;
+  const totalFrames = 37;
+  const radius = 25;
+  const damage = 12;
+  const startFrame = 5;
+  const endFrame = 15;
+  const hb1Offsets = new Map<frameNumber, FlatVec>();
+  const impulses = new Map<frameNumber, FlatVec>();
+
+  for (let i = 0; i < 15; i++) {
+    impulses.set(i, new FlatVec(4, 0));
+  }
+
+  hb1Offsets
+    .set(5, new FlatVec(40, -60))
+    .set(6, new FlatVec(40, -60))
+    .set(7, new FlatVec(40, -60))
+    .set(8, new FlatVec(40, -60))
+    .set(9, new FlatVec(40, -60))
+    .set(10, new FlatVec(40, -60))
+    .set(11, new FlatVec(40, -60))
+    .set(12, new FlatVec(40, -60))
+    .set(13, new FlatVec(40, -60))
+    .set(14, new FlatVec(40, -60))
+    .set(15, new FlatVec(40, -60));
+
+  const bldr = new AttackBuilder('DashAttack');
+
+  bldr
+    .WithGravity(true)
+    .WithBaseKnockBack(basKnowback)
+    .WithKnockBackScaling(knockBackScaling)
+    .WithTotalFrames(totalFrames)
+    .WithImpulses(impulses, 18)
+    .WithHitBubble(damage, radius, 0, 50, hb1Offsets);
 
   return bldr.Build();
 }

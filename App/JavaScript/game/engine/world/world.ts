@@ -34,7 +34,7 @@ export class World {
 
   constructor() {
     this.ActiveHitBubbleDto = new Pool<ActiveHitBubblesDTO>(
-      10,
+      20,
       () => new ActiveHitBubblesDTO()
     );
     this.VecPool = new Pool<PooledVector>(500, () => new PooledVector());
@@ -48,7 +48,7 @@ export class World {
     );
     this.AtkResPool = new Pool<AttackResult>(100, () => new AttackResult());
     this.ClstsPntsResPool = new Pool<ClosestPointsResult>(
-      200,
+      400,
       () => new ClosestPointsResult()
     );
   }

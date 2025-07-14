@@ -2,6 +2,8 @@ export interface IPooledObject {
   Zero(): void;
 }
 
+//TODO:  this is NOT jit friendly.
+// Replace with one large pool class that contains concrete instances of the different pool types.
 export class Pool<T extends IPooledObject> {
   private pool: Array<T>;
   private poolIndex: number = 0;

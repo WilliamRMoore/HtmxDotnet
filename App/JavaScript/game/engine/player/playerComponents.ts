@@ -642,22 +642,21 @@ export type ECBShape = Map<
 
 export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   private readonly sesnsorDepth: number = 1;
+  private yOffset: number;
   private x: number = 0;
   private y: number = 0;
   private prevX: number = 0;
   private prevY: number = 0;
-  private readonly curVerts = new Array<FlatVec>(4);
-  private readonly prevVerts = new Array<FlatVec>(4);
-  private readonly allVerts = new Array<FlatVec>(8);
-
   private color: string;
   private height: number;
   private width: number;
   private readonly originalHeight: number;
   private readonly originalWidth: number;
   private readonly originalYOffset: number;
+  private readonly curVerts = new Array<FlatVec>(4);
+  private readonly prevVerts = new Array<FlatVec>(4);
+  private readonly allVerts = new Array<FlatVec>(8);
   private readonly ecbStateShapes: ECBShape;
-  private yOffset: number;
 
   constructor(
     shapes: ECBShape,

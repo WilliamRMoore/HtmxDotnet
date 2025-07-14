@@ -90,7 +90,7 @@ export class StateMachine {
 
   private runConditional(world: World, fsmInfo: FSMInfoComponent): boolean {
     const conditions = this.stateMappings
-      .get(this.player.FSMInfo.CurrentStatetId)!
+      .get(fsmInfo.CurrentStatetId)!
       .GetConditions();
 
     // We have no conditionals, return
