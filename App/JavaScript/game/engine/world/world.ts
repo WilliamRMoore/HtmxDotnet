@@ -16,7 +16,7 @@ export class World {
   private players: Array<Player> = [];
   private stage?: Stage;
   private stateMachines: Array<StateMachine> = [];
-  public readonly ActiveHitBubbleDto: Pool<ActiveHitBubblesDTO>;
+  public readonly ActiveHitBubbleDtoPool: Pool<ActiveHitBubblesDTO>;
   public readonly VecPool: Pool<PooledVector>;
   public readonly ColResPool: Pool<CollisionResult>;
   public readonly ProjResPool: Pool<ProjectionResult>;
@@ -33,7 +33,7 @@ export class World {
   private readonly FrameTimeStamps: Array<number> = [];
 
   constructor() {
-    this.ActiveHitBubbleDto = new Pool<ActiveHitBubblesDTO>(
+    this.ActiveHitBubbleDtoPool = new Pool<ActiveHitBubblesDTO>(
       20,
       () => new ActiveHitBubblesDTO()
     );

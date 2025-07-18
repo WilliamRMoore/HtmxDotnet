@@ -34,11 +34,11 @@ export class StateMachine {
     this.states = FSMStates;
   }
 
-  public SetInitialState(stateId: StateId) {
+  public SetInitialState(stateId: StateId): void {
     this.changeState(this.states.get(stateId)!, this.player.FSMInfo);
   }
 
-  public UpdateFromWorld(gameEventId: GameEventId) {
+  public UpdateFromWorld(gameEventId: GameEventId): void {
     // world events should still have to follow mapping rules
     const state = this.GetTranslation(gameEventId);
     if (state === undefined) {
@@ -51,7 +51,7 @@ export class StateMachine {
     fsmInfo.IncrementStateFrame();
   }
 
-  public ForceState(sateId: StateId) {
+  public ForceState(sateId: StateId): void {
     //ignore mapping rules and force a state change
     const state = this.states.get(sateId);
 
@@ -109,7 +109,7 @@ export class StateMachine {
         const state = this.states.get(stateId);
 
         // stateId did not resolve, return false
-        if (state == undefined) {
+        if (state === undefined) {
           console.error('StateId not found in state machine: ', stateId);
           return false;
         }
@@ -205,14 +205,14 @@ export class StateMachine {
     return undefined;
   }
 
-  private changeState(state: FSMState, fsmInfo: FSMInfoComponent) {
+  private changeState(state: FSMState, fsmInfo: FSMInfoComponent): void {
     fsmInfo.SetStateFrameToZero();
     fsmInfo.CurrentState.OnExit(this.player, this.world);
     fsmInfo.SetCurrentState(state);
     fsmInfo.CurrentState.OnEnter(this.player, this.world);
   }
 
-  private updateState(fsmInfo: FSMInfoComponent) {
+  private updateState(fsmInfo: FSMInfoComponent): void {
     fsmInfo.CurrentState.OnUpdate(this.player, this.world);
     fsmInfo.IncrementStateFrame();
   }

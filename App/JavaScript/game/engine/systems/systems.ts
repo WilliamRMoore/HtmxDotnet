@@ -9,7 +9,7 @@ import {
 } from '../player/finite-state-machine/PlayerStates';
 import { World } from '../world/world';
 import { StateMachine } from '../player/finite-state-machine/PlayerStateMachine';
-import { Player } from '../player/playerOrchestrator';
+import { Player, PlayerOnStage } from '../player/playerOrchestrator';
 import { AttackResult } from '../pools/AttackResult';
 import { PooledVector } from '../pools/PooledVector';
 import { Pool } from '../pools/Pool';
@@ -32,18 +32,24 @@ export function StageCollisionDetection(
   projResPool: Pool<ProjectionResult>
 ): void {
   const stageVerts = stage.StageVerticies.GetVerts();
+  const stageGround = stage.StageVerticies.GetGround();
+  const leftMostPeice = stageGround[0];
+  const rightMostPeice = stageGround[stageGround.length - 1];
+  const leftStagePoint = vecPool
+    .Rent()
+    .SetXY(leftMostPeice.X1, leftMostPeice.Y1);
+  const rightStagePoint = vecPool
+    .Rent()
+    .SetXY(rightMostPeice.X2, rightMostPeice.Y2);
 
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = players[playerIndex];
-
     const sm = stateMachines[playerIndex];
     const playerVerts = p.ECB.GetHull();
-    const grnd = p.IsPlayerGroundedOnStage(stage);
-    const prvGrnd = p.IsPlayerPreviouslyGroundedOnStage(stage);
+    const grnd = PlayerOnStage(stage, p.ECB.Bottom, p.ECB.SensorDepth);
+    const prvGrnd = PlayerOnStage(stage, p.ECB.PrevBottom, p.ECB.SensorDepth);
     const pFlags = p.Flags;
-    const stageGround = stage.StageVerticies.GetGround();
-    const leftStagePoint = stageGround[0];
-    const rightStagePoint = stageGround[1];
+
     const standingOnLeftLedge =
       Math.abs(p.Position.X - leftStagePoint.X) <= cornerJitterCorrection;
     const standingOnRightLedge =
@@ -69,8 +75,14 @@ export function StageCollisionDetection(
       pFlags.CanWalkOffStage === false
     ) {
       const stageGround = stage.StageVerticies.GetGround();
-      const leftStagePoint = stageGround[0];
-      const rightStagePoint = stageGround[1];
+      const leftMostPeice = stageGround[0];
+      const rightMostPeice = stageGround[stageGround.length - 1];
+      const leftStagePoint = vecPool
+        .Rent()
+        .SetXY(leftMostPeice.X1, leftMostPeice.Y1);
+      const rightStagePoint = vecPool
+        .Rent()
+        .SetXY(rightMostPeice.X2, rightMostPeice.Y2);
       const position = p.Position;
 
       // Snap to nearest ledge regardless of facing
@@ -189,7 +201,7 @@ export function LedgeGrabDetection(
   vecPool: Pool<PooledVector>,
   colResPool: Pool<CollisionResult>,
   projResPool: Pool<ProjectionResult>
-) {
+): void {
   const ledges = stage.Ledges;
   const leftLedge = ledges.GetLeftLedge();
   const rightLedge = ledges.GetRightLedge();
@@ -213,7 +225,7 @@ export function LedgeGrabDetection(
       continue;
     }
 
-    if (p.IsPlayerGroundedOnStage(stage)) {
+    if (PlayerOnStage(stage, ecb.Bottom, ecb.SensorDepth)) {
       continue;
     }
 
@@ -263,7 +275,7 @@ export function PlayerCollisionDetection(
   vecPool: Pool<PooledVector>,
   colResPool: Pool<CollisionResult>,
   projResPool: Pool<ProjectionResult>
-) {
+): void {
   if (playerCount < 2) {
     return;
   }
@@ -328,7 +340,7 @@ export function Gravity(
   playerCount: number,
   playersArr: Array<Player>,
   stage: Stage
-) {
+): void {
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = playersArr[playerIndex]!;
 
@@ -336,7 +348,7 @@ export function Gravity(
       continue;
     }
 
-    if (p.IsPlayerGroundedOnStage(stage) === false) {
+    if (PlayerOnStage(stage, p.ECB.Bottom, p.ECB.SensorDepth) === false) {
       const speeds = p.Speeds;
       const grav = speeds.Gravity;
       const isFF = p.Flags.IsFastFalling;
@@ -352,7 +364,7 @@ export function PlayerInput(
   playerArr: Array<Player>,
   stateMachines: Array<StateMachine>,
   world: World
-) {
+): void {
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = playerArr[playerIndex];
     if (p.Flags.IsInHitPause) {
@@ -408,7 +420,7 @@ function sesnsorDetect(
   vecPool: Pool<PooledVector>,
   colResPool: Pool<CollisionResult>,
   closestPointsPool: Pool<ClosestPointsResult>
-) {
+): boolean {
   const pASensors = pA.Sensors;
   const pAPos = pA.Position;
   const pBPos = pB.Position;
@@ -479,7 +491,7 @@ export function PlayerAttacks(
   colResPool: Pool<CollisionResult>,
   clstsPntsResPool: Pool<ClosestPointsResult>,
   componentHistories: Array<ComponentHistory>
-) {
+): void {
   if (playerCount === 1) {
     return;
   }
@@ -532,7 +544,7 @@ function resolveHitResult(
   stateMachines: Array<StateMachine>,
   pAHitsPbResult: AttackResult,
   vecPool: Pool<PooledVector>
-) {
+): void {
   const damage = pAHitsPbResult.Damage;
   pB.Points.AddDamage(damage);
 
@@ -710,7 +722,7 @@ function p1VsP2(
   return atkResPool.Rent();
 }
 
-function CalculateHitStop(damage: number) {
+function CalculateHitStop(damage: number): number {
   return Math.floor(damage / 3 + 3);
 }
 
@@ -751,7 +763,7 @@ export function ApplyVelocty(
   playerCount: number,
   players: Array<Player>,
   stage: Stage
-) {
+): void {
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = players[playerIndex]!;
 
@@ -760,7 +772,7 @@ export function ApplyVelocty(
     }
 
     const speeds = p.Speeds;
-    const grounded = p.IsPlayerGroundedOnStage(stage);
+    const grounded = PlayerOnStage(stage, p.ECB.Bottom, p.ECB.SensorDepth);
     const playerVelocity = p.Velocity;
     const pvx = playerVelocity.X;
     const pvy = playerVelocity.Y;
@@ -814,7 +826,10 @@ export function ApplyVelocty(
   }
 }
 
-export function TimedFlags(playerCount: number, playerArr: Array<Player>) {
+export function TimedFlags(
+  playerCount: number,
+  playerArr: Array<Player>
+): void {
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = playerArr[playerIndex]!;
     const flags = p.Flags;
@@ -832,7 +847,7 @@ export function OutOfBoundsCheck(
   playerArr: Array<Player>,
   playerStateMachineArr: Array<StateMachine>,
   stage: Stage
-) {
+): void {
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = playerArr[playerIndex];
     const sm = playerStateMachineArr[playerIndex];
@@ -865,7 +880,7 @@ export function OutOfBoundsCheck(
   }
 }
 
-function KillPlayer(p: Player, sm: StateMachine) {
+function KillPlayer(p: Player, sm: StateMachine): void {
   // reset player to spawn point
   p.SetPlayerInitialPosition(610, 300);
   // reset any stats
@@ -885,7 +900,7 @@ export function RecordHistory(
   playerArr: Array<Player>,
   playerHistories: Array<ComponentHistory>,
   w: World
-) {
+): void {
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = playerArr[playerIndex]!;
     const history = playerHistories[playerIndex];

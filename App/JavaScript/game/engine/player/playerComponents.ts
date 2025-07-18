@@ -7,11 +7,7 @@ import {
   STATE_IDS,
 } from './finite-state-machine/PlayerStates';
 import { FSMState } from './finite-state-machine/PlayerStateMachine';
-import {
-  CreateConvexHull,
-  FlatVec,
-  LineSegmentIntersection,
-} from '../physics/vector';
+import { FlatVec } from '../physics/vector';
 import { FillArrayWithFlatVec } from '../utils';
 import { Player } from './playerOrchestrator';
 import { Clamp } from '../utils';
@@ -20,6 +16,10 @@ import { PooledVector } from '../pools/PooledVector';
 import { Pool } from '../pools/Pool';
 import { ActiveHitBubblesDTO } from '../pools/ActiveAttackHitBubbles';
 import { World } from '../world/world';
+import {
+  CreateConvexHull,
+  LineSegmentIntersection,
+} from '../physics/collisions';
 
 /**
  * This file contains everything pertaining to player components.
@@ -75,67 +75,67 @@ export class ComponentHistory {
     p.Attacks.SetFromSnapShot(this.AttackHistory[frameNumber]);
   }
 
-  public static GetRightXFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetRightXFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.posX + ecb.Width / 2;
   }
 
-  public static GetRightYFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetRightYFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.posY - ecb.Height / 2;
   }
 
-  public static GetLeftXFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetLeftXFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.posX - ecb.Width / 2;
   }
 
-  public static GetLeftYFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetLeftYFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.posY - ecb.Height / 2;
   }
 
-  public static GetTopXFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetTopXFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.posX;
   }
 
-  public static GetTopYFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetTopYFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.posY - ecb.Height;
   }
 
-  public static GetBottomXFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetBottomXFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.posX;
   }
 
-  public static GetBottomYFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetBottomYFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.posY;
   }
 
-  public static GetPrevRightXFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetPrevRightXFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.prevPosX + ecb.Width / 2;
   }
 
-  public static GetPrevRightYFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetPrevRightYFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.prevPosY - ecb.Height / 2;
   }
 
-  public static GetPrevLeftXFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetPrevLeftXFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.prevPosX - ecb.Width / 2;
   }
 
-  public static GetPrevLeftYFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetPrevLeftYFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.prevPosY - ecb.Height / 2;
   }
 
-  public static GetPrevTopXFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetPrevTopXFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.prevPosX;
   }
 
-  public static GetPrevTopYFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetPrevTopYFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.prevPosY - ecb.Height;
   }
 
-  public static GetPrevBottomXFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetPrevBottomXFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.prevPosX;
   }
 
-  public static GetPrevBottomYFromEcbHistory(ecb: ECBSnapShot) {
+  public static GetPrevBottomYFromEcbHistory(ecb: ECBSnapShot): number {
     return ecb.prevPosY;
   }
 }
@@ -155,11 +155,11 @@ export class PositionComponent implements IHistoryEnabled<FlatVec> {
     this.y = y;
   }
 
-  public get X() {
+  public get X(): number {
     return this.x;
   }
 
-  public get Y() {
+  public get Y(): number {
     return this.y;
   }
 
@@ -199,8 +199,8 @@ export class VelocityComponent implements IHistoryEnabled<FlatVec> {
   }
 
   public AddClampedXImpulse(clamp: number, x: number): void {
-    const upperBound = Math.abs(clamp);
-    const vel = this.x;
+    const upperBound: number = Math.abs(clamp);
+    const vel: number = this.x;
 
     if (Math.abs(vel) > upperBound) {
       return;
@@ -210,8 +210,8 @@ export class VelocityComponent implements IHistoryEnabled<FlatVec> {
   }
 
   public AddClampedYImpulse(clamp: number, y: number): void {
-    const upperBound = Math.abs(clamp);
-    const vel = this.y;
+    const upperBound: number = Math.abs(clamp);
+    const vel: number = this.y;
 
     if (Math.abs(vel) > clamp) {
       return;
@@ -262,7 +262,7 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
     this.frameLengths = frameLengths;
   }
 
-  public get CurrentStateFrame() {
+  public get CurrentStateFrame(): number {
     return this.currentStateFrame;
   }
 
@@ -321,15 +321,15 @@ type hitStopSnapShot = number; //{ frames: number };
 export class HitStopComponent implements IHistoryEnabled<hitStopSnapShot> {
   private hitStopFrames: number = 0;
 
-  public SetHitStop(frames: number) {
+  public SetHitStop(frames: number): void {
     this.hitStopFrames = frames;
   }
 
-  public Decrement() {
+  public Decrement(): void {
     this.hitStopFrames--;
   }
 
-  public SetZero() {
+  public SetZero(): void {
     this.hitStopFrames = 0;
   }
 
@@ -369,17 +369,17 @@ export class HitStunComponent implements IHistoryEnabled<hitStunSnapShot> {
     return this.yVelocity;
   }
 
-  public SetHitStun(hitStunFrames: number, vx: number, vy: number) {
+  public SetHitStun(hitStunFrames: number, vx: number, vy: number): void {
     this.framesOfHitStun = hitStunFrames;
     this.xVelocity = vx;
     this.yVelocity = vy;
   }
 
-  public DecrementHitStun() {
+  public DecrementHitStun(): void {
     this.framesOfHitStun--;
   }
 
-  public Zero() {
+  public Zero(): void {
     this.framesOfHitStun = 0;
     this.xVelocity = 0;
     this.yVelocity = 0;
@@ -540,15 +540,15 @@ export class PlayerFlagsComponent implements IHistoryEnabled<FlagsSnapShot> {
     this.fastFalling = false;
   }
 
-  public ChangeDirections() {
+  public ChangeDirections(): void {
     this.facingRight = !this.facingRight;
   }
 
-  public SetCanWalkOffTrue() {
+  public SetCanWalkOffTrue(): void {
     this.canWalkOffStage = true;
   }
 
-  public SetCanWalkOffFalse() {
+  public SetCanWalkOffFalse(): void {
     this.canWalkOffStage = false;
   }
 
@@ -635,13 +635,12 @@ export type ECBSnapShot = {
   Width: number;
 };
 
-export type ECBShape = Map<
-  StateId,
-  { height: number; width: number; yOffset: number }
->;
+export type ECBShape = { height: number; width: number; yOffset: number };
+
+export type ECBShapes = Map<StateId, ECBShape>;
 
 export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
-  private readonly sesnsorDepth: number = 1;
+  public readonly SensorDepth: number = 1;
   private yOffset: number;
   private x: number = 0;
   private y: number = 0;
@@ -656,10 +655,10 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   private readonly curVerts = new Array<FlatVec>(4);
   private readonly prevVerts = new Array<FlatVec>(4);
   private readonly allVerts = new Array<FlatVec>(8);
-  private readonly ecbStateShapes: ECBShape;
+  private readonly ecbStateShapes: ECBShapes;
 
   constructor(
-    shapes: ECBShape,
+    shapes: ECBShapes,
     height: number = 100,
     width: number = 100,
     yOffset: number = 0
@@ -690,8 +689,8 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
     this.prevX = this.x;
     this.prevY = this.y;
 
-    const prevVert = this.prevVerts;
-    const curVert = this.curVerts;
+    const prevVert: FlatVec[] = this.prevVerts;
+    const curVert: FlatVec[] = this.curVerts;
     prevVert[0].X = curVert[0].X;
     prevVert[0].Y = curVert[0].Y;
     prevVert[1].X = curVert[1].X;
@@ -714,7 +713,7 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
   }
 
   public SetECBShape(stateId: StateId): void {
-    const shape = this.ecbStateShapes.get(stateId);
+    const shape: ECBShape | undefined = this.ecbStateShapes.get(stateId);
     if (shape === undefined) {
       this.yOffset = this.originalYOffset;
       this.height = this.originalHeight;
@@ -759,106 +758,6 @@ export class ECBComponent implements IHistoryEnabled<ECBSnapShot> {
 
     this.curVerts[3].X = rightX;
     this.curVerts[3].Y = rightY;
-  }
-
-  public DetectPreviousGroundCollision(
-    groundStart: FlatVec,
-    groundEnd: FlatVec
-  ): boolean {
-    const bottom = this.PrevBottom;
-    const bx = bottom.X;
-    const by = bottom.Y;
-
-    return LineSegmentIntersection(
-      groundStart.X,
-      groundStart.Y,
-      groundEnd.X,
-      groundEnd.Y,
-      bx,
-      by,
-      bx,
-      by - this.sesnsorDepth
-    );
-  }
-
-  public DetectGroundCollision(
-    groundStart: FlatVec,
-    groundEnd: FlatVec
-  ): boolean {
-    const bottom = this.Bottom;
-    const bx = bottom.X;
-    const by = bottom.Y;
-
-    return LineSegmentIntersection(
-      groundStart.X,
-      groundStart.Y,
-      groundEnd.X,
-      groundEnd.Y,
-      bx,
-      by,
-      bx,
-      by - this.sesnsorDepth
-    );
-  }
-
-  public DetectLeftWallCollision(
-    leftWallStart: FlatVec,
-    leftWallEnd: FlatVec
-  ): boolean {
-    const left = this.Left;
-    const lx = left.X;
-    const ly = left.Y;
-
-    return LineSegmentIntersection(
-      leftWallStart.X,
-      leftWallStart.Y,
-      leftWallEnd.X,
-      leftWallEnd.Y,
-      lx,
-      ly,
-      lx + this.sesnsorDepth,
-      ly
-    );
-  }
-
-  public DetectCeilingCollision(
-    ceilingStart: FlatVec,
-    ceilingEnd: FlatVec
-  ): boolean {
-    const top = this.Top;
-    const tx = top.X;
-    const ty = top.Y;
-
-    return LineSegmentIntersection(
-      ceilingStart.X,
-      ceilingStart.Y,
-      ceilingEnd.X,
-      ceilingEnd.Y,
-      tx,
-      ty,
-      tx,
-      ty + this.sesnsorDepth
-    );
-  }
-
-  public DetectRightWallCollision(
-    rightWallStart: FlatVec,
-    rightWallEnd: FlatVec
-  ): boolean {
-    const right = this.Right;
-    const rx = right.X;
-    const ry = right.Y;
-
-    return LineSegmentIntersection(
-      rightWallStart.X,
-      rightWallStart.Y,
-      rightWallEnd.X,
-      rightWallEnd.Y,
-      rx,
-      ry,
-      rx - this.sesnsorDepth,
-      ry
-    );
   }
 
   public get Bottom(): FlatVec {
@@ -1150,11 +1049,11 @@ export class LedgeDetectorComponent
     return this.numberOfLedgeGrabs < this.maxGrabs;
   }
 
-  public IncrementLedgeGrabs() {
+  public IncrementLedgeGrabs(): void {
     this.numberOfLedgeGrabs++;
   }
 
-  public ZeroLedgeGrabCount() {
+  public ZeroLedgeGrabCount(): void {
     this.numberOfLedgeGrabs = 0;
   }
 
@@ -1366,15 +1265,15 @@ export class Attack {
     return activeHBs;
   }
 
-  public HitPlayer(playerIndex: number) {
+  public HitPlayer(playerIndex: number): void {
     this.PlayerIdsHit.push(playerIndex);
   }
 
-  public HasHitPlayer(playerIndex: number) {
+  public HasHitPlayer(playerIndex: number): boolean {
     return this.PlayerIdsHit.includes(playerIndex);
   }
 
-  public ResetPlayeIdHitArray() {
+  public ResetPlayeIdHitArray(): void {
     this.PlayerIdsHit.length = 0;
     this.PlayerIdsHit[0] = -1;
   }
@@ -1467,7 +1366,7 @@ export class AttackBuilder {
     return this;
   }
 
-  public Build() {
+  public Build(): Attack {
     return new Attack(
       this.name,
       this.totalFrames,
@@ -1630,7 +1529,11 @@ export class SensorComponent implements IHistoryEnabled<SensorSnapShot> {
     this.sensorReactor = sr;
   }
 
-  public ActivateSensor(yOffset: number, xOffset: number, radius: number) {
+  public ActivateSensor(
+    yOffset: number,
+    xOffset: number,
+    radius: number
+  ): SensorComponent {
     if (this.currentSensorIdx >= this.sensors.length) {
       throw new Error('No more sensors available to activate.');
     }
@@ -1740,32 +1643,36 @@ export class SpeedsComponentBuilder {
     this.airDodgeSpeed = airDodgeSpeed;
   }
 
-  SetFallSpeeds(fastFallSpeed: number, fallSpeed: number, gravity: number = 1) {
+  SetFallSpeeds(
+    fastFallSpeed: number,
+    fallSpeed: number,
+    gravity: number = 1
+  ): void {
     this.fallSpeed = fallSpeed;
     this.fastFallSpeed = fastFallSpeed;
     this.gravity = gravity;
   }
 
-  SetWalkSpeeds(maxWalkSpeed: number, walkSpeedMultiplier: number) {
+  SetWalkSpeeds(maxWalkSpeed: number, walkSpeedMultiplier: number): void {
     this.maxWalkSpeed = maxWalkSpeed;
     this.walkSpeedMulitplier = walkSpeedMultiplier;
   }
 
-  SetRunSpeeds(maxRunSpeed: number, runSpeedMultiplier: number) {
+  SetRunSpeeds(maxRunSpeed: number, runSpeedMultiplier: number): void {
     this.runSpeedMultiplier = runSpeedMultiplier;
     this.maxRunSpeed = maxRunSpeed;
   }
 
-  SetDashSpeeds(dashMultiplier: number, maxDashSpeed: number) {
+  SetDashSpeeds(dashMultiplier: number, maxDashSpeed: number): void {
     this.dashMutiplier = dashMultiplier;
     this.maxDashSpeed = maxDashSpeed;
   }
 
-  SetGroundedVelocityDecay(groundedVelocityDecay: number) {
+  SetGroundedVelocityDecay(groundedVelocityDecay: number): void {
     this.groundedVelocityDecay = groundedVelocityDecay;
   }
 
-  Build() {
+  Build(): SpeedsComponent {
     return new SpeedsComponent(
       this.groundedVelocityDecay,
       this.aerialVelocityDecay,

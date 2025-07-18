@@ -18,6 +18,8 @@ import {
   VelocityComponent,
   WeightComponent,
 } from './playerComponents';
+import { LineSegmentIntersection } from '../physics/collisions';
+import { FlatVec } from '../physics/vector';
 
 export type speedBuilderOptions = (scb: SpeedsComponentBuilder) => void;
 
@@ -155,43 +157,6 @@ export class Player {
     );
   }
 
-  public IsPlayerGroundedOnStage(s: Stage): boolean {
-    const grnd = s.StageVerticies.GetGround();
-
-    if (grnd == undefined) {
-      return false;
-    }
-
-    const grndLength = grnd.length - 1;
-    for (let i = 0; i < grndLength; i++) {
-      const va = grnd[i];
-      const vb = grnd[i + 1];
-      if (this.ecb.DetectGroundCollision(va, vb)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  public IsPlayerPreviouslyGroundedOnStage(s: Stage): boolean {
-    const grnd = s.StageVerticies.GetGround();
-    if (grnd == undefined) {
-      return false;
-    }
-
-    const grndLength = grnd.length - 1;
-    for (let i = 0; i < grndLength; i++) {
-      const va = grnd[i];
-      const vb = grnd[i + 1];
-      if (this.ecb.DetectPreviousGroundCollision(va, vb)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   public SetPlayerPosition(x: number, y: number) {
     const position = this.position;
     this.Position;
@@ -222,4 +187,120 @@ export class Player {
     this.ecb.SetInitialPosition(x, y);
     this.ledgeDetector.MoveTo(x, y);
   }
+}
+
+export function PlayerOnStage(
+  s: Stage,
+  ecbBottom: FlatVec,
+  ecbSensorDepth: number
+) {
+  const grnd = s.StageVerticies.GetGround();
+  const grndLoopLength = grnd.length - 1;
+
+  for (let i = 0; i < grndLoopLength; i++) {
+    const gP = grnd[i];
+    if (
+      LineSegmentIntersection(
+        gP.X1,
+        gP.Y1,
+        gP.X2,
+        gP.Y2,
+        ecbBottom.X,
+        ecbBottom.Y,
+        ecbBottom.X,
+        ecbBottom.Y - ecbSensorDepth
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function PlayerTouchingStageLeftWall(
+  s: Stage,
+  ecbRight: FlatVec,
+  sensorDepth: number
+) {
+  const left = s.StageVerticies.GetLeftWall();
+  const leftLoopLength = left.length - 1;
+
+  for (let i = 0; i < leftLoopLength; i++) {
+    const lP = left[i];
+    if (
+      LineSegmentIntersection(
+        lP.X1,
+        lP.Y1,
+        lP.X2,
+        lP.Y2,
+        ecbRight.X,
+        ecbRight.Y,
+        ecbRight.X - sensorDepth,
+        ecbRight.Y
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function PlayerTouchingStageRightWall(
+  s: Stage,
+  ecbLeft: FlatVec,
+  sensorDepth: number
+) {
+  const left = s.StageVerticies.GetLeftWall();
+  const leftLoopLength = left.length - 1;
+
+  for (let i = 0; i < leftLoopLength; i++) {
+    const lP = left[i];
+    if (
+      LineSegmentIntersection(
+        lP.X1,
+        lP.Y1,
+        lP.X2,
+        lP.Y2,
+        ecbLeft.X,
+        ecbLeft.Y,
+        ecbLeft.X + sensorDepth,
+        ecbLeft.Y
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function PlayerTouchingStageCeiling(
+  s: Stage,
+  ecbTop: FlatVec,
+  sensorDepth: number
+) {
+  const left = s.StageVerticies.GetLeftWall();
+  const leftLoopLength = left.length - 1;
+
+  for (let i = 0; i < leftLoopLength; i++) {
+    const lP = left[i];
+    if (
+      LineSegmentIntersection(
+        lP.X1,
+        lP.Y1,
+        lP.X2,
+        lP.Y2,
+        ecbTop.X,
+        ecbTop.Y,
+        ecbTop.X,
+        ecbTop.Y + sensorDepth
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }

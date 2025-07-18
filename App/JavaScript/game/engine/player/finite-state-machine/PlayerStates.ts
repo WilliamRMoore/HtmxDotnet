@@ -1,4 +1,4 @@
-import { Player } from '../playerOrchestrator';
+import { Player, PlayerOnStage } from '../playerOrchestrator';
 import { EaseIn, Sequencer } from '../../utils';
 import { World } from '../../world/world';
 import { FSMState } from './PlayerStateMachine';
@@ -30,6 +30,9 @@ class GameEvents {
   public readonly DASH_ATTACK_GE = seq.Next as GameEventId;
   public readonly D_TILT_GE = seq.Next as GameEventId;
   public readonly S_TILT_GE = seq.Next as GameEventId;
+  public readonly S_TILT_U_GE = seq.Next as GameEventId;
+  public readonly S_TILT_D_GE = seq.Next as GameEventId;
+  public readonly U_TILT_GE = seq.Next as GameEventId;
   public readonly N_AIR_GE = seq.Next as GameEventId;
   public readonly F_AIR_GE = seq.Next as GameEventId;
   public readonly B_AIR_GE = seq.Next as GameEventId;
@@ -82,6 +85,7 @@ class STATES {
   public readonly DASH_ATTACK_S = seq.Next as StateId;
   public readonly DOWN_TILT_S = seq.Next as StateId;
   public readonly SIDE_TILT_S = seq.Next as StateId;
+  public readonly UP_TILT_S = seq.Next as StateId;
   public readonly N_AIR_S = seq.Next as StateId;
   public readonly F_AIR_S = seq.Next as StateId;
   public readonly B_AIR_S = seq.Next as StateId;
@@ -106,6 +110,8 @@ class ATTACKS {
   public readonly U_GRND_ATK = seq.Next as AttackId;
   public readonly D_GRND_ATK = seq.Next as AttackId;
   public readonly S_TILT_ATK = seq.Next as AttackId;
+  public readonly S_TILT_U_ATK = seq.Next as AttackId;
+  public readonly S_TITL_D_ATK = seq.Next as AttackId;
   public readonly U_TILT_ATK = seq.Next as AttackId;
   public readonly D_TILT_ATK = seq.Next as AttackId;
   public readonly DASH_ATK = seq.Next as AttackId;
@@ -935,7 +941,7 @@ function InitTurnRelations(): StateRelation {
     ToSideSpecial,
   ];
 
-  turnTranslations.SetConditions([TurnToDash, ToSideSpecial]);
+  turnTranslations.SetConditions([TurnToDash, ToSideSpecial, WalkToSideTilt]);
 
   turnTranslations.SetDefault(defaultConditions);
 
@@ -954,7 +960,11 @@ function InitWalkRelations(): StateRelation {
     { geId: GAME_EVENT_IDS.DOWN_GE, sId: STATE_IDS.CROUCH_S },
   ]);
 
-  const conditions: Array<condition> = [WalkToTurn, ToSideSpecial];
+  const conditions: Array<condition> = [
+    WalkToTurn,
+    ToSideSpecial,
+    WalkToSideTilt,
+  ];
 
   walkTranslations.SetConditions(conditions);
 
@@ -1653,7 +1663,13 @@ export const Jump: FSMState = {
       p.Flags.FastFallOff();
       jumpComp.IncrementJumps();
     }
-    if (p.IsPlayerGroundedOnStage(w.Stage)) {
+    if (
+      PlayerOnStage(
+        w.Stage,
+        p.ECB.Bottom,
+        p.ECB.SensorDepth
+      ) /*p.IsPlayerGroundedOnStage(w.Stage)*/
+    ) {
       p.ECB.SetECBShape(STATE_IDS.JUMP_S);
     }
   },
@@ -1897,8 +1913,42 @@ export const SideTilt: FSMState = {
   StateName: 'SideTilt',
   StateId: STATE_IDS.SIDE_TILT_S,
   OnEnter: (p: Player, w: World) => {
-    p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.D_TILT_GE);
+    p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.S_TILT_GE);
     p.ECB.SetECBShape(STATE_IDS.SIDE_TILT_S);
+  },
+  OnUpdate: (p: Player, w: World) => {
+    const attackComp = p.Attacks;
+    const attack = attackComp.GetAttack();
+    const impulse = attack?.GetActiveImpulseForFrame(
+      p.FSMInfo.CurrentStateFrame
+    );
+
+    if (impulse === undefined) {
+      return;
+    }
+
+    const x = p.Flags.IsFacingRight ? impulse.X : -impulse.X;
+    const y = impulse.Y;
+    const clamp = attack?.ImpulseClamp;
+    const pVel = p.Velocity;
+    if (clamp !== undefined) {
+      pVel.AddClampedXImpulse(clamp, x);
+      pVel.AddClampedYImpulse(clamp, y);
+    }
+  },
+  OnExit: (p: Player, w: World) => {
+    const attackComp = p.Attacks;
+    attackComp.ZeroCurrentAttack();
+    p.ECB.ResetECBShape();
+  },
+};
+
+export const UpTilt: FSMState = {
+  StateName: 'UpTilt',
+  StateId: STATE_IDS.UP_TILT_S,
+  OnEnter: (p: Player, w: World) => {
+    p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.U_TILT_GE);
+    p.ECB.SetECBShape(STATE_IDS.UP_TILT_S);
   },
   OnUpdate: (p: Player, w: World) => {
     const attackComp = p.Attacks;
@@ -2214,6 +2264,34 @@ export const Crouch: FSMState = {
   },
 };
 
+/**
+ * TODO
+ * neutralSpecial
+ * neutralSpecial EX
+ * upSpecial
+ * upSpecial EX
+ * upTilt
+ * sideCharge
+ * downCharge
+ * upcharge
+ * grab
+ * runGrab
+ * shield
+ * shieldBreak
+ * dodgeRoll
+ * tech
+ * wallSlide
+ * wallKick
+ * held (when grabbed)
+ * pummel
+ * dirtNap
+ * groundRecover
+ * ledgeRecover
+ * flinch
+ * clang
+ * platDrop
+ */
+
 //==================== Utils =====================
 
 function ShouldFastFall(curLYAxsis: number, prevLYAxsis: number): boolean {
@@ -2270,6 +2348,8 @@ const LEDGE_GRAB_RELATIONS = InitLedgeGrabRelations();
 const AIR_DODGE_RELATIONS = InitAirDodgeRelations();
 const HELPESS_RELATIONS = InitHelpessRelations();
 const ATTACK_RELATIONS = InitAttackRelations();
+const DOWN_TILT_RELATIONS = InitDownTiltRelations();
+const SIDE_TILT_RELATIONS = InitSideTiltRelations();
 const DASH_ATK_RELATIONS = InitDashAttackRelations();
 const AIR_ATK_RELATIONS = InitAirAttackRelations();
 const F_AIR_ATK_RELATIONS = InitFAirAttackRelations();
@@ -2283,7 +2363,6 @@ const HIT_STOP_RELATIONS = InitHitStopRelations();
 const TUMBLE_RELATIONS = InitTumbleRelations();
 const LAUNCH_RELATIONS = InitLaunchRelations();
 const CROUCH_RELATIONS = InitCrouchRelations();
-const DOWN_TILT_RELATIONS = InitDownTiltRelations();
 
 export const ActionMappings = new Map<StateId, ActionStateMappings>()
   .set(IDLE_STATE_RELATIONS.stateId, IDLE_STATE_RELATIONS.mappings)
@@ -2305,6 +2384,7 @@ export const ActionMappings = new Map<StateId, ActionStateMappings>()
   .set(HELPESS_RELATIONS.stateId, HELPESS_RELATIONS.mappings)
   .set(ATTACK_RELATIONS.stateId, ATTACK_RELATIONS.mappings)
   .set(DOWN_TILT_RELATIONS.stateId, DOWN_TILT_RELATIONS.mappings)
+  .set(SIDE_TILT_RELATIONS.stateId, SIDE_SPECIAL_RELATIONS.mappings)
   .set(DASH_ATK_RELATIONS.stateId, DASH_ATK_RELATIONS.mappings)
   .set(AIR_ATK_RELATIONS.stateId, AIR_ATK_RELATIONS.mappings)
   .set(F_AIR_ATK_RELATIONS.stateId, F_AIR_ATK_RELATIONS.mappings)
@@ -2338,6 +2418,7 @@ export const FSMStates = new Map<StateId, FSMState>()
   .set(AirDodge.StateId, AirDodge)
   .set(Helpess.StateId, Helpess)
   .set(NAttack.StateId, NAttack)
+  .set(SideTilt.StateId, SideTilt)
   .set(DashAttack.StateId, DashAttack)
   .set(NAerialAttack.StateId, NAerialAttack)
   .set(FAerialAttack.StateId, FAerialAttack)
@@ -2357,6 +2438,9 @@ export const AttackGameEventMappings = new Map<GameEventId, AttackId>()
   .set(GAME_EVENT_IDS.ATTACK_GE, ATTACK_IDS.N_GRND_ATK)
   .set(GAME_EVENT_IDS.DASH_ATTACK_GE, ATTACK_IDS.DASH_ATK)
   .set(GAME_EVENT_IDS.D_TILT_GE, ATTACK_IDS.D_TILT_ATK)
+  .set(GAME_EVENT_IDS.S_TILT_GE, ATTACK_IDS.S_TILT_ATK)
+  .set(GAME_EVENT_IDS.S_TILT_U_GE, ATTACK_IDS.S_TILT_U_ATK)
+  .set(GAME_EVENT_IDS.S_TILT_D_GE, ATTACK_IDS.S_TITL_D_ATK)
   .set(GAME_EVENT_IDS.N_AIR_GE, ATTACK_IDS.N_AIR_ATK)
   .set(GAME_EVENT_IDS.F_AIR_GE, ATTACK_IDS.F_AIR_ATK)
   .set(GAME_EVENT_IDS.U_AIR_GE, ATTACK_IDS.U_AIR_ATK)

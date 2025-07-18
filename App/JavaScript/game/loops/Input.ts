@@ -1,8 +1,4 @@
-import {
-  GAME_EVENT_IDS,
-  STATE_IDS,
-} from '../engine/player/finite-state-machine/PlayerStates';
-import { Player } from '../engine/player/playerOrchestrator';
+import { GAME_EVENT_IDS } from '../engine/player/finite-state-machine/PlayerStates';
 import { World } from '../engine/world/world';
 
 export type InputAction = {
@@ -37,7 +33,7 @@ export class GamePadInput {
   start: boolean = false;
   select: boolean = false;
 
-  Clear() {
+  Clear(): void {
     this.LXAxis = 0;
     this.LYAxis = 0;
     this.RXAxis = 0;
@@ -63,7 +59,7 @@ export class GamePadInput {
 
 const currentInput = new GamePadInput();
 
-function readInput(gamePad: Gamepad) {
+function readInput(gamePad: Gamepad): void {
   currentInput.Clear();
   let lx = setDeadzone(gamePad.axes[0]);
   let ly = setDeadzone(gamePad.axes[1]);
@@ -116,7 +112,7 @@ function handleSpecial(
   inputAction: InputAction,
   LXAxis: number,
   LYAxis: number
-) {
+): InputAction {
   //are we more vertical than horizontal?
   if (Math.abs(LYAxis) > Math.abs(LXAxis)) {
     if (LYAxis > 0) {
@@ -141,7 +137,7 @@ function handleAction(
   inputAction: InputAction,
   LXAxis: number,
   LYAxis: number
-) {
+): InputAction {
   if (Math.abs(LYAxis) > Math.abs(LXAxis)) {
     // up
     if (LYAxis > 0) {
@@ -264,7 +260,7 @@ function setDeadzone(v: number): number {
 
 const clampDto: Array<number> = [];
 
-function clampStick(x: number, y: number) {
+function clampStick(x: number, y: number): number[] {
   let m = Math.sqrt(x * x + y * y);
 
   if (m > 1) {

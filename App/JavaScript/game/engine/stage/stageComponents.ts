@@ -1,8 +1,17 @@
-import { FlatVec } from '../physics/vector';
+import { FlatVec, Line, VertArrayContainsFlatVec } from '../physics/vector';
 
 export function defaultStage() {
   const sv = new StageVerticies();
-  const sl = new Ledges(sv.GetGround()[0], sv.GetGround()[1]);
+  const groundPecies = sv.GetGround();
+  const grndStart = groundPecies[0];
+  const grndEnd = groundPecies[groundPecies.length - 1];
+  const topLeftX = grndStart.X1;
+  const topLeftY = grndStart.Y1;
+  const topRightX = grndEnd.X2;
+  const topRighty = grndEnd.Y2;
+  const leftLedgePoint = new FlatVec(topLeftX, topLeftY);
+  const rightLedgePoint = new FlatVec(topRightX, topRighty);
+  const sl = new Ledges(leftLedgePoint, rightLedgePoint); //new Ledges(sv.GetGround()[0], sv.GetGround()[1]);
   const db = new DeathBoundry(-100, 1180, -100, 2020);
   return new Stage(sv, sl, db);
 }
@@ -21,42 +30,59 @@ export class Stage {
 
 export class StageVerticies {
   private Verts: Array<FlatVec> = new Array<FlatVec>();
-  private Ground: Array<FlatVec> = new Array<FlatVec>();
-  private leftWall: Array<FlatVec> = new Array<FlatVec>();
-  private RightWall: Array<FlatVec> = new Array<FlatVec>();
-  private Ceiling: Array<FlatVec> = new Array<FlatVec>();
+  private Ground: Array<Line>;
+  private leftWall: Array<Line>;
+  private RightWall: Array<Line>;
+  private Ceiling: Array<Line>;
 
   public constructor() {
-    let groundStart = new FlatVec(500, 650);
-    let groundEnd = new FlatVec(1600, 650);
-    let rightBottom = new FlatVec(1600, 700);
-    let leftBottom = new FlatVec(500, 700);
+    const groundPeices: Array<Line> = [new Line(500, 650, 1600, 650)];
+    const leftFacingWalls: Array<Line> = [new Line(500, 650, 500, 700)];
+    const rightFacingWalls: Array<Line> = [new Line(1600, 650, 1600, 700)];
+    const ceilingPeices: Array<Line> = [new Line(500, 700, 1600, 700)];
 
-    this.Verts.push(groundStart, groundEnd, rightBottom, leftBottom);
+    this.Ground = groundPeices;
+    this.leftWall = leftFacingWalls;
+    this.RightWall = rightFacingWalls;
+    this.Ceiling = ceilingPeices;
 
-    this.Ground.push(groundStart, groundEnd);
-    this.RightWall.push(groundEnd, rightBottom);
-    this.Ceiling.push(rightBottom, leftBottom);
-    this.leftWall.push(leftBottom, groundStart);
+    const pushFunc = (l: Line) => {
+      const start = new FlatVec(l.X1, l.Y1);
+      const end = new FlatVec(l.X2, l.Y2);
+      if (VertArrayContainsFlatVec(this.Verts, start) === false) {
+        this.Verts.push(start);
+      }
+      if (VertArrayContainsFlatVec(this.Verts, end) === false) {
+        this.Verts.push(end);
+      }
+    };
+
+    this.Ground.forEach(pushFunc);
+
+    this.RightWall.forEach(pushFunc);
+
+    this.Ceiling.forEach(pushFunc);
+
+    this.leftWall.forEach(pushFunc);
   }
 
   public GetVerts(): Array<FlatVec> {
     return this.Verts;
   }
 
-  public GetGround(): Array<FlatVec> {
+  public GetGround(): Array<Line> {
     return this.Ground;
   }
 
-  public GetLeftWall(): Array<FlatVec> {
+  public GetLeftWall(): Array<Line> {
     return this.leftWall;
   }
 
-  public GetRightWall(): Array<FlatVec> {
+  public GetRightWall(): Array<Line> {
     return this.RightWall;
   }
 
-  public GetCeiling(): Array<FlatVec> {
+  public GetCeiling(): Array<Line> {
     return this.Ceiling;
   }
 }
