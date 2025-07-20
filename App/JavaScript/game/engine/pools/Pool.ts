@@ -5,9 +5,9 @@ export interface IPooledObject {
 //TODO:  this is NOT jit friendly.
 // Replace with one large pool class that contains concrete instances of the different pool types.
 export class Pool<T extends IPooledObject> {
-  private pool: Array<T>;
   private poolIndex: number = 0;
-  private constructorFunc: () => T;
+  private readonly pool: Array<T>;
+  private readonly constructorFunc: () => T;
 
   constructor(poolSize: number, constructorFunc: () => T) {
     this.pool = new Array(poolSize);
@@ -18,9 +18,9 @@ export class Pool<T extends IPooledObject> {
   }
 
   Rent(): T {
-    let pi = this.poolIndex;
-    let p = this.pool;
-    let pLength = p.length;
+    const pi = this.poolIndex;
+    const p = this.pool;
+    const pLength = p.length;
 
     if (pi < pLength) {
       let item = p[pi];

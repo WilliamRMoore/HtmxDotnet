@@ -245,7 +245,7 @@ function transcribeInput(input: GamePadInput): InputAction {
 }
 
 function setDeadzone(v: number): number {
-  const DEADZONE = 0.3;
+  const DEADZONE = 0.2;
 
   if (Math.abs(v) < DEADZONE) {
     v = 0;

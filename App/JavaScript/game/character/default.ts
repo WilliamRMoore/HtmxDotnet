@@ -122,6 +122,7 @@ export class DefaultCharacterConfig {
       .set(STATE_IDS.B_AIR_S, { height: 60, width: 60, yOffset: -25 })
       .set(STATE_IDS.D_AIR_S, { height: 90, width: 60, yOffset: -10 })
       .set(STATE_IDS.DOWN_TILT_S, { height: 50, width: 100, yOffset: 0 })
+      .set(STATE_IDS.DOWN_SPCL_S, { height: 65, width: 105, yOffset: 0 })
       .set(STATE_IDS.CROUCH_S, { height: 50, width: 100, yOffset: 0 });
 
     this.SCB = new SpeedsComponentBuilder();
@@ -813,14 +814,14 @@ function GetDownSpecial() {
   const hb3offSets = new Map<frameNumber, FlatVec>();
   const hb4OffSets = new Map<frameNumber, FlatVec>();
 
-  for (let i = 0; i < activeFrames; i++) {
+  for (let i = 23; i < activeFrames; i++) {
+    impulses.set(i, new FlatVec(2, 0));
     hb1OffSets.set(i, new FlatVec(100, -25));
     hb2OffSets.set(i, new FlatVec(70, -25));
     hb3offSets.set(i, new FlatVec(40, -25));
     if (i > 50) {
       hb4OffSets.set(i, new FlatVec(120, -25));
     }
-    impulses.set(i, new FlatVec(3, 0));
   }
 
   const blrd = new AttackBuilder('DSpecial');
@@ -834,7 +835,7 @@ function GetDownSpecial() {
     .WithHitBubble(13, 19, 1, 45, hb2OffSets)
     .WithHitBubble(12, 18, 3, 45, hb3offSets)
     .WithHitBubble(16, 25, 4, 45, hb4OffSets)
-    .WithImpulses(impulses, 15);
+    .WithImpulses(impulses, 12);
 
   return blrd.Build();
 }

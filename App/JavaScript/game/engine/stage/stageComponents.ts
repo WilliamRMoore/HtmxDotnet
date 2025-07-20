@@ -11,7 +11,7 @@ export function defaultStage() {
   const topRighty = grndEnd.Y2;
   const leftLedgePoint = new FlatVec(topLeftX, topLeftY);
   const rightLedgePoint = new FlatVec(topRightX, topRighty);
-  const sl = new Ledges(leftLedgePoint, rightLedgePoint); //new Ledges(sv.GetGround()[0], sv.GetGround()[1]);
+  const sl = new Ledges(leftLedgePoint, rightLedgePoint);
   const db = new DeathBoundry(-100, 1180, -100, 2020);
   return new Stage(sv, sl, db);
 }

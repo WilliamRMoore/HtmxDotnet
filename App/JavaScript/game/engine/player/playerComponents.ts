@@ -16,10 +16,7 @@ import { PooledVector } from '../pools/PooledVector';
 import { Pool } from '../pools/Pool';
 import { ActiveHitBubblesDTO } from '../pools/ActiveAttackHitBubbles';
 import { World } from '../world/world';
-import {
-  CreateConvexHull,
-  LineSegmentIntersection,
-} from '../physics/collisions';
+import { CreateConvexHull } from '../physics/collisions';
 
 /**
  * This file contains everything pertaining to player components.

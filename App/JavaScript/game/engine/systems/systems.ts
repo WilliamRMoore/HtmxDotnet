@@ -74,15 +74,6 @@ export function StageCollisionDetection(
       prvGrnd === true &&
       pFlags.CanWalkOffStage === false
     ) {
-      const stageGround = stage.StageVerticies.GetGround();
-      const leftMostPeice = stageGround[0];
-      const rightMostPeice = stageGround[stageGround.length - 1];
-      const leftStagePoint = vecPool
-        .Rent()
-        .SetXY(leftMostPeice.X1, leftMostPeice.Y1);
-      const rightStagePoint = vecPool
-        .Rent()
-        .SetXY(rightMostPeice.X2, rightMostPeice.Y2);
       const position = p.Position;
 
       // Snap to nearest ledge regardless of facing
@@ -386,30 +377,36 @@ export function PlayerSensors(
   if (playerCount < 2) {
     return;
   }
-  for (let playerIndex = 0; playerIndex < playerCount - 1; playerIndex++) {
-    const pA = players[playerIndex];
-    const pB = players[playerIndex + 1];
-    const pAVspB = sesnsorDetect(
-      pA,
-      pB,
-      vecPool,
-      collisionResultPool,
-      closestPointsPool
-    );
-    const pBVspA = sesnsorDetect(
-      pB,
-      pA,
-      vecPool,
-      collisionResultPool,
-      closestPointsPool
-    );
+  for (let pIdx_outer = 0; pIdx_outer < playerCount - 1; pIdx_outer++) {
+    const pA = players[pIdx_outer];
+    for (
+      let pIdx_inner = pIdx_outer + 1;
+      pIdx_inner < playerCount;
+      pIdx_inner++
+    ) {
+      const pB = players[pIdx_inner];
+      const pAVspB = sesnsorDetect(
+        pA,
+        pB,
+        vecPool,
+        collisionResultPool,
+        closestPointsPool
+      );
+      const pBVspA = sesnsorDetect(
+        pB,
+        pA,
+        vecPool,
+        collisionResultPool,
+        closestPointsPool
+      );
 
-    if (pAVspB) {
-      pA.Sensors.ReactAction(world, pA, pB);
-    }
+      if (pAVspB) {
+        pA.Sensors.ReactAction(world, pA, pB);
+      }
 
-    if (pBVspA) {
-      pB.Sensors.ReactAction(world, pB, pB);
+      if (pBVspA) {
+        pB.Sensors.ReactAction(world, pB, pB);
+      }
     }
   }
 }
@@ -496,44 +493,47 @@ export function PlayerAttacks(
     return;
   }
 
-  for (let playerIndex = 0; playerIndex < playerCount - 1; playerIndex++) {
-    const p1 = players[playerIndex];
-    const p2 = players[playerIndex + 1];
+  for (let i = 0; i < playerCount - 1; i++) {
+    for (let j = i + 1; j < playerCount; j++) {
+      const p1 = players[i];
+      const p2 = players[j];
 
-    const p1HitsP2Result = p1VsP2(
-      currentFrame,
-      activeHitBuubleDtoPool,
-      atkResPool,
-      vecPool,
-      colResPool,
-      clstsPntsResPool,
-      componentHistories,
-      p1,
-      p2
-    );
-    const p2HitsP1Result = p1VsP2(
-      currentFrame,
-      activeHitBuubleDtoPool,
-      atkResPool,
-      vecPool,
-      colResPool,
-      clstsPntsResPool,
-      componentHistories,
-      p2,
-      p1
-    );
+      const p1HitsP2Result = p1VsP2(
+        currentFrame,
+        activeHitBuubleDtoPool,
+        atkResPool,
+        vecPool,
+        colResPool,
+        clstsPntsResPool,
+        componentHistories,
+        p1,
+        p2
+      );
+      const p2HitsP1Result = p1VsP2(
+        currentFrame,
+        activeHitBuubleDtoPool,
+        atkResPool,
+        vecPool,
+        colResPool,
+        clstsPntsResPool,
+        componentHistories,
+        p2,
+        p1
+      );
 
-    if (p1HitsP2Result.Hit && p2HitsP1Result.Hit) {
-      //check for clang
-      const clang = Math.abs(p1HitsP2Result.Damage - p2HitsP1Result.Damage) < 3;
-    }
+      if (p1HitsP2Result.Hit && p2HitsP1Result.Hit) {
+        //check for clang
+        const clang =
+          Math.abs(p1HitsP2Result.Damage - p2HitsP1Result.Damage) < 3;
+      }
 
-    if (p1HitsP2Result.Hit) {
-      resolveHitResult(p1, p2, stateMachines, p1HitsP2Result, vecPool);
-    }
+      if (p1HitsP2Result.Hit) {
+        resolveHitResult(p1, p2, stateMachines, p1HitsP2Result, vecPool);
+      }
 
-    if (p2HitsP1Result.Hit) {
-      resolveHitResult(p2, p1, stateMachines, p2HitsP1Result, vecPool);
+      if (p2HitsP1Result.Hit) {
+        resolveHitResult(p2, p1, stateMachines, p2HitsP1Result, vecPool);
+      }
     }
   }
 }

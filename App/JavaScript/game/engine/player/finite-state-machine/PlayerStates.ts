@@ -1913,6 +1913,20 @@ export const SideTilt: FSMState = {
   StateName: 'SideTilt',
   StateId: STATE_IDS.SIDE_TILT_S,
   OnEnter: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
+
+    if (ia.LYAxsis > 0.15) {
+      p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.S_TILT_U_GE);
+      p.ECB.SetECBShape(STATE_IDS.SIDE_TILT_S);
+      return;
+    }
+
+    if (ia.LYAxsis < -0.15) {
+      p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.S_TILT_D_GE);
+      p.ECB.SetECBShape(STATE_IDS.SIDE_TILT_S);
+      return;
+    }
+
     p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.S_TILT_GE);
     p.ECB.SetECBShape(STATE_IDS.SIDE_TILT_S);
   },
@@ -2174,6 +2188,7 @@ export const DownSpecial: FSMState = {
     if (gravity === false) {
       p.Flags.GravityOff();
     }
+    p.ECB.SetECBShape(STATE_IDS.DOWN_SPCL_S);
   },
   OnUpdate: (p: Player, w: World) => {
     const attackComp = p.Attacks;
@@ -2192,6 +2207,7 @@ export const DownSpecial: FSMState = {
     const attackComp = p.Attacks;
     p.Flags.GravityOn();
     attackComp.ZeroCurrentAttack();
+    p.ECB.ResetECBShape();
   },
 };
 
