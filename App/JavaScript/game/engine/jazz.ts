@@ -15,6 +15,7 @@ import {
   RecordHistory,
   StageCollisionDetection,
   PlayerSensors,
+  ApplyVeloctyDecay,
 } from './systems/systems';
 import { World } from './world/world';
 
@@ -105,7 +106,9 @@ export class Jazz implements IJazz {
 
     Gravity(playerCount, players, stage);
 
-    ApplyVelocty(playerCount, players, stage);
+    ApplyVelocty(playerCount, players);
+
+    ApplyVeloctyDecay(playerCount, players, stage);
 
     PlayerCollisionDetection(
       playerCount,

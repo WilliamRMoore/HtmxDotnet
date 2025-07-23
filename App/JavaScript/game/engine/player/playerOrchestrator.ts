@@ -195,7 +195,7 @@ export function PlayerOnStage(
   ecbSensorDepth: number
 ) {
   const grnd = s.StageVerticies.GetGround();
-  const grndLoopLength = grnd.length - 1;
+  const grndLoopLength = grnd.length;
 
   for (let i = 0; i < grndLoopLength; i++) {
     const gP = grnd[i];

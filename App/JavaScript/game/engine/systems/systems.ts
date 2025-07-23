@@ -498,7 +498,7 @@ export function PlayerAttacks(
       const p1 = players[i];
       const p2 = players[j];
 
-      const p1HitsP2Result = p1VsP2(
+      const p1HitsP2Result = PAvsPB(
         currentFrame,
         activeHitBuubleDtoPool,
         atkResPool,
@@ -509,7 +509,7 @@ export function PlayerAttacks(
         p1,
         p2
       );
-      const p2HitsP1Result = p1VsP2(
+      const p2HitsP1Result = PAvsPB(
         currentFrame,
         activeHitBuubleDtoPool,
         atkResPool,
@@ -588,7 +588,7 @@ function resolveHitResult(
  * @param {Player} pB - The defending player.
  * @returns {AttackResult} The result of the attack collision for this frame.
  * */
-function p1VsP2(
+function PAvsPB(
   currentFrame: number,
   activeHbPool: Pool<ActiveHitBubblesDTO>,
   atkResPool: Pool<AttackResult>,
@@ -761,8 +761,7 @@ function CalculateKnockback(player: Player, attackRes: AttackResult): number {
 
 export function ApplyVelocty(
   playerCount: number,
-  players: Array<Player>,
-  stage: Stage
+  players: Array<Player>
 ): void {
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
     const p = players[playerIndex]!;
@@ -771,20 +770,33 @@ export function ApplyVelocty(
       continue;
     }
 
-    const speeds = p.Speeds;
+    const playerVelocity = p.Velocity;
+
+    p.AddToPlayerPosition(playerVelocity.X, playerVelocity.Y);
+  }
+}
+
+export function ApplyVeloctyDecay(
+  playerCount: number,
+  players: Array<Player>,
+  stage: Stage
+) {
+  for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
+    const p = players[playerIndex]!;
+    const flags = p.Flags;
+
+    if (flags.IsInHitPause) {
+      continue;
+    }
+
     const grounded = PlayerOnStage(stage, p.ECB.Bottom, p.ECB.SensorDepth);
     const playerVelocity = p.Velocity;
     const pvx = playerVelocity.X;
     const pvy = playerVelocity.Y;
-    const fallSpeed = p.Flags.IsFastFalling
-      ? speeds.FastFallSpeed
-      : speeds.FallSpeed;
-    const groundedVelocityDecay = speeds.GroundedVelocityDecay;
-    const aerialVelocityDecay = speeds.AerialVelocityDecay;
-
-    p.AddToPlayerPosition(pvx, pvy);
+    const speeds = p.Speeds;
 
     if (grounded) {
+      const groundedVelocityDecay = speeds.GroundedVelocityDecay;
       if (pvx > 0) {
         playerVelocity.X -= groundedVelocityDecay;
       }
@@ -803,6 +815,11 @@ export function ApplyVelocty(
 
       continue;
     }
+
+    const aerialVelocityDecay = speeds.AerialVelocityDecay;
+    const fallSpeed = p.Flags.IsFastFalling
+      ? speeds.FastFallSpeed
+      : speeds.FallSpeed;
 
     if (pvx > 0) {
       playerVelocity.X -= aerialVelocityDecay;

@@ -1805,7 +1805,7 @@ export const Helpess: FSMState = {
     const ia = w.GetPlayerCurrentInput(p.ID);
     const speeds = p.Speeds;
     const airSpeed = speeds.AerialSpeedInpulseLimit;
-    const airMult = speeds.AirDogeSpeed;
+    const airMult = speeds.ArielVelocityMultiplier;
     p.Velocity.AddClampedXImpulse(airSpeed, (ia!.LXAxsis * airMult) / 2);
   },
   OnExit: (p: Player, w: World) => {},
@@ -1848,6 +1848,7 @@ export const DashAttack: FSMState = {
   StateId: STATE_IDS.DASH_ATTACK_S,
   OnEnter: (p: Player, w: World) => {
     p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.DASH_ATTACK_GE);
+    p.Flags.SetCanWalkOffFalse();
   },
   OnUpdate: (p: Player, w: World) => {
     const attackComp = p.Attacks;
@@ -1872,6 +1873,7 @@ export const DashAttack: FSMState = {
   OnExit: (p, w) => {
     const attackComp = p.Attacks;
     attackComp.ZeroCurrentAttack();
+    p.Flags.SetCanWalkOffTrue();
   },
 };
 
@@ -2003,8 +2005,8 @@ export const NAerialAttack: FSMState = {
     const prevIa = w.GetPlayerPreviousInput(p.ID);
     const speeds = p.Speeds;
     const airSpeed = speeds.AerialSpeedInpulseLimit;
-    const airMult = speeds.AirDogeSpeed;
-    p.Velocity.AddClampedXImpulse(airSpeed, (ia!.LXAxsis * airMult) / 2);
+    const airMult = speeds.ArielVelocityMultiplier;
+    p.Velocity.AddClampedXImpulse(airSpeed, ia!.LXAxsis * airMult);
     if (prevIa !== undefined && ShouldFastFall(ia.LYAxsis, prevIa.LYAxsis)) {
       p.Flags.FastFallOn();
     }
@@ -2260,7 +2262,7 @@ export const Tumble: FSMState = {
     const ia = w.GetPlayerCurrentInput(p.ID);
     const speeds = p.Speeds;
     const airSpeed = speeds.AerialSpeedInpulseLimit;
-    const airMult = speeds.AirDogeSpeed;
+    const airMult = speeds.ArielVelocityMultiplier;
     p.Velocity.AddClampedXImpulse(airSpeed, (ia!.LXAxsis * airMult) / 2);
   },
   OnExit: (p: Player, w: World) => {},
@@ -2400,7 +2402,7 @@ export const ActionMappings = new Map<StateId, ActionStateMappings>()
   .set(HELPESS_RELATIONS.stateId, HELPESS_RELATIONS.mappings)
   .set(ATTACK_RELATIONS.stateId, ATTACK_RELATIONS.mappings)
   .set(DOWN_TILT_RELATIONS.stateId, DOWN_TILT_RELATIONS.mappings)
-  .set(SIDE_TILT_RELATIONS.stateId, SIDE_SPECIAL_RELATIONS.mappings)
+  .set(SIDE_TILT_RELATIONS.stateId, SIDE_TILT_RELATIONS.mappings)
   .set(DASH_ATK_RELATIONS.stateId, DASH_ATK_RELATIONS.mappings)
   .set(AIR_ATK_RELATIONS.stateId, AIR_ATK_RELATIONS.mappings)
   .set(F_AIR_ATK_RELATIONS.stateId, F_AIR_ATK_RELATIONS.mappings)
