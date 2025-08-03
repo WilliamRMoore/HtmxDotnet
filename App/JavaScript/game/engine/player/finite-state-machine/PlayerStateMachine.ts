@@ -41,9 +41,11 @@ export class StateMachine {
   public UpdateFromWorld(gameEventId: GameEventId): void {
     // world events should still have to follow mapping rules
     const state = this.GetTranslation(gameEventId);
+
     if (state === undefined) {
       return;
     }
+
     const fsmInfo = this.player.FSMInfo;
 
     this.changeState(state, fsmInfo);

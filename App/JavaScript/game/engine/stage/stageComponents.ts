@@ -1,5 +1,7 @@
 import { FlatVec, Line, VertArrayContainsFlatVec } from '../physics/vector';
 
+//TODO: Add Platforms
+
 export function defaultStage() {
   const sv = new StageVerticies();
   const groundPecies = sv.GetGround();

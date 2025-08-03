@@ -64,7 +64,7 @@ export class DefaultCharacterConfig {
     const sideTiltUp = GetSideTiltUp();
     const sideTiltDown = GetSideTiltDown();
     const downTilt = GetDownTilt();
-    // upTilt
+    const upTilt = GetUpTilt();
     // sideCharge
     // upCharge
     // downCharge
@@ -100,6 +100,7 @@ export class DefaultCharacterConfig {
       .set(STATE_IDS.ATTACK_S, neutralAttack.TotalFrameLength)
       .set(STATE_IDS.DASH_ATTACK_S, dashAtk.TotalFrameLength)
       .set(STATE_IDS.DOWN_TILT_S, downTilt.TotalFrameLength)
+      .set(STATE_IDS.UP_TILT_S, upTilt.TotalFrameLength)
       .set(STATE_IDS.SIDE_TILT_S, sideTilt.TotalFrameLength)
       .set(STATE_IDS.N_AIR_S, neutralAir.TotalFrameLength)
       .set(STATE_IDS.F_AIR_S, fAir.TotalFrameLength)
@@ -151,6 +152,7 @@ export class DefaultCharacterConfig {
     this.attacks
       .set(ATTACK_IDS.N_GRND_ATK, neutralAttack)
       .set(ATTACK_IDS.D_TILT_ATK, downTilt)
+      .set(ATTACK_IDS.U_TILT_ATK, upTilt)
       .set(ATTACK_IDS.S_TILT_ATK, sideTilt)
       .set(ATTACK_IDS.S_TILT_U_ATK, sideTiltUp)
       .set(ATTACK_IDS.S_TITL_D_ATK, sideTiltDown)
@@ -327,7 +329,7 @@ function GetUAir() {
   const startAngle = 0; // 0 degrees, in front
   const endAngle = (200 * Math.PI) / 180; // 200 degrees, down and to the left
 
-  const bubble1Offsets = generateCounterClockWiseBubbleOffsets(
+  const bubble1Offsets = generateArcBubbleOffsets(
     startAngle,
     endAngle,
     uairFramesActive,
@@ -335,7 +337,7 @@ function GetUAir() {
     20
   );
 
-  const bubble2Offsets = generateCounterClockWiseBubbleOffsets(
+  const bubble2Offsets = generateArcBubbleOffsets(
     startAngle,
     endAngle,
     uairFramesActive,
@@ -343,7 +345,7 @@ function GetUAir() {
     20
   );
 
-  const bubble3Offsets = generateCounterClockWiseBubbleOffsets(
+  const bubble3Offsets = generateArcBubbleOffsets(
     startAngle,
     endAngle,
     uairFramesActive,
@@ -383,29 +385,35 @@ function GetFAir() {
   const fairLaunchAngle = 30;
 
   // Bubble 1: closer to player, rotates from above to below, retracts inward
-  const bubble1Offsets = generateClockwiseBubbleOffsets(
+  const bubble1Offsets = generateArcBubbleOffsets(
     -Math.PI / 2, // start above (90deg)
     Math.PI / 2, // end below (270deg)
     fairFramesActive,
     155, // distance from player center
-    130 // retract inwards by 10px at end
+    130, // retract inwards by 10px at end
+    12,
+    false
   );
 
   // Bubble 2: further from player, stacked above, same rotation
-  const bubble2Offsets = generateClockwiseBubbleOffsets(
+  const bubble2Offsets = generateArcBubbleOffsets(
     -Math.PI / 2,
     Math.PI / 2,
     fairFramesActive,
     130,
-    110
+    110,
+    12,
+    false
   );
 
-  const bubble3Offsets = generateClockwiseBubbleOffsets(
+  const bubble3Offsets = generateArcBubbleOffsets(
     -Math.PI / 2,
     Math.PI / 2,
     fairFramesActive,
     100,
-    100
+    100,
+    12,
+    false
   );
 
   // Build the FAir attack using AttackBuilder
@@ -727,7 +735,52 @@ function GetSideTiltUp() {
   return bldr.Build();
 }
 
-function GetUpTilt() {}
+function GetUpTilt() {
+  const totalFrames = 60;
+  const damage = 16;
+  const launchAngle = 65;
+  const nonExplsoiveRadius = 30;
+  const explosiveRadius = 50;
+  const BaseKnockBack = 30;
+  const knockBackScaling = 45;
+
+  const startAngle = (90 * Math.PI) / 180;
+  const endAngle = (-315 * Math.PI) / 180;
+
+  const hitBubbleOffsets = generateArcBubbleOffsets(
+    startAngle,
+    endAngle,
+    58,
+    120,
+    0,
+    50,
+    true
+  );
+
+  const hitBubbleOffsets2 = new Map<frameNumber, FlatVec>();
+
+  hitBubbleOffsets2
+    .set(59, new FlatVec(110, -40))
+    .set(60, new FlatVec(110, -40));
+
+  const bldr = new AttackBuilder('UpTilt');
+
+  bldr
+    .WithBaseKnockBack(BaseKnockBack)
+    .WithKnockBackScaling(knockBackScaling)
+    .WithGravity(true)
+    .WithTotalFrames(totalFrames)
+    .WithHitBubble(damage, nonExplsoiveRadius, 0, launchAngle, hitBubbleOffsets)
+    .WithHitBubble(
+      damage * 2,
+      explosiveRadius,
+      1,
+      launchAngle,
+      hitBubbleOffsets2
+    );
+
+  return bldr.Build();
+}
 
 function GetSideSpecial() {
   const activeFrames = 80;
@@ -840,46 +893,16 @@ function GetDownSpecial() {
   return blrd.Build();
 }
 
-// Utility to generate offsets for a rotating hit bubble
-function generateClockwiseBubbleOffsets(
-  startAngle: number,
-  endAngle: number,
-  frames: number,
-  distance: number,
-  inwardRetract: number
-): Map<number, FlatVec> {
-  const offsets = new Map<number, FlatVec>();
-  for (let i = 0; i < frames; i++) {
-    const t = i / (frames - 1);
-    const angle = startAngle + (endAngle - startAngle) * t;
-    const retract = inwardRetract * t;
-    const r = distance - retract;
-    const x = r * Math.cos(angle);
-    const y = r * Math.sin(angle);
-    offsets.set(12 + i, new FlatVec(x, y));
-  }
-  return offsets;
-}
-
-function generateCounterClockWiseBubbleOffsets(
+function generateArcBubbleOffsets(
   startAngle: number,
   endAngle: number,
   frames: number,
   distance: number,
   inwardRetract: number,
-  frameStart: number = 12
+  frameStart: number = 12,
+  invertY: boolean = true
 ): Map<number, FlatVec> {
   const offsets = new Map<number, FlatVec>();
-
-  // Calculate the difference in the range [0, 2π)
-  let diff =
-    (((endAngle - startAngle) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-
-  // If the arc is less than π (180°), go the other way (add 2π to start and interpolate backwards)
-  if (diff < Math.PI) {
-    // Swap start and end, and interpolate backwards
-    [startAngle, endAngle] = [endAngle, startAngle + 2 * Math.PI];
-  }
 
   for (let i = 0; i < frames; i++) {
     const t = i / (frames - 1);
@@ -888,7 +911,7 @@ function generateCounterClockWiseBubbleOffsets(
     const r = distance - retract;
     const x = r * Math.cos(angle);
     const y = r * Math.sin(angle);
-    offsets.set(frameStart + i, new FlatVec(x, -y));
+    offsets.set(frameStart + i, new FlatVec(x, invertY ? -y : y));
   }
   return offsets;
 }

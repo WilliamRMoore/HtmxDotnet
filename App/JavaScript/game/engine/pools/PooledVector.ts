@@ -2,8 +2,8 @@ import { FlatVec } from '../physics/vector';
 import { IPooledObject } from './Pool';
 
 export interface IPooledVector {
-  Add(vec: IPooledVector): IPooledVector;
-  Subtract(vec: IPooledVector): IPooledVector;
+  AddVec(vec: IPooledVector): IPooledVector;
+  SubtractVec(vec: IPooledVector): IPooledVector;
   Multiply(s: number): IPooledVector;
   Negate(): IPooledVector;
   Divide(s: number): IPooledVector;
@@ -31,21 +31,27 @@ export class PooledVector implements IPooledVector, IPooledObject {
     this.y = y;
   }
 
-  public Add(vec: PooledVector): PooledVector {
+  public AddVec(vec: PooledVector): PooledVector {
     this.x += vec.X;
     this.y += vec.Y;
     return this;
   }
 
-  public AddNumber(x: number, y: number): PooledVector {
+  public AddXY(x: number, y: number): PooledVector {
     this.x += x;
     this.y += y;
     return this;
   }
 
-  public Subtract(vec: PooledVector): PooledVector {
+  public SubtractVec(vec: PooledVector): PooledVector {
     this.x -= vec.X;
     this.y -= vec.Y;
+    return this;
+  }
+
+  public SubtractXY(x: number, y: number): PooledVector {
+    this.x -= x;
+    this.y -= y;
     return this;
   }
 

@@ -313,7 +313,7 @@ export class FSMInfoComponent implements IHistoryEnabled<FSMInfoSnapShot> {
   }
 }
 
-type hitStopSnapShot = number; //{ frames: number };
+type hitStopSnapShot = number;
 
 export class HitStopComponent implements IHistoryEnabled<hitStopSnapShot> {
   private hitStopFrames: number = 0;
@@ -1250,15 +1250,18 @@ export class Attack {
     activeHBs: ActiveHitBubblesDTO
   ): ActiveHitBubblesDTO {
     const hitBubbleslength = this.HitBubbles.length;
+
     if (hitBubbleslength === 0) {
       return activeHBs;
     }
+
     for (let i = 0; i < hitBubbleslength; i++) {
       const hb = this.HitBubbles[i];
       if (hb.IsActive(frameNumber)) {
         activeHBs.AddBubble(hb);
       }
     }
+
     return activeHBs;
   }
 

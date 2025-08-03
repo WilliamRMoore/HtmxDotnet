@@ -881,6 +881,7 @@ function InitIdleRelations(): StateRelation {
     { geId: GAME_EVENT_IDS.FALL_GE, sId: STATE_IDS.N_FALL_S },
     { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
     { geId: GAME_EVENT_IDS.DOWN_GE, sId: STATE_IDS.CROUCH_S },
+    { geId: GAME_EVENT_IDS.UP_ATTACK_GE, sId: STATE_IDS.UP_TILT_S },
   ]);
 
   const condtions: Array<condition> = [
@@ -990,7 +991,10 @@ function InitDashRelations(): StateRelation {
 
   dashTranslations.SetConditions(conditions);
 
-  const defaultConditions: Array<condition> = [DashDefaultRun, DashDefaultIdle];
+  const defaultConditions: Array<condition> = [
+    DashDefaultRun,
+    defaultIdle /*DashDefaultIdle*/,
+  ];
 
   dashTranslations.SetDefault(defaultConditions);
 
@@ -1502,6 +1506,26 @@ function InitSideTiltRelations(): StateRelation {
   return sideTiltRelations;
 }
 
+function InitUpTiltRelations(): StateRelation {
+  const upTiltTranslations = new ActionStateMappings();
+
+  upTiltTranslations.SetMappings([
+    {
+      geId: GAME_EVENT_IDS.HIT_STOP_GE,
+      sId: STATE_IDS.HIT_STOP_S,
+    },
+  ]);
+
+  upTiltTranslations.SetDefault([defaultIdle]);
+
+  const upTiltRelations = new StateRelation(
+    STATE_IDS.UP_TILT_S,
+    upTiltTranslations
+  );
+
+  return upTiltRelations;
+}
+
 // STATES ==================================================================
 
 export const Idle: FSMState = {
@@ -1844,7 +1868,7 @@ export const NAttack: FSMState = {
 };
 
 export const DashAttack: FSMState = {
-  StateName: 'Attack',
+  StateName: 'DashAttack',
   StateId: STATE_IDS.DASH_ATTACK_S,
   OnEnter: (p: Player, w: World) => {
     p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.DASH_ATTACK_GE);
@@ -2288,7 +2312,6 @@ export const Crouch: FSMState = {
  * neutralSpecial EX
  * upSpecial
  * upSpecial EX
- * upTilt
  * sideCharge
  * downCharge
  * upcharge
@@ -2367,6 +2390,7 @@ const AIR_DODGE_RELATIONS = InitAirDodgeRelations();
 const HELPESS_RELATIONS = InitHelpessRelations();
 const ATTACK_RELATIONS = InitAttackRelations();
 const DOWN_TILT_RELATIONS = InitDownTiltRelations();
+const UP_TILT_RELATIONS = InitUpTiltRelations();
 const SIDE_TILT_RELATIONS = InitSideTiltRelations();
 const DASH_ATK_RELATIONS = InitDashAttackRelations();
 const AIR_ATK_RELATIONS = InitAirAttackRelations();
@@ -2402,6 +2426,7 @@ export const ActionMappings = new Map<StateId, ActionStateMappings>()
   .set(HELPESS_RELATIONS.stateId, HELPESS_RELATIONS.mappings)
   .set(ATTACK_RELATIONS.stateId, ATTACK_RELATIONS.mappings)
   .set(DOWN_TILT_RELATIONS.stateId, DOWN_TILT_RELATIONS.mappings)
+  .set(UP_TILT_RELATIONS.stateId, UP_TILT_RELATIONS.mappings)
   .set(SIDE_TILT_RELATIONS.stateId, SIDE_TILT_RELATIONS.mappings)
   .set(DASH_ATK_RELATIONS.stateId, DASH_ATK_RELATIONS.mappings)
   .set(AIR_ATK_RELATIONS.stateId, AIR_ATK_RELATIONS.mappings)
@@ -2450,7 +2475,8 @@ export const FSMStates = new Map<StateId, FSMState>()
   .set(Tumble.StateId, Tumble)
   .set(Launch.StateId, Launch)
   .set(Crouch.StateId, Crouch)
-  .set(DownTilt.StateId, DownTilt);
+  .set(DownTilt.StateId, DownTilt)
+  .set(UpTilt.StateId, UpTilt);
 
 export const AttackGameEventMappings = new Map<GameEventId, AttackId>()
   .set(GAME_EVENT_IDS.ATTACK_GE, ATTACK_IDS.N_GRND_ATK)
@@ -2459,6 +2485,7 @@ export const AttackGameEventMappings = new Map<GameEventId, AttackId>()
   .set(GAME_EVENT_IDS.S_TILT_GE, ATTACK_IDS.S_TILT_ATK)
   .set(GAME_EVENT_IDS.S_TILT_U_GE, ATTACK_IDS.S_TILT_U_ATK)
   .set(GAME_EVENT_IDS.S_TILT_D_GE, ATTACK_IDS.S_TITL_D_ATK)
+  .set(GAME_EVENT_IDS.U_TILT_GE, ATTACK_IDS.U_TILT_ATK)
   .set(GAME_EVENT_IDS.N_AIR_GE, ATTACK_IDS.N_AIR_ATK)
   .set(GAME_EVENT_IDS.F_AIR_GE, ATTACK_IDS.F_AIR_ATK)
   .set(GAME_EVENT_IDS.U_AIR_GE, ATTACK_IDS.U_AIR_ATK)

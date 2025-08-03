@@ -20,6 +20,13 @@ import { ComponentHistory } from '../player/playerComponents';
 import { ClosestPointsResult } from '../pools/ClosestPointsResult';
 import { ActiveHitBubblesDTO } from '../pools/ActiveAttackHitBubbles';
 
+/**
+ * TODO:
+ * Add Platform Collision Detections
+ * Add Projectile Systems
+ * Add Grab Systems
+ */
+
 const correctionDepth: number = 0.1;
 const cornerJitterCorrection = 2;
 export function StageCollisionDetection(
@@ -120,7 +127,7 @@ export function StageCollisionDetection(
       if (normalX == 0 && normalY > 0) {
         move.AddToY(+yOffset);
 
-        playerPosDTO.Add(move);
+        playerPosDTO.AddVec(move);
         p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y + correctionDepth);
         sm.UpdateFromWorld(
           p.Velocity.Y < 8
@@ -134,7 +141,7 @@ export function StageCollisionDetection(
       //Right wall correction
       if (normalX > 0 && normalY == 0) {
         move.AddToX(correctionDepth);
-        playerPosDTO.Add(move);
+        playerPosDTO.AddVec(move);
         p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
 
         continue;
@@ -143,7 +150,7 @@ export function StageCollisionDetection(
       // Left Wall Correction
       if (normalX < 0 && normalY == 0) {
         move.AddToX(-correctionDepth);
-        playerPosDTO.Add(move);
+        playerPosDTO.AddVec(move);
         p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
 
         continue;
@@ -152,7 +159,7 @@ export function StageCollisionDetection(
       //ceiling
       if (normalX == 0 && normalY < 0) {
         move.AddToY(-correctionDepth);
-        playerPosDTO.Add(move);
+        playerPosDTO.AddVec(move);
         p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
 
         continue;
@@ -161,14 +168,14 @@ export function StageCollisionDetection(
       // corner case, literally
       if (Math.abs(normalX) > 0 && normalY > 0) {
         move.AddToX(move.X <= 0 ? move.Y : -move.Y); // add the y value into x
-        playerPosDTO.Add(move);
+        playerPosDTO.AddVec(move);
         p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
 
         continue;
       }
 
       if (Math.abs(normalX) > 0 && normalY < 0) {
-        playerPosDTO.Add(move);
+        playerPosDTO.AddVec(move);
         p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
 
         continue;

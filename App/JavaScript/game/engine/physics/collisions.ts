@@ -26,7 +26,7 @@ export function IntersectsPolygons(
     verticiesAVec.SetXY(va.X, va.Y);
     verticiesBVec.SetXY(vb.X, vb.Y);
     let axis = verticiesBVec
-      .Subtract(verticiesAVec)
+      .SubtractVec(verticiesAVec)
       .SetY(-verticiesBVec.Y)
       .Normalize();
     // Project verticies for both polygons.
@@ -57,7 +57,7 @@ export function IntersectsPolygons(
     verticiesAVec.SetXY(va.X, va.Y);
     verticiesBVec.SetXY(vb.X, vb.Y);
     const axis = verticiesBVec
-      .Subtract(verticiesAVec)
+      .SubtractVec(verticiesAVec)
       .SetY(-verticiesBVec.Y)
       .Normalize();
     // Project verticies for both polygons.
@@ -80,7 +80,7 @@ export function IntersectsPolygons(
   const centerA = FindArithemticMean(verticiesA, vecPool.Rent());
   const centerB = FindArithemticMean(verticiesB, vecPool.Rent());
 
-  const direction = centerB.Subtract(centerA);
+  const direction = centerB.SubtractVec(centerA);
 
   if (direction.DotProduct(normal) < 0) {
     normal.Negate();
@@ -106,7 +106,7 @@ export function IntersectsCircles(
     return colResPool.Rent();
   }
 
-  const norm = v2.Subtract(v1).Normalize();
+  const norm = v2.SubtractVec(v1).Normalize();
   const depth = raddi - dist;
   const returnValue = colResPool.Rent();
 
@@ -146,9 +146,9 @@ export function ClosestPointsBetweenSegments(
   const p1Dto = vecPool.Rent().SetXY(p1.X, p1.Y);
   const p2Dto = vecPool.Rent().SetXY(p2.X, p2.Y);
 
-  const d1 = q1.Subtract(p1Dto);
-  const d2 = q2.Subtract(p2Dto);
-  const r = p1Dto.Subtract(p2Dto);
+  const d1 = q1.SubtractVec(p1Dto);
+  const d2 = q2.SubtractVec(p2Dto);
+  const r = p1Dto.SubtractVec(p2Dto);
 
   const a = d1.DotProduct(d1); // Squared length of segment 1
   const e = d2.DotProduct(d2); // Squared length of segment 2
