@@ -73,7 +73,7 @@ namespace HtmxDotnet.utils
     internal static class HtmlPools
     {
         internal static readonly DefaultObjectPool<StringBuilder> HtmlBuilderSbPool = new(new HtmlStringBuilderPolicy(64, 10_000), 50);
-        internal static readonly DefaultObjectPool<StringBuilder> SanitizerSbPool = new(new HtmlStringBuilderPolicy(64, 1024), 100);
+        internal static readonly DefaultObjectPool<StringBuilder> SanitizerSbPool = new(new HtmlStringBuilderPolicy(64, 1_024), 100);
         internal static readonly HtmlNodePool HtmlNodePool = new(1000);
     }
 

@@ -1,5 +1,5 @@
 import { IJazz, JazzDebugger } from '../engine/jazz';
-import { STATES } from '../engine/finite-state-machine/PlayerStates';
+import { STATE_IDS } from '../engine/player/finite-state-machine/PlayerStates';
 import { DebugRenderer, resolution } from '../render/debug-2d';
 import { RENDERFPS60Loop } from './FPS60LoopExecutor';
 import { GetInput } from './Input';
@@ -31,7 +31,7 @@ export function start(playerInfo: Array<playerControllerInfo>) {
 
   for (let i = 0; i < playerCount; i++) {
     const sm = engine.World.GetStateMachine(i);
-    sm?.SetInitialState(STATES.N_FALL_S);
+    sm?.SetInitialState(STATE_IDS.N_FALL_S);
   }
 
   LOGIC_LOOP(engine, playerInfo);
@@ -55,11 +55,12 @@ function RENDER_LOOP(world: World) {
 
 function logicStep(engine: IJazz, gamePadInfo: Array<playerControllerInfo>) {
   const gamePadCount = gamePadInfo.length;
+  const w = engine.World;
   for (let i = 0; i < gamePadCount; i++) {
     const info = gamePadInfo[i];
     const gpI = info.inputIndex;
     const pi = info.playerIndex;
-    const input = GetInput(gpI);
+    const input = GetInput(gpI, w!);
     engine.UpdateInputForCurrentFrame(input, pi);
   }
   engine.Tick();

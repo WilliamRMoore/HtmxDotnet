@@ -3,6 +3,8 @@ import { Pool } from '../pools/Pool';
 import { IProjectionResult, ProjectionResult } from '../pools/ProjectResult';
 import { PooledVector } from '../pools/PooledVector';
 import { FlatVec } from './vector';
+import { ClampWithMin } from '../utils';
+import { ClosestPointsResult } from '../pools/ClosestPointsResult';
 
 export function IntersectsPolygons(
   verticiesA: Array<FlatVec>,
@@ -24,7 +26,7 @@ export function IntersectsPolygons(
     verticiesAVec.SetXY(va.X, va.Y);
     verticiesBVec.SetXY(vb.X, vb.Y);
     let axis = verticiesBVec
-      .Subtract(verticiesAVec)
+      .SubtractVec(verticiesAVec)
       .SetY(-verticiesBVec.Y)
       .Normalize();
     // Project verticies for both polygons.
@@ -32,9 +34,7 @@ export function IntersectsPolygons(
     const vbProj = projectVerticies(verticiesB, axis, vecPool, projResPool);
 
     if (vaProj.Min >= vbProj.Max || vbProj.Min >= vaProj.Max) {
-      const res = colResPool.Rent();
-      res._setCollisionFalse();
-      return res;
+      return colResPool.Rent();
     }
 
     const axisDepth = Math.min(
@@ -57,7 +57,7 @@ export function IntersectsPolygons(
     verticiesAVec.SetXY(va.X, va.Y);
     verticiesBVec.SetXY(vb.X, vb.Y);
     const axis = verticiesBVec
-      .Subtract(verticiesAVec)
+      .SubtractVec(verticiesAVec)
       .SetY(-verticiesBVec.Y)
       .Normalize();
     // Project verticies for both polygons.
@@ -65,9 +65,7 @@ export function IntersectsPolygons(
     const vbProj = projectVerticies(verticiesB, axis, vecPool, projResPool);
 
     if (vaProj.Min >= vbProj.Max || vbProj.Min >= vaProj.Max) {
-      const res = colResPool.Rent();
-      res._setCollisionFalse();
-      return res;
+      return colResPool.Rent();
     }
     const axisDepth = Math.min(
       vbProj.Max - vaProj.Min,
@@ -79,10 +77,10 @@ export function IntersectsPolygons(
     }
   }
 
-  const centerA = findArithemticMean(verticiesA, vecPool.Rent());
-  const centerB = findArithemticMean(verticiesB, vecPool.Rent());
+  const centerA = FindArithemticMean(verticiesA, vecPool.Rent());
+  const centerB = FindArithemticMean(verticiesB, vecPool.Rent());
 
-  const direction = centerB.Subtract(centerA);
+  const direction = centerB.SubtractVec(centerA);
 
   if (direction.DotProduct(normal) < 0) {
     normal.Negate();
@@ -93,9 +91,110 @@ export function IntersectsPolygons(
   return res;
 }
 
+export function IntersectsCircles(
+  colResPool: Pool<CollisionResult>,
+  v1: PooledVector,
+  v2: PooledVector,
+  r1: number,
+  r2: number
+): CollisionResult {
+  let dist = v1.Distance(v2);
+  let raddi = r1 + r2;
+
+  if (dist > raddi) {
+    // false, comes from pool in zeroed state.
+    return colResPool.Rent();
+  }
+
+  const norm = v2.SubtractVec(v1).Normalize();
+  const depth = raddi - dist;
+  const returnValue = colResPool.Rent();
+
+  returnValue._setCollisionTrue(norm.X, norm.Y, depth);
+
+  return returnValue;
+}
+
+export function ClosestPointsBetweenSegments(
+  p1: PooledVector,
+  q1: PooledVector,
+  p2: PooledVector,
+  q2: PooledVector,
+  vecPool: Pool<PooledVector>,
+  ClosestPointsPool: Pool<ClosestPointsResult>
+): ClosestPointsResult {
+  const isSegment1Point = p1.X === q1.X && p1.Y === q1.Y;
+  const isSegment2Point = p2.X === q2.X && p2.Y === q2.Y;
+
+  if (isSegment1Point && isSegment2Point) {
+    // Both segments are points
+    const ret = ClosestPointsPool.Rent();
+    ret.Set(p1.X, p1.Y, p2.X, p2.Y);
+    return ret;
+  }
+
+  if (isSegment1Point) {
+    // Segment 1 is a point
+    return closestPointOnSegmentToPoint(p2, q2, p1, vecPool, ClosestPointsPool);
+  }
+
+  if (isSegment2Point) {
+    // Segment 2 is a point
+    return closestPointOnSegmentToPoint(p1, q1, p2, vecPool, ClosestPointsPool);
+  }
+
+  const p1Dto = vecPool.Rent().SetXY(p1.X, p1.Y);
+  const p2Dto = vecPool.Rent().SetXY(p2.X, p2.Y);
+
+  const d1 = q1.SubtractVec(p1Dto);
+  const d2 = q2.SubtractVec(p2Dto);
+  const r = p1Dto.SubtractVec(p2Dto);
+
+  const a = d1.DotProduct(d1); // Squared length of segment 1
+  const e = d2.DotProduct(d2); // Squared length of segment 2
+  const f = d2.DotProduct(r);
+
+  let s = 0;
+  let t = 0;
+
+  const b = d1.DotProduct(d2);
+  const c = d1.DotProduct(r);
+  const denom = a * e - b * b;
+
+  // Check for parallel or near-parallel lines
+  if (Math.abs(denom) > Number.EPSILON) {
+    // Use a small epsilon to handle near-parallel cases
+    s = ClampWithMin((b * f - c * e) / denom, 0, 1);
+  } else {
+    // Segments are parallel or nearly parallel
+    s = 0; // Default to one endpoint of segment 1
+  }
+
+  t = (b * s + f) / e;
+
+  if (t < 0) {
+    t = 0;
+    s = ClampWithMin(-c / a, 0, 1);
+  } else if (t > 1) {
+    t = 1;
+    s = ClampWithMin((b - c) / a, 0, 1);
+  }
+
+  let c1X = p1.X + s * d1.X;
+  let c1Y = p1.Y + s * d1.Y;
+  let c2X = p2Dto.X + t * d2.X;
+  let c2Y = p2Dto.Y + t * d2.Y;
+
+  const closestPoints = ClosestPointsPool.Rent();
+
+  closestPoints.Set(c1X, c1Y, c2X, c2Y);
+
+  return closestPoints;
+}
+
 // suplimental functions ====================================
 
-function findArithemticMean(
+export function FindArithemticMean(
   verticies: Array<FlatVec>,
   pooledVec: PooledVector
 ): PooledVector {
@@ -110,6 +209,36 @@ function findArithemticMean(
   }
 
   return pooledVec.SetXY(sumX, sumY).Divide(vertLength);
+}
+
+function closestPointOnSegmentToPoint(
+  segStart: FlatVec,
+  segEnd: FlatVec,
+  point: FlatVec,
+  vecPool: Pool<PooledVector>,
+  ClosestPointsPool: Pool<ClosestPointsResult>
+): ClosestPointsResult {
+  const segVec = vecPool
+    .Rent()
+    .SetXY(segEnd.X - segStart.X, segEnd.Y - segStart.Y);
+  const pointVec = vecPool
+    .Rent()
+    .SetXY(point.X - segStart.X, point.Y - segStart.Y);
+
+  const segLengthSquared = segVec.X * segVec.X + segVec.Y * segVec.Y;
+
+  let t = 0;
+  if (segLengthSquared > 0) {
+    t = (pointVec.X * segVec.X + pointVec.Y * segVec.Y) / segLengthSquared;
+    t = Math.max(0, Math.min(1, t)); // Clamp t to [0, 1]
+  }
+
+  const closestX = segStart.X + t * segVec.X;
+  const closestY = segStart.Y + t * segVec.Y;
+
+  const ret = ClosestPointsPool.Rent();
+  ret.Set(closestX, closestY, point.X, point.Y);
+  return ret;
 }
 
 function projectVerticies(
@@ -143,4 +272,100 @@ function projectVerticies(
   let result = projResPool.Rent();
   result._setMinMax(min, max);
   return result;
+}
+
+export function LineSegmentIntersection(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  x3: number,
+  y3: number,
+  x4: number,
+  y4: number
+): boolean {
+  const denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+  const numeA = (x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3);
+  const numeB = (x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3);
+
+  if (denom === 0) {
+    return false;
+  }
+
+  const uA = numeA / denom;
+  const uB = numeB / denom;
+
+  if (uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1) {
+    return true;
+  }
+
+  return false;
+}
+
+// Function to compute the cross product of two vectors
+function cross(o: FlatVec, a: FlatVec, b: FlatVec): number {
+  return (a.X - o.X) * (b.Y - o.Y) - (a.Y - o.Y) * (b.X - o.X);
+}
+
+function comparePointsXY(a: FlatVec, b: FlatVec): number {
+  if (a.X === b.X) {
+    return a.Y - b.Y;
+  }
+  return a.X - b.X;
+}
+
+const lower: Array<FlatVec> = [];
+const upper: Array<FlatVec> = [];
+
+export function CreateConvexHull(points: Array<FlatVec>): Array<FlatVec> {
+  if (points.length < 3) {
+    // A convex hull is not possible with fewer than 3 points
+    lower.length = 0; // Clear the lower array
+    for (let i = 0; i < points.length; i++) {
+      lower.push(points[i]);
+    }
+    return lower;
+  }
+
+  // Sort points lexicographically (by X, then by Y)
+  points.sort(comparePointsXY);
+
+  // Clear the lower and upper arrays
+  lower.length = 0;
+  upper.length = 0;
+
+  // Build the lower hull
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    while (
+      lower.length >= 2 &&
+      cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0
+    ) {
+      lower.pop();
+    }
+    lower.push(p);
+  }
+
+  // Build the upper hull
+  for (let i = points.length - 1; i >= 0; i--) {
+    const p = points[i];
+    while (
+      upper.length >= 2 &&
+      cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0
+    ) {
+      upper.pop();
+    }
+    upper.push(p);
+  }
+
+  // Remove the last point of each half because it's repeated at the beginning of the other half
+  lower.pop();
+  upper.pop();
+
+  // Concatenate upper hull into the lower array
+  for (let i = 0; i < upper.length; i++) {
+    lower.push(upper[i]);
+  }
+
+  return lower;
 }

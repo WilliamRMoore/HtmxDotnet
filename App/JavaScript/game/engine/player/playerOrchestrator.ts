@@ -1,18 +1,25 @@
 import { Stage } from '../stage/stageComponents';
 import { CharacterConfig } from '../../character/default';
 import {
+  AttackComponment,
   ECBComponent,
   FSMInfoComponent,
-  HurtCircles,
+  HitStopComponent,
+  HitStunComponent,
+  HurtCapsulesComponent,
   JumpComponent,
   LedgeDetectorComponent,
   PlayerFlagsComponent,
   PlayerPointsComponent,
   PositionComponent,
+  SensorComponent,
   SpeedsComponent,
   SpeedsComponentBuilder,
   VelocityComponent,
+  WeightComponent,
 } from './playerComponents';
+import { LineSegmentIntersection } from '../physics/collisions';
+import { FlatVec } from '../physics/vector';
 
 export type speedBuilderOptions = (scb: SpeedsComponentBuilder) => void;
 
@@ -31,14 +38,19 @@ const defaultSpeedsBuilderOptions: speedBuilderOptions = (
 export class Player {
   private readonly position: PositionComponent;
   private readonly velocity: VelocityComponent;
+  private readonly weight: WeightComponent;
   private readonly flags: PlayerFlagsComponent;
   private readonly points: PlayerPointsComponent;
+  private readonly hitStun: HitStunComponent;
+  private readonly hitStop: HitStopComponent;
   private readonly speeds: SpeedsComponent;
   private readonly ecb: ECBComponent;
-  private readonly hurtCircles: HurtCircles;
+  private readonly hurtCircles: HurtCapsulesComponent;
   private readonly jump: JumpComponent;
   private readonly fsmInfo: FSMInfoComponent;
   private readonly ledgeDetector: LedgeDetectorComponent;
+  private readonly sensors: SensorComponent;
+  private readonly attacks: AttackComponment;
   public readonly ID: number = 0;
 
   constructor(Id: number, CharacterConfig: CharacterConfig) {
@@ -46,20 +58,25 @@ export class Player {
     this.ID = Id;
     this.position = new PositionComponent();
     this.velocity = new VelocityComponent();
+    this.weight = new WeightComponent(CharacterConfig.Weight);
     this.speeds = speedsBuilder.Build();
     this.flags = new PlayerFlagsComponent();
     this.points = new PlayerPointsComponent();
+    this.hitStun = new HitStunComponent();
+    this.hitStop = new HitStopComponent();
+
     this.ecb = new ECBComponent(
+      CharacterConfig.ECBShapes,
       CharacterConfig.ECBHeight,
       CharacterConfig.ECBWidth,
       CharacterConfig.ECBOffset
     );
-    this.hurtCircles = new HurtCircles(CharacterConfig.HurtCircles);
+    this.hurtCircles = new HurtCapsulesComponent(CharacterConfig.HurtCapsules);
     this.jump = new JumpComponent(
       CharacterConfig.JumpVelocity,
       CharacterConfig.NumberOfJumps
     );
-    this.fsmInfo = new FSMInfoComponent();
+    this.fsmInfo = new FSMInfoComponent(CharacterConfig.FrameLengths);
     this.ledgeDetector = new LedgeDetectorComponent(
       this.position.X,
       this.position.Y,
@@ -67,13 +84,15 @@ export class Player {
       CharacterConfig.LedgeBoxHeight,
       CharacterConfig.ledgeBoxYOffset
     );
+    this.sensors = new SensorComponent();
+    this.attacks = new AttackComponment(CharacterConfig.attacks);
   }
 
   public get ECB(): ECBComponent {
     return this.ecb;
   }
 
-  public get HurtCircles(): HurtCircles {
+  public get HurtBubbles(): HurtCapsulesComponent {
     return this.hurtCircles;
   }
 
@@ -85,16 +104,28 @@ export class Player {
     return this.points;
   }
 
+  public get HitStun(): HitStunComponent {
+    return this.hitStun;
+  }
+
+  public get HitStop(): HitStopComponent {
+    return this.hitStop;
+  }
+
   public get Jump(): JumpComponent {
     return this.jump;
   }
 
-  public get Postion(): PositionComponent {
+  public get Position(): PositionComponent {
     return this.position;
   }
 
   public get Velocity(): VelocityComponent {
     return this.velocity;
+  }
+
+  public get Weight(): WeightComponent {
+    return this.weight;
   }
 
   public get Speeds(): SpeedsComponent {
@@ -108,112 +139,168 @@ export class Player {
   public get LedgeDetector(): LedgeDetectorComponent {
     return this.ledgeDetector;
   }
-}
 
-export class PlayerHelpers {
-  public static AddWalkImpulseToPlayer(p: Player, impulse: number): void {
-    const velocity = p.Velocity;
-    const speeds = p.Speeds;
+  public get Sensors(): SensorComponent {
+    return this.sensors;
+  }
+
+  public get Attacks(): AttackComponment {
+    return this.attacks;
+  }
+
+  public AddWalkImpulseToPlayer(impulse: number): void {
+    const velocity = this.velocity;
+    const speeds = this.speeds;
     velocity.AddClampedXImpulse(
       speeds.MaxWalkSpeed,
       impulse * speeds.WalkSpeedMulitplier
     );
   }
 
-  public static AddRunImpulseToPlayer(p: Player, impulse: number): void {
-    const velocity = p.Velocity;
-    const speeds = p.Speeds;
-    velocity.AddClampedXImpulse(
-      speeds.MaxRunSpeed,
-      impulse * speeds.RunSpeedMultiplier
-    );
+  public SetPlayerPosition(x: number, y: number) {
+    const position = this.position;
+    this.Position;
+    position.X = x;
+    position.Y = y;
+    this.ecb.MoveToPosition(x, y);
+    this.ledgeDetector.MoveTo(x, y);
   }
 
-  public static AddGravityToPlayer(p: Player, s: Stage): void {
-    if (!this.IsPlayerGroundedOnStage(p, s)) {
-      const speeds = p.Speeds;
-      const grav = speeds.Gravity;
-      const isFF = p.Flags.IsFastFalling();
-      const fallSpeed = isFF ? speeds.FastFallSpeed : speeds.FallSpeed;
-      const GravMutliplier = isFF ? 1.4 : 1;
-      p.Velocity.AddClampedYImpulse(fallSpeed, grav * GravMutliplier);
-    }
-  }
-
-  public static IsPlayerGroundedOnStage(p: Player, s: Stage): boolean {
-    const grnd = s.StageVerticies.GetGround();
-
-    if (grnd == undefined) {
-      return false;
-    }
-
-    const grndLength = grnd.length - 1;
-    for (let i = 0; i < grndLength; i++) {
-      const va = grnd[i];
-      const vb = grnd[i + 1];
-      if (p.ECB.DetectGroundCollision(va, vb)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  public static IsPlayerPreviouslyGroundedOnStage(
-    p: Player,
-    s: Stage
-  ): boolean {
-    const grnd = s.StageVerticies.GetGround();
-    if (grnd == undefined) {
-      return false;
-    }
-
-    const grndLength = grnd.length - 1;
-    for (let i = 0; i < grndLength; i++) {
-      const va = grnd[i];
-      const vb = grnd[i + 1];
-      if (p.ECB.DetectPreviousGroundCollision(va, vb)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  public static SetPlayerPosition(p: Player, x: number, y: number) {
-    p.Postion.X = x;
-    p.Postion.Y = y;
-    p.ECB.MoveToPosition(x, y);
-    p.HurtCircles.MoveTo(x, y);
-    p.LedgeDetector.MoveTo(x, y);
-  }
-
-  public static SetPlayerInitialPosition(
-    p: Player,
-    x: number,
-    y: number
-  ): void {
-    p.Postion.X = x;
-    p.Postion.Y = y;
-    p.ECB.SetInitialPosition(x, y);
-    p.HurtCircles.MoveTo(x, y);
-    p.LedgeDetector.MoveTo(x, y);
-  }
-
-  public static AddToPlayerYPosition(p: Player, y: number): void {
-    const position = p.Postion;
-    position.Y += y;
-    p.ECB.MoveToPosition(position.X, position.Y);
-    p.HurtCircles.MoveTo(position.X, position.Y);
-    p.LedgeDetector.MoveTo(position.X, position.Y);
-  }
-
-  public static AddToPlayerPosition(p: Player, x: number, y: number): void {
-    const pos = p.Postion;
+  public AddToPlayerPosition(x: number, y: number): void {
+    const pos = this.position;
     pos.X += x;
     pos.Y += y;
-    p.ECB.MoveToPosition(pos.X, pos.Y);
-    p.HurtCircles.MoveTo(pos.X, pos.Y);
-    p.LedgeDetector.MoveTo(pos.X, pos.Y);
+    this.ecb.MoveToPosition(pos.X, pos.Y);
+    this.ledgeDetector.MoveTo(pos.X, pos.Y);
   }
+
+  public AddToPlayerYPosition(y: number): void {
+    const position = this.position;
+    position.Y += y;
+    this.ecb.MoveToPosition(position.X, position.Y);
+    this.ledgeDetector.MoveTo(position.X, position.Y);
+  }
+
+  public SetPlayerInitialPosition(x: number, y: number): void {
+    this.Position.X = x;
+    this.Position.Y = y;
+    this.ecb.SetInitialPosition(x, y);
+    this.ledgeDetector.MoveTo(x, y);
+  }
+}
+
+export function PlayerOnStage(
+  s: Stage,
+  ecbBottom: FlatVec,
+  ecbSensorDepth: number
+) {
+  const grnd = s.StageVerticies.GetGround();
+  const grndLoopLength = grnd.length;
+
+  for (let i = 0; i < grndLoopLength; i++) {
+    const gP = grnd[i];
+    if (
+      LineSegmentIntersection(
+        gP.X1,
+        gP.Y1,
+        gP.X2,
+        gP.Y2,
+        ecbBottom.X,
+        ecbBottom.Y,
+        ecbBottom.X,
+        ecbBottom.Y - ecbSensorDepth
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function PlayerTouchingStageLeftWall(
+  s: Stage,
+  ecbRight: FlatVec,
+  sensorDepth: number
+) {
+  const left = s.StageVerticies.GetLeftWall();
+  const leftLoopLength = left.length - 1;
+
+  for (let i = 0; i < leftLoopLength; i++) {
+    const lP = left[i];
+    if (
+      LineSegmentIntersection(
+        lP.X1,
+        lP.Y1,
+        lP.X2,
+        lP.Y2,
+        ecbRight.X,
+        ecbRight.Y,
+        ecbRight.X - sensorDepth,
+        ecbRight.Y
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function PlayerTouchingStageRightWall(
+  s: Stage,
+  ecbLeft: FlatVec,
+  sensorDepth: number
+) {
+  const left = s.StageVerticies.GetLeftWall();
+  const leftLoopLength = left.length - 1;
+
+  for (let i = 0; i < leftLoopLength; i++) {
+    const lP = left[i];
+    if (
+      LineSegmentIntersection(
+        lP.X1,
+        lP.Y1,
+        lP.X2,
+        lP.Y2,
+        ecbLeft.X,
+        ecbLeft.Y,
+        ecbLeft.X + sensorDepth,
+        ecbLeft.Y
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function PlayerTouchingStageCeiling(
+  s: Stage,
+  ecbTop: FlatVec,
+  sensorDepth: number
+) {
+  const left = s.StageVerticies.GetLeftWall();
+  const leftLoopLength = left.length - 1;
+
+  for (let i = 0; i < leftLoopLength; i++) {
+    const lP = left[i];
+    if (
+      LineSegmentIntersection(
+        lP.X1,
+        lP.Y1,
+        lP.X2,
+        lP.Y2,
+        ecbTop.X,
+        ecbTop.Y,
+        ecbTop.X,
+        ecbTop.Y + sensorDepth
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }

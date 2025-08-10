@@ -1,4 +1,4 @@
-import { StateMachine } from '../finite-state-machine/PlayerStateMachine';
+import { StateMachine } from '../player/finite-state-machine/PlayerStateMachine';
 import { InputAction } from '../../loops/Input';
 import { InputStorageManagerLocal } from '../engine-state-management/Managers';
 import { ComponentHistory } from '../player/playerComponents';
@@ -8,14 +8,20 @@ import { PooledVector } from '../pools/PooledVector';
 import { Pool } from '../pools/Pool';
 import { CollisionResult } from '../pools/CollisionResult';
 import { ProjectionResult } from '../pools/ProjectResult';
+import { AttackResult } from '../pools/AttackResult';
+import { ClosestPointsResult } from '../pools/ClosestPointsResult';
+import { ActiveHitBubblesDTO } from '../pools/ActiveAttackHitBubbles';
 
 export class World {
   private players: Array<Player> = [];
   private stage?: Stage;
   private stateMachines: Array<StateMachine> = [];
+  public readonly ActiveHitBubbleDtoPool: Pool<ActiveHitBubblesDTO>;
   public readonly VecPool: Pool<PooledVector>;
   public readonly ColResPool: Pool<CollisionResult>;
   public readonly ProjResPool: Pool<ProjectionResult>;
+  public readonly AtkResPool: Pool<AttackResult>;
+  public readonly ClstsPntsResPool: Pool<ClosestPointsResult>;
   public localFrame = 0;
   private readonly InputStorage: Array<InputStorageManagerLocal<InputAction>> =
     [];
@@ -27,7 +33,11 @@ export class World {
   private readonly FrameTimeStamps: Array<number> = [];
 
   constructor() {
-    this.VecPool = new Pool<PooledVector>(300, () => new PooledVector());
+    this.ActiveHitBubbleDtoPool = new Pool<ActiveHitBubblesDTO>(
+      20,
+      () => new ActiveHitBubblesDTO()
+    );
+    this.VecPool = new Pool<PooledVector>(500, () => new PooledVector());
     this.ColResPool = new Pool<CollisionResult>(
       100,
       () => new CollisionResult()
@@ -35,6 +45,11 @@ export class World {
     this.ProjResPool = new Pool<ProjectionResult>(
       200,
       () => new ProjectionResult()
+    );
+    this.AtkResPool = new Pool<AttackResult>(100, () => new AttackResult());
+    this.ClstsPntsResPool = new Pool<ClosestPointsResult>(
+      400,
+      () => new ClosestPointsResult()
     );
   }
 
@@ -45,6 +60,9 @@ export class World {
     const compHist = new ComponentHistory();
     compHist.StaticPlayerHistory.LedgeDetectorWidth = p.LedgeDetector.Width;
     compHist.StaticPlayerHistory.ledgDetecorHeight = p.LedgeDetector.Height;
+    p.HurtBubbles.HurtCapsules.forEach((hc) =>
+      compHist.StaticPlayerHistory.HurtCapsules.push(hc)
+    );
     this.PlayerComponentHistories.push(compHist);
   }
 
@@ -103,16 +121,38 @@ export class World {
     this.RentedProjResHistory[frame] = projReses;
   }
 
-  public get Stage(): Stage | undefined {
-    return this.stage;
+  public get Stage(): Stage {
+    return this.stage!;
+  }
+
+  public get Players(): Array<Player> {
+    return this.players;
+  }
+
+  public get StateMachines(): Array<StateMachine> {
+    return this.stateMachines;
+  }
+
+  public get ComponentHistories(): Array<ComponentHistory> {
+    return this.PlayerComponentHistories;
   }
 
   public GetPlayerPreviousInput(playerId: number): InputAction | undefined {
-    return this.InputStorage[playerId].GetInputForFrame(this.localFrame - 1);
+    const localFrame = this.localFrame;
+    return this.InputStorage[playerId].GetInputForFrame(
+      localFrame - 1 >= 0 ? localFrame - 1 : 0
+    );
   }
 
   public GetPlayerCurrentInput(playerId: number): InputAction | undefined {
     return this.InputStorage[playerId].GetInputForFrame(this.localFrame);
+  }
+
+  public GetPlayeInputForFrame(
+    playerId: number,
+    frame: number
+  ): InputAction | undefined {
+    return this.InputStorage[playerId].GetInputForFrame(frame);
   }
 
   public GetInputManager(

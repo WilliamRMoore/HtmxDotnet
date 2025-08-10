@@ -7,9 +7,9 @@ import {
   Stage,
 } from '../../JavaScript/game/engine/stage/stageComponents';
 import { World } from '../../JavaScript/game/engine/world/world';
-import { GAME_EVENTS } from '../../JavaScript/game/engine/finite-state-machine/PlayerStates';
-import { STATES } from '../../JavaScript/game/engine/finite-state-machine/PlayerStates';
-import { StateMachine } from '../../JavaScript/game/engine/finite-state-machine/PlayerStateMachine';
+import { GAME_EVENT_IDS } from '../../JavaScript/game/engine/player/finite-state-machine/PlayerStates';
+import { STATE_IDS } from '../../JavaScript/game/engine/player/finite-state-machine/PlayerStates';
+import { StateMachine } from '../../JavaScript/game/engine/player/finite-state-machine/PlayerStateMachine';
 import { InputAction } from '../../JavaScript/game/loops/Input';
 
 test('StateMachineShould', () => {
@@ -28,24 +28,24 @@ test('StateMachineShould', () => {
   const sm: StateMachine = new StateMachine(p);
 
   const ia: InputAction = {
-    Action: GAME_EVENTS.MOVE_GE,
-    LXAxsis: 0.4,
+    Action: GAME_EVENT_IDS.MOVE_GE,
+    LXAxis: 0.4,
     RXAxis: 0,
-    LYAxsis: 0,
-    RYAxsis: 0,
+    LYAxis: 0,
+    RYAxis: 0,
     Select: false,
     Start: false,
   };
 
   world.localFrame = 0;
-  sm.SetInitialState(STATES.IDLE_S);
+  sm.SetInitialState(STATE_IDS.IDLE_S);
 
   // sm.UpdateFromInput(ia, world);
   world.GetInputManager(0).StoreInputForFrame(world.localFrame, ia);
 
   sm.UpdateFromInput(ia, world);
 
-  expect(p.FSMInfo.CurrentState.StateId).toBe(STATES.TURN_S);
+  expect(p.FSMInfo.CurrentState.StateId).toBe(STATE_IDS.TURN_S);
 });
 
 test('StateMachineShould2', () => {
@@ -66,18 +66,18 @@ test('StateMachineShould2', () => {
   const sm: StateMachine = new StateMachine(p);
 
   const ia: InputAction = {
-    Action: GAME_EVENTS.MOVE_GE,
-    LXAxsis: 0.4,
+    Action: GAME_EVENT_IDS.MOVE_GE,
+    LXAxis: 0.4,
     RXAxis: 0,
-    LYAxsis: 0,
-    RYAxsis: 0,
+    LYAxis: 0,
+    RYAxis: 0,
     Start: false,
     Select: false,
   };
 
   sm.UpdateFromInput(ia, world);
 
-  expect(p.FSMInfo.CurrentState.StateId).toBe(STATES.TURN_S);
+  expect(p.FSMInfo.CurrentState.StateId).toBe(STATE_IDS.TURN_S);
 });
 
 function UpdateNTimes(w: World, sm: StateMachine, ia: InputAction, n: number) {

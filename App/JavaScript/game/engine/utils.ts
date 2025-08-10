@@ -22,6 +22,16 @@ export function Clamp(val: number, clamp: number): number {
   return Math.min(Math.max(val, -clamp), clamp);
 }
 
+export function ClampWithMin(value: number, min: number, max: number): number {
+  if (value < min) {
+    return min;
+  }
+  if (value > max) {
+    return max;
+  }
+  return value;
+}
+
 export function Lerp(start: number, end: number, alpha: number): number {
   return start + (end - start) * alpha;
 }
@@ -32,4 +42,18 @@ export function EaseIn(t: number) {
 
 export function EaseInPower(t: number, p: number) {
   return Math.pow(t, p);
+}
+
+export class Sequencer {
+  private seq: number = 0;
+
+  public set SeqStart(val: number) {
+    this.seq = val;
+  }
+
+  public get Next(): number {
+    const next = this.seq;
+    this.seq++;
+    return next;
+  }
 }
