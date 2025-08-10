@@ -29,10 +29,10 @@ test('StateMachineShould', () => {
 
   const ia: InputAction = {
     Action: GAME_EVENT_IDS.MOVE_GE,
-    LXAxsis: 0.4,
+    LXAxis: 0.4,
     RXAxis: 0,
-    LYAxsis: 0,
-    RYAxsis: 0,
+    LYAxis: 0,
+    RYAxis: 0,
     Select: false,
     Start: false,
   };
@@ -67,10 +67,10 @@ test('StateMachineShould2', () => {
 
   const ia: InputAction = {
     Action: GAME_EVENT_IDS.MOVE_GE,
-    LXAxsis: 0.4,
+    LXAxis: 0.4,
     RXAxis: 0,
-    LYAxsis: 0,
-    RYAxsis: 0,
+    LYAxis: 0,
+    RYAxis: 0,
     Start: false,
     Select: false,
   };

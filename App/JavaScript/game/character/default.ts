@@ -86,7 +86,8 @@ export class DefaultCharacterConfig {
     const bAir = GetBAir();
     const dAir = GetDAir();
 
-    this.FrameLengths.set(STATE_IDS.START_WALK_S, 5)
+    this.FrameLengths
+      //.set(STATE_IDS.START_WALK_S, 5)
       .set(STATE_IDS.JUMP_SQUAT_S, 4)
       .set(STATE_IDS.TURN_S, 3)
       .set(STATE_IDS.DASH_S, 20)
@@ -785,17 +786,20 @@ function GetUpTilt() {
 function GetSideSpecial() {
   const activeFrames = 80;
   const impulses = new Map<frameNumber, FlatVec>();
+
   const reactor: SensorReactor = (w, sensorOwner, detectedPlayer) => {
     console.log('SENSOR DETECTED');
     const sm = w.GetStateMachine(sensorOwner.ID)!;
     sm.UpdateFromWorld(GAME_EVENT_IDS.SIDE_SPCL_EX_GE);
     // change the state here
   };
+
   const onEnter: AttackOnEnter = (w, p) => {
     const vel = p.Velocity;
     vel.X = 0;
     p.Sensors.SetSensorReactor(reactor);
   };
+
   const onUpdate: AttackOnUpdate = (w, p, fN) => {
     if (fN === 15) {
       p.Sensors.ActivateSensor(-15, 45, 30)
@@ -807,6 +811,7 @@ function GetSideSpecial() {
       p.Sensors.DeactivateSensors();
     }
   };
+
   const onExit: AttackOnExit = (w, p) => {
     p.Sensors.DeactivateSensors();
   };

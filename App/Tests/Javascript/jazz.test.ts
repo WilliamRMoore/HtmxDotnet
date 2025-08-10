@@ -20,10 +20,10 @@ test('test', () => {
 
   const ia: InputAction = {
     Action: GAME_EVENT_IDS.IDLE_GE,
-    LXAxsis: 0,
-    LYAxsis: 0,
+    LXAxis: 0,
+    LYAxis: 0,
     RXAxis: 0,
-    RYAxsis: 0,
+    RYAxis: 0,
     Start: false,
     Select: false,
   };
@@ -59,10 +59,10 @@ test('test fast fall to ground', () => {
 
   let ia: InputAction = {
     Action: GAME_EVENT_IDS.IDLE_GE,
-    LXAxsis: 0,
-    LYAxsis: 0,
+    LXAxis: 0,
+    LYAxis: 0,
     RXAxis: 0,
-    RYAxsis: 0,
+    RYAxis: 0,
     Start: false,
     Select: false,
   };

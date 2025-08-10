@@ -1,12 +1,15 @@
-import { GAME_EVENT_IDS } from '../engine/player/finite-state-machine/PlayerStates';
+import {
+  GAME_EVENT_IDS,
+  GameEventId,
+} from '../engine/player/finite-state-machine/PlayerStates';
 import { World } from '../engine/world/world';
 
 export type InputAction = {
-  Action: number;
-  LXAxsis: number;
-  LYAxsis: number;
+  Action: GameEventId;
+  LXAxis: number;
+  LYAxis: number;
   RXAxis: number;
-  RYAxsis: number;
+  RYAxis: number;
   Start: boolean;
   Select: boolean;
 };
@@ -168,10 +171,10 @@ function transcribeInput(input: GamePadInput): InputAction {
   const RYAxis = input.RYAxis;
   const inputAction = NewInputAction();
 
-  inputAction.LXAxsis = LXAxis;
-  inputAction.LYAxsis = LYAxis;
+  inputAction.LXAxis = LXAxis;
+  inputAction.LYAxis = LYAxis;
   inputAction.RXAxis = RXAxis;
-  inputAction.RYAxsis = RYAxis;
+  inputAction.RYAxis = RYAxis;
   inputAction.Start = input.start;
   inputAction.Select = input.select;
 
@@ -276,9 +279,9 @@ function clampStick(x: number, y: number): number[] {
 export function NewInputAction() {
   return {
     Action: GAME_EVENT_IDS.IDLE_GE,
-    LXAxsis: 0,
-    LYAxsis: 0,
+    LXAxis: 0,
+    LYAxis: 0,
     RXAxis: 0,
-    RYAxsis: 0,
+    RYAxis: 0,
   } as InputAction;
 }

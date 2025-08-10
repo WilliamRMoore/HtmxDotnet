@@ -138,11 +138,21 @@ export class World {
   }
 
   public GetPlayerPreviousInput(playerId: number): InputAction | undefined {
-    return this.InputStorage[playerId].GetInputForFrame(this.localFrame - 1);
+    const localFrame = this.localFrame;
+    return this.InputStorage[playerId].GetInputForFrame(
+      localFrame - 1 >= 0 ? localFrame - 1 : 0
+    );
   }
 
   public GetPlayerCurrentInput(playerId: number): InputAction | undefined {
     return this.InputStorage[playerId].GetInputForFrame(this.localFrame);
+  }
+
+  public GetPlayeInputForFrame(
+    playerId: number,
+    frame: number
+  ): InputAction | undefined {
+    return this.InputStorage[playerId].GetInputForFrame(frame);
   }
 
   public GetInputManager(

@@ -26,6 +26,8 @@ class GameEvents {
   public readonly UP_ATTACK_GE = seq.Next as GameEventId;
   public readonly DOWN_ATTACK_GE = seq.Next as GameEventId;
   public readonly SIDE_ATTACK_GE = seq.Next as GameEventId;
+  public readonly SIDE_CHARGE_GE = seq.Next as GameEventId;
+  public readonly SIDE_CHARGE_EX_GE = seq.Next as GameEventId;
   public readonly ATTACK_GE = seq.Next as GameEventId;
   public readonly DASH_ATTACK_GE = seq.Next as GameEventId;
   public readonly D_TILT_GE = seq.Next as GameEventId;
@@ -46,7 +48,6 @@ class GameEvents {
   public readonly GUARD_GE = seq.Next as GameEventId;
   public readonly UP_GE = seq.Next as GameEventId;
   public readonly DOWN_GE = seq.Next as GameEventId;
-  public readonly TURN_GE = seq.Next as GameEventId;
   // End of GameEvents that can be source from player input
   public readonly LAND_GE = seq.Next as GameEventId;
   public readonly SOFT_LAND_GE = seq.Next as GameEventId;
@@ -64,7 +65,6 @@ seq.SeqStart = 0;
 //Postfixed _S for state, so you know you are looking at state Ids.
 class STATES {
   public readonly IDLE_S = seq.Next as StateId;
-  public readonly START_WALK_S = seq.Next as StateId;
   public readonly TURN_S = seq.Next as StateId;
   public readonly WALK_S = seq.Next as StateId;
   public readonly DASH_S = seq.Next as StateId;
@@ -82,6 +82,12 @@ class STATES {
   public readonly AIR_DODGE_S = seq.Next as StateId;
   public readonly HELPESS_S = seq.Next as StateId;
   public readonly ATTACK_S = seq.Next as StateId;
+  public readonly SIDE_CHARGE_S = seq.Next as StateId;
+  public readonly SIDE_CHARGE_EX_S = seq.Next as StateId;
+  public readonly DOWN_CHARGE_S = seq.Next as StateId;
+  public readonly DOWN_CHARGE_EX_S = seq.Next as StateId;
+  public readonly UP_CHARGE_S = seq.Next as StateId;
+  public readonly UP_CHARGE_EX_S = seq.Next as StateId;
   public readonly DASH_ATTACK_S = seq.Next as StateId;
   public readonly DOWN_TILT_S = seq.Next as StateId;
   public readonly SIDE_TILT_S = seq.Next as StateId;
@@ -109,6 +115,8 @@ class ATTACKS {
   public readonly S_GRND_ATK = seq.Next as AttackId;
   public readonly U_GRND_ATK = seq.Next as AttackId;
   public readonly D_GRND_ATK = seq.Next as AttackId;
+  public readonly S_CHARGE_ATK = seq.Next as AttackId;
+  public readonly S_CHARGE_EX_ATK = seq.Next as AttackId;
   public readonly S_TILT_ATK = seq.Next as AttackId;
   public readonly S_TILT_U_ATK = seq.Next as AttackId;
   public readonly S_TITL_D_ATK = seq.Next as AttackId;
@@ -208,15 +216,82 @@ export function RunCondition(
   return undefined;
 }
 
+const IdleToTurn: condition = {
+  Name: 'IdleToTurn',
+  ConditionFunc: (w: World, playerIndex: number) => {
+    const p = w.GetPlayer(playerIndex)!;
+    const flags = p.Flags;
+    const ia = w.GetPlayerCurrentInput(playerIndex)!;
+
+    if (ia.LXAxis < 0 && flags.IsFacingRight) {
+      return true;
+    }
+
+    if (ia.LXAxis > 0 && flags.IsFacingLeft) {
+      return true;
+    }
+
+    return false;
+  },
+  StateId: STATE_IDS.TURN_S,
+};
+
+const IdleToDash: condition = {
+  Name: 'IdleToDash',
+  ConditionFunc: (w: World, playerIndex: number) => {
+    const p = w.GetPlayer(playerIndex)!;
+    const prevIa = w.GetPlayerPreviousInput(playerIndex)!;
+
+    if (prevIa.Action === GAME_EVENT_IDS.MOVE_FAST_GE) {
+      return false;
+    }
+
+    const ia = w.GetPlayerCurrentInput(playerIndex)!;
+
+    if (ia.Action !== GAME_EVENT_IDS.MOVE_FAST_GE) {
+      return false;
+    }
+
+    const facingRight = p.Flags.IsFacingRight;
+    const lxAxis = ia.LXAxis;
+
+    if (lxAxis > 0 && facingRight) {
+      return true;
+    }
+
+    if (lxAxis < 0 && !facingRight) {
+      return true;
+    }
+
+    return false;
+  },
+  StateId: STATE_IDS.DASH_S,
+};
+
 const IdleToDashturn: condition = {
   Name: 'IdleToTurnDash',
   ConditionFunc: (w: World, playerIndex: number) => {
+    const prevIa = w.GetPlayerPreviousInput(playerIndex)!;
+
+    if (prevIa.Action === GAME_EVENT_IDS.MOVE_FAST_GE) {
+      return false;
+    }
+
+    const ia = w.GetPlayerCurrentInput(playerIndex)!;
+
+    if (ia.Action !== GAME_EVENT_IDS.MOVE_FAST_GE) {
+      return false;
+    }
+
     const p = w.GetPlayer(playerIndex)!;
-    const input = w.GetPlayerCurrentInput(playerIndex)!;
-    if (input.LXAxsis < -0.5 && p.Flags.IsFacingRight) {
+    const flags = p.Flags;
+    const lxAxis = ia.LXAxis;
+
+    if (lxAxis < 0 && flags.IsFacingRight) {
       return true;
     }
-    if (input.LXAxsis > 0.5 && p.Flags.IsFacingLeft) {
+
+    if (lxAxis > 0 && flags.IsFacingLeft) {
       return true;
     }
 
@@ -225,24 +300,42 @@ const IdleToDashturn: condition = {
   StateId: STATE_IDS.DASH_TURN_S,
 };
 
-const IdleToTurn: condition = {
-  Name: 'IdleToTurn',
+const WalkToDash: condition = {
+  Name: 'WalkToDash',
   ConditionFunc: (w: World, playerIndex: number) => {
     const p = w.GetPlayer(playerIndex)!;
+    const fsmInfo = p.FSMInfo;
+    const prevIa = w.GetPlayerPreviousInput(playerIndex)!;
+
+    if (
+      fsmInfo.CurrentStateFrame > 2 ||
+      prevIa.Action === GAME_EVENT_IDS.MOVE_FAST_GE
+    ) {
+      return false;
+    }
+
     const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
-    if (ia.LXAxsis < 0 && flags.IsFacingRight) {
+    if (
+      flags.IsFacingRight &&
+      ia.LXAxis > 0 &&
+      ia.Action === GAME_EVENT_IDS.MOVE_FAST_GE
+    ) {
       return true;
     }
 
-    if (ia.LXAxsis > 0 && flags.IsFacingLeft) {
+    if (
+      flags.IsFacingLeft &&
+      ia.LXAxis < 0 &&
+      ia.Action === GAME_EVENT_IDS.MOVE_FAST_GE
+    ) {
       return true;
     }
 
     return false;
   },
-  StateId: STATE_IDS.TURN_S,
+  StateId: STATE_IDS.DASH_S,
 };
 
 const WalkToTurn: condition = {
@@ -256,8 +349,8 @@ const WalkToTurn: condition = {
       return false;
     }
 
-    const prevLax = prevIa.LXAxsis;
-    const curLax = ia.LXAxsis;
+    const prevLax = prevIa.LXAxis;
+    const curLax = ia.LXAxis;
     if ((prevLax < 0 && curLax > 0) || (prevLax > 0 && curLax < 0)) {
       return true;
     }
@@ -286,8 +379,8 @@ const RunToTurn: condition = {
       return false;
     }
 
-    const prevLax = prevIa.LXAxsis;
-    const curLax = ia.LXAxsis;
+    const prevLax = prevIa.LXAxis;
+    const curLax = ia.LXAxis;
 
     if ((prevLax < 0 && curLax > 0) || (prevLax > 0 && curLax < 0)) {
       return true;
@@ -317,8 +410,8 @@ const DashToTurn: condition = {
       return false;
     }
 
-    const prevLax = prevIa.LXAxsis; // Previous left stick X-axis
-    const curLax = ia.LXAxsis; // Current left stick X-axis
+    const prevLax = prevIa.LXAxis; // Previous left stick X-axis
+    const curLax = ia.LXAxis; // Current left stick X-axis
     const laxDifference = curLax - prevLax; // Difference between current and previous X-axis
     const threshold = 0.5; // Threshold for detecting significant variation
 
@@ -384,11 +477,11 @@ const DashDefaultRun: condition = {
     const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
-    if (ia.LXAxsis > 0 && flags.IsFacingRight) {
+    if (ia.LXAxis > 0 && flags.IsFacingRight) {
       return true;
     }
 
-    if (ia.LXAxsis < 0 && flags.IsFacingLeft) {
+    if (ia.LXAxis < 0 && flags.IsFacingLeft) {
       return true;
     }
 
@@ -402,7 +495,7 @@ const DashDefaultIdle: condition = {
   ConditionFunc: (w: World, playerIndex: number) => {
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
-    if (ia.LXAxsis === 0) {
+    if (ia.LXAxis === 0) {
       return true;
     }
 
@@ -418,7 +511,7 @@ const TurnDefaultWalk: condition = {
     const p = w.GetPlayer(playerIndex);
     const facingRight = p?.Flags.IsFacingRight;
 
-    if ((facingRight && ia!.LXAxsis < 0) || (!facingRight && ia!.LXAxsis > 0)) {
+    if ((facingRight && ia!.LXAxis < 0) || (!facingRight && ia!.LXAxis > 0)) {
       return true;
     }
     return false;
@@ -438,60 +531,17 @@ const TurnToDash: condition = {
 
     const input = w.GetPlayerCurrentInput(playerIndex)!;
 
-    if (input.LXAxsis < -0.5 && p.Flags.IsFacingRight) {
+    if (input.LXAxis < -0.5 && p.Flags.IsFacingRight) {
       return true;
     }
 
-    if (input.LXAxsis > 0.5 && p.Flags.IsFacingLeft) {
+    if (input.LXAxis > 0.5 && p.Flags.IsFacingLeft) {
       return true;
     }
 
     return false;
   },
   StateId: STATE_IDS.DASH_S,
-};
-
-const StartWalkToDash: condition = {
-  Name: 'StartWalkToDash',
-  ConditionFunc: (w: World, playerIndex: number) => {
-    const ia = w.GetPlayerCurrentInput(playerIndex)!;
-    const prevIa = w.GetPlayerPreviousInput(playerIndex);
-    return inputMacthesTargetNotRepeating(
-      GAME_EVENT_IDS.MOVE_FAST_GE,
-      ia,
-      prevIa
-    );
-  },
-  StateId: STATE_IDS.DASH_S,
-};
-
-const LandToJumpSquat: condition = {
-  Name: 'LandToJumpSquat',
-  ConditionFunc: (w: World, playerIndex: number) => {
-    const ia = w.GetPlayerCurrentInput(playerIndex);
-    const prevIa = w.GetPlayerPreviousInput(playerIndex);
-    const p = w.GetPlayer(playerIndex);
-    const stateFrame = p!.FSMInfo.CurrentStateFrame;
-
-    if (stateFrame > 1) {
-      return false;
-    }
-
-    if (ia?.Action !== GAME_EVENT_IDS.JUMP_GE) {
-      return false;
-    }
-
-    if (prevIa === null) {
-      return true;
-    }
-
-    if (prevIa?.Action === GAME_EVENT_IDS.JUMP_GE) {
-      return false;
-    }
-
-    return true;
-  },
-  StateId: STATE_IDS.JUMP_SQUAT_S,
 };
 
 const ToNair: condition = {
@@ -536,11 +586,11 @@ const ToFAir: condition = {
     }
 
     if (isRStickXAxisActuated === false) {
-      if (isFacingRight && ia.LXAxsis > 0) {
+      if (isFacingRight && ia.LXAxis > 0) {
         return true;
       }
 
-      if (IsFacingLeft && ia.LXAxsis < 0) {
+      if (IsFacingLeft && ia.LXAxis < 0) {
         return true;
       }
     }
@@ -562,11 +612,11 @@ const ToBAir: condition = {
     }
 
     if (ia.Action === GAME_EVENT_IDS.SIDE_ATTACK_GE) {
-      if (p!.Flags.IsFacingRight && (ia.RXAxis < 0 || ia.LXAxsis < 0)) {
+      if (p!.Flags.IsFacingRight && (ia.RXAxis < 0 || ia.LXAxis < 0)) {
         return true;
       }
 
-      if (p!.Flags.IsFacingLeft && (ia.RXAxis > 0 || ia.LXAxsis > 0)) {
+      if (p!.Flags.IsFacingLeft && (ia.RXAxis > 0 || ia.LXAxis > 0)) {
         return true;
       }
     }
@@ -604,6 +654,34 @@ const ToDAir: condition = {
     );
   },
   StateId: STATE_IDS.D_AIR_S,
+};
+
+const SideTiltToWalk: condition = {
+  Name: 'SideTiltToWalk',
+  ConditionFunc: (w: World, playerIndex: number) => {
+    const ia = w.GetPlayerCurrentInput(playerIndex)!;
+
+    if (
+      ia.Action !== GAME_EVENT_IDS.MOVE_GE ||
+      ia.Action !== GAME_EVENT_IDS.MOVE_FAST_GE
+    ) {
+      return false;
+    }
+
+    const p = w.GetPlayer(playerIndex)!;
+    const flags = p.Flags;
+
+    if (ia.LXAxis > 0 && flags.IsFacingRight) {
+      return true;
+    }
+
+    if (ia.LXAxis < 0 && flags.IsFacingLeft) {
+      return true;
+    }
+
+    return false;
+  },
+  StateId: STATE_IDS.WALK_S,
 };
 
 const defaultWalk: condition = {
@@ -662,12 +740,20 @@ const defaultHelpess: condition = {
   StateId: STATE_IDS.HELPESS_S,
 };
 
+const defaultSideChargeEx: condition = {
+  Name: 'DefaultSideChargeEx',
+  ConditionFunc: (w: World, playerIndex: number) => {
+    return true;
+  },
+  StateId: STATE_IDS.SIDE_CHARGE_EX_S,
+};
+
 const LandToIdle: condition = {
   Name: 'LandToIdle',
   ConditionFunc: (w: World, playerIndex: number) => {
     const ia = w.GetInputManager(playerIndex).GetInputForFrame(w.localFrame)!;
 
-    if (ia.LXAxsis === 0) {
+    if (ia.LXAxis === 0) {
       return true;
     }
 
@@ -683,11 +769,11 @@ const LandToWalk: condition = {
     const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
-    if (ia.LXAxsis > 0 && flags.IsFacingRight) {
+    if (ia.LXAxis > 0 && flags.IsFacingRight) {
       return true;
     }
 
-    if (ia.LXAxsis < 0 && flags.IsFacingLeft) {
+    if (ia.LXAxis < 0 && flags.IsFacingLeft) {
       return true;
     }
 
@@ -703,11 +789,11 @@ const LandToTurn: condition = {
     const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
-    if (ia.LXAxsis < 0 && flags.IsFacingRight) {
+    if (ia.LXAxis < 0 && flags.IsFacingRight) {
       return true;
     }
 
-    if (ia.LXAxsis > 0 && flags.IsFacingLeft) {
+    if (ia.LXAxis > 0 && flags.IsFacingLeft) {
       return true;
     }
 
@@ -735,11 +821,11 @@ const RunStopToTurn: condition = {
     const flags = p.Flags;
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
-    if (ia.LXAxsis > 0 && flags.IsFacingLeft) {
+    if (ia.LXAxis > 0 && flags.IsFacingLeft) {
       return true;
     }
 
-    if (ia.LXAxsis < 0 && flags.IsFacingRight) {
+    if (ia.LXAxis < 0 && flags.IsFacingRight) {
       return true;
     }
 
@@ -766,8 +852,8 @@ const RunToDashAttack: condition = {
     if (ia.Action === GAME_EVENT_IDS.SIDE_ATTACK_GE) {
       const facingRight = p.Flags.IsFacingRight;
       if (
-        (ia.LXAxsis > 0 && facingRight) ||
-        (ia.LXAxsis < 0 && facingRight === false)
+        (ia.LXAxis > 0 && facingRight) ||
+        (ia.LXAxis < 0 && facingRight === false)
       ) {
         return true;
       }
@@ -785,8 +871,8 @@ const WalkToSideTilt: condition = {
     if (ia.Action === GAME_EVENT_IDS.SIDE_ATTACK_GE) {
       const facingRight = p.Flags.IsFacingRight;
       if (
-        (ia.LXAxsis > 0 && facingRight) ||
-        (ia.LXAxsis < 0 && facingRight === false)
+        (ia.LXAxis > 0 && facingRight) ||
+        (ia.LXAxis < 0 && facingRight === false)
       ) {
         return true;
       }
@@ -868,15 +954,27 @@ const LaunchToTumble: condition = {
   StateId: STATE_IDS.TUMBLE_S,
 };
 
+const SideChargeToEx: condition = {
+  Name: 'SideChargeToEx',
+  ConditionFunc: (w: World, playerIndex: number) => {
+    const ia = w.GetPlayerCurrentInput(playerIndex)!;
+
+    if (ia.LXAxis === 0 || ia.Action === GAME_EVENT_IDS.IDLE_GE) {
+      return true;
+    }
+
+    return false;
+  },
+  StateId: STATE_IDS.SIDE_CHARGE_EX_S,
+};
+
 // StateMapping init functions ====================================================================
 
 function InitIdleRelations(): StateRelation {
   const idleTranslations = new ActionStateMappings();
 
   idleTranslations.SetMappings([
-    { geId: GAME_EVENT_IDS.MOVE_GE, sId: STATE_IDS.START_WALK_S },
-    { geId: GAME_EVENT_IDS.MOVE_FAST_GE, sId: STATE_IDS.START_WALK_S },
-    { geId: GAME_EVENT_IDS.TURN_GE, sId: STATE_IDS.TURN_S },
+    { geId: GAME_EVENT_IDS.MOVE_GE, sId: STATE_IDS.WALK_S },
     { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
     { geId: GAME_EVENT_IDS.FALL_GE, sId: STATE_IDS.N_FALL_S },
     { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
@@ -885,6 +983,7 @@ function InitIdleRelations(): StateRelation {
   ]);
 
   const condtions: Array<condition> = [
+    IdleToDash,
     IdleToDashturn,
     IdleToTurn,
     IdleToAttack,
@@ -896,36 +995,6 @@ function InitIdleRelations(): StateRelation {
 
   const idle = new StateRelation(STATE_IDS.IDLE_S, idleTranslations);
   return idle;
-}
-
-function InitStartWalkRelations(): StateRelation {
-  const startWalkTranslations = new ActionStateMappings();
-
-  startWalkTranslations.SetMappings([
-    { geId: GAME_EVENT_IDS.IDLE_GE, sId: STATE_IDS.IDLE_S },
-    // { geId: GAME_EVENT_IDS.MOVE_FAST_GE, sId: STATE_IDS.DASH_S },
-    { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
-    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
-  ]);
-
-  const conditions: Array<condition> = [
-    WalkToTurn,
-    ToSideSpecial,
-    StartWalkToDash,
-  ];
-
-  startWalkTranslations.SetConditions(conditions);
-
-  const defaultConditions: Array<condition> = [defaultWalk];
-
-  startWalkTranslations.SetDefault(defaultConditions);
-
-  const startWalk = new StateRelation(
-    STATE_IDS.START_WALK_S,
-    startWalkTranslations
-  );
-
-  return startWalk;
 }
 
 function InitTurnRelations(): StateRelation {
@@ -963,6 +1032,7 @@ function InitWalkRelations(): StateRelation {
 
   const conditions: Array<condition> = [
     WalkToTurn,
+    WalkToDash,
     ToSideSpecial,
     WalkToSideTilt,
   ];
@@ -1073,7 +1143,6 @@ function InitStopRunRelations(): StateRelation {
     { geId: GAME_EVENT_IDS.MOVE_FAST_GE, sId: STATE_IDS.DASH_S },
     { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
     { geId: GAME_EVENT_IDS.FALL_GE, sId: STATE_IDS.N_FALL_S },
-    { geId: GAME_EVENT_IDS.TURN_GE, sId: STATE_IDS.RUN_TURN_S },
     { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
     { geId: GAME_EVENT_IDS.DOWN_GE, sId: STATE_IDS.CROUCH_S },
     { geId: GAME_EVENT_IDS.SIDE_SPCL_GE, sId: STATE_IDS.SIDE_SPCL_S },
@@ -1267,6 +1336,42 @@ function InitDashAttackRelations(): StateRelation {
   return dashAtkRelations;
 }
 
+function InitSideChargeRelations(): StateRelation {
+  const sideChargeTranslations = new ActionStateMappings();
+
+  sideChargeTranslations.SetMappings([
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
+  ]);
+
+  sideChargeTranslations.SetConditions([SideChargeToEx]);
+
+  sideChargeTranslations.SetDefault([defaultSideChargeEx]);
+
+  const sideChargeRelations = new StateRelation(
+    STATE_IDS.SIDE_CHARGE_S,
+    sideChargeTranslations
+  );
+
+  return sideChargeRelations;
+}
+
+function InitSideChargeExRelations(): StateRelation {
+  const sideChargeExTranslations = new ActionStateMappings();
+
+  sideChargeExTranslations.SetMappings([
+    { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
+  ]);
+
+  sideChargeExTranslations.SetDefault([defaultIdle]);
+
+  const relation = new StateRelation(
+    STATE_IDS.SIDE_CHARGE_EX_S,
+    sideChargeExTranslations
+  );
+
+  return relation;
+}
+
 function InitAirAttackRelations(): StateRelation {
   const airAttackTranslations = new ActionStateMappings();
 
@@ -1457,8 +1562,8 @@ function InitCrouchRelations(): StateRelation {
   crouchTranslations.SetMappings([
     { geId: GAME_EVENT_IDS.IDLE_GE, sId: STATE_IDS.IDLE_S },
     { geId: GAME_EVENT_IDS.HIT_STOP_GE, sId: STATE_IDS.HIT_STOP_S },
-    { geId: GAME_EVENT_IDS.MOVE_GE, sId: STATE_IDS.START_WALK_S },
-    { geId: GAME_EVENT_IDS.MOVE_FAST_GE, sId: STATE_IDS.START_WALK_S },
+    { geId: GAME_EVENT_IDS.MOVE_GE, sId: STATE_IDS.WALK_S },
+    { geId: GAME_EVENT_IDS.MOVE_FAST_GE, sId: STATE_IDS.DASH_S },
     { geId: GAME_EVENT_IDS.JUMP_GE, sId: STATE_IDS.JUMP_SQUAT_S },
   ]);
 
@@ -1540,34 +1645,6 @@ export const Idle: FSMState = {
   },
 };
 
-export const StartWalk: FSMState = {
-  StateName: 'START_WALK',
-  StateId: STATE_IDS.START_WALK_S,
-  OnEnter: (p: Player, w: World) => {
-    p.Flags.SetCanWalkOffFalse();
-    const ia = w.GetPlayerCurrentInput(p.ID);
-    const axis = ia?.LXAxsis ?? 0;
-    if (ia !== undefined) {
-      const flags = p.Flags;
-      if (axis < 0 && flags.IsFacingRight) {
-        flags.ChangeDirections();
-      }
-      if (axis > 0 && flags.IsFacingLeft) {
-        flags.ChangeDirections();
-      }
-    }
-  },
-  OnUpdate: (p: Player, w: World) => {
-    const ia = w.GetPlayerCurrentInput(p.ID);
-    if (ia !== undefined) {
-      p.AddWalkImpulseToPlayer(ia.LXAxsis);
-    }
-  },
-  OnExit: (p: Player, w: World) => {
-    p.Flags.SetCanWalkOffTrue();
-  },
-};
-
 export const Walk: FSMState = {
   StateName: 'WALK',
   StateId: STATE_IDS.WALK_S,
@@ -1577,7 +1654,7 @@ export const Walk: FSMState = {
   OnUpdate: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID);
     if (ia !== undefined) {
-      p.AddWalkImpulseToPlayer(ia.LXAxsis);
+      p.AddWalkImpulseToPlayer(ia.LXAxis);
     }
   },
   OnExit: (p: Player, w: World) => {
@@ -1611,7 +1688,7 @@ export const Dash: FSMState = {
     const ia = w.GetPlayerCurrentInput(p.ID);
     const speedsComp = p.Speeds;
     const dashSpeedMultiplier = speedsComp.DashMultiplier;
-    const impulse = (ia?.LXAxsis ?? 0) * dashSpeedMultiplier;
+    const impulse = (ia?.LXAxis ?? 0) * dashSpeedMultiplier;
     p.Velocity.AddClampedXImpulse(speedsComp.MaxDashSpeed, impulse);
   },
   OnExit: (p: Player, w: World) => {},
@@ -1638,7 +1715,7 @@ export const Run: FSMState = {
       const speeds = p.Speeds;
       p.Velocity.AddClampedXImpulse(
         speeds.MaxRunSpeed,
-        ia.LXAxsis * speeds.RunSpeedMultiplier
+        ia.LXAxis * speeds.RunSpeedMultiplier
       );
     }
   },
@@ -1706,7 +1783,7 @@ export const Jump: FSMState = {
     const speedsComp = p.Speeds;
     p.Velocity.AddClampedXImpulse(
       speedsComp.AerialSpeedInpulseLimit,
-      (inputAction?.LXAxsis ?? 0) * speedsComp.ArielVelocityMultiplier
+      (inputAction?.LXAxis ?? 0) * speedsComp.ArielVelocityMultiplier
     );
   },
   OnExit: (p: Player, w: World) => {
@@ -1728,13 +1805,13 @@ export const NeutralFall: FSMState = {
     const speedsComp = p.Speeds;
     const prevIa = w.GetPlayerPreviousInput(p.ID)!;
 
-    if (p.Velocity.Y > 0 && ia.LYAxsis < -0.8 && prevIa.LYAxsis > -0.8) {
+    if (p.Velocity.Y > 0 && ia.LYAxis < -0.8 && prevIa.LYAxis > -0.8) {
       p.Flags.FastFallOn();
     }
 
     p.Velocity.AddClampedXImpulse(
       speedsComp.AerialSpeedInpulseLimit,
-      ia.LXAxsis * speedsComp.ArielVelocityMultiplier
+      ia.LXAxis * speedsComp.ArielVelocityMultiplier
     );
   },
   OnExit: (p: Player, w: World) => {
@@ -1796,7 +1873,7 @@ export const AirDodge: FSMState = {
     p.Flags.GravityOff();
     const pVel = p.Velocity;
     const ia = w.GetPlayerCurrentInput(p.ID)!;
-    const angle = Math.atan2(ia?.LYAxsis, ia?.LXAxsis);
+    const angle = Math.atan2(ia?.LYAxis, ia?.LXAxis);
     const speed = p.Speeds.AirDogeSpeed;
     pVel.X = Math.cos(angle) * speed;
     pVel.Y = -Math.sin(angle) * speed;
@@ -1830,7 +1907,7 @@ export const Helpess: FSMState = {
     const speeds = p.Speeds;
     const airSpeed = speeds.AerialSpeedInpulseLimit;
     const airMult = speeds.ArielVelocityMultiplier;
-    p.Velocity.AddClampedXImpulse(airSpeed, (ia!.LXAxsis * airMult) / 2);
+    p.Velocity.AddClampedXImpulse(airSpeed, (ia!.LXAxis * airMult) / 2);
   },
   OnExit: (p: Player, w: World) => {},
 };
@@ -1941,13 +2018,13 @@ export const SideTilt: FSMState = {
   OnEnter: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID)!;
 
-    if (ia.LYAxsis > 0.15) {
+    if (ia.LYAxis > 0.15) {
       p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.S_TILT_U_GE);
       p.ECB.SetECBShape(STATE_IDS.SIDE_TILT_S);
       return;
     }
 
-    if (ia.LYAxsis < -0.15) {
+    if (ia.LYAxis < -0.15) {
       p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.S_TILT_D_GE);
       p.ECB.SetECBShape(STATE_IDS.SIDE_TILT_S);
       return;
@@ -1958,7 +2035,7 @@ export const SideTilt: FSMState = {
   },
   OnUpdate: (p: Player, w: World) => {
     const attackComp = p.Attacks;
-    const attack = attackComp.GetAttack();
+    const attack = attackComp.GetAttack()!;
     const impulse = attack?.GetActiveImpulseForFrame(
       p.FSMInfo.CurrentStateFrame
     );
@@ -1967,14 +2044,7 @@ export const SideTilt: FSMState = {
       return;
     }
 
-    const x = p.Flags.IsFacingRight ? impulse.X : -impulse.X;
-    const y = impulse.Y;
-    const clamp = attack?.ImpulseClamp;
-    const pVel = p.Velocity;
-    if (clamp !== undefined) {
-      pVel.AddClampedXImpulse(clamp, x);
-      pVel.AddClampedYImpulse(clamp, y);
-    }
+    addAttackImpulseToPlayer(p, impulse, attack);
   },
   OnExit: (p: Player, w: World) => {
     const attackComp = p.Attacks;
@@ -1992,7 +2062,7 @@ export const UpTilt: FSMState = {
   },
   OnUpdate: (p: Player, w: World) => {
     const attackComp = p.Attacks;
-    const attack = attackComp.GetAttack();
+    const attack = attackComp.GetAttack()!;
     const impulse = attack?.GetActiveImpulseForFrame(
       p.FSMInfo.CurrentStateFrame
     );
@@ -2001,20 +2071,81 @@ export const UpTilt: FSMState = {
       return;
     }
 
-    const x = p.Flags.IsFacingRight ? impulse.X : -impulse.X;
-    const y = impulse.Y;
-    const clamp = attack?.ImpulseClamp;
-    const pVel = p.Velocity;
-    if (clamp !== undefined) {
-      pVel.AddClampedXImpulse(clamp, x);
-      pVel.AddClampedYImpulse(clamp, y);
-    }
+    addAttackImpulseToPlayer(p, impulse, attack);
   },
   OnExit: (p: Player, w: World) => {
     const attackComp = p.Attacks;
     attackComp.ZeroCurrentAttack();
     p.ECB.ResetECBShape();
   },
+};
+
+export const SideCharge: FSMState = {
+  StateName: 'SideChagrge',
+  OnEnter: (p: Player, w: World) => {
+    const ia = w.GetPlayerCurrentInput(p.ID)!;
+    const rXAxis = ia.RXAxis;
+
+    if (rXAxis > 0) {
+      p.Flags.FaceRight();
+    }
+
+    if (rXAxis < 0) {
+      p.Flags.FaceLeft();
+    }
+
+    p.Flags.SetCanWalkOffFalse();
+    const attackComp = p.Attacks;
+    attackComp.SetCurrentAttack(GAME_EVENT_IDS.SIDE_CHARGE_GE);
+    attackComp.GetAttack()!.OnEnter(w, p);
+  },
+  OnUpdate: (p, w) => {
+    // Shake player maybe?
+  },
+  OnExit: (p, w) => {},
+  StateId: STATE_IDS.SIDE_CHARGE_S,
+};
+
+export const SideChargeEx: FSMState = {
+  StateName: 'SideChagrgeEx',
+  OnEnter: (p: Player, w: World) => {
+    p.Attacks.SetCurrentAttack(GAME_EVENT_IDS.SIDE_CHARGE_EX_GE);
+    p.ECB.SetECBShape(STATE_IDS.SIDE_CHARGE_EX_S);
+  },
+  OnUpdate: (p, w) => {
+    const attackComp = p.Attacks;
+    const attack = attackComp.GetAttack()!;
+    const impulse = attack?.GetActiveImpulseForFrame(
+      p.FSMInfo.CurrentStateFrame
+    );
+
+    if (impulse === undefined) {
+      return;
+    }
+
+    addAttackImpulseToPlayer(p, impulse, attack);
+  },
+  OnExit: (p, w) => {
+    p.Attacks.ZeroCurrentAttack();
+    p.ECB.ResetECBShape();
+  },
+  StateId: STATE_IDS.SIDE_CHARGE_EX_S,
+};
+
+export const UpCharge: FSMState = {
+  StateName: 'UpCharge',
+  OnEnter: (p, w) => {},
+  OnUpdate: (p, w) => {},
+  OnExit: (p, w) => {},
+  StateId: STATE_IDS.UP_CHARGE_S,
+};
+
+export const DownCharge: FSMState = {
+  StateName: 'DownCharge',
+  OnEnter: (p, w) => {},
+  OnUpdate: (p, w) => {},
+  OnExit: (p, w) => {},
+  StateId: STATE_IDS.DOWN_CHARGE_S,
 };
 
 export const NAerialAttack: FSMState = {
@@ -2030,8 +2161,8 @@ export const NAerialAttack: FSMState = {
     const speeds = p.Speeds;
     const airSpeed = speeds.AerialSpeedInpulseLimit;
     const airMult = speeds.ArielVelocityMultiplier;
-    p.Velocity.AddClampedXImpulse(airSpeed, ia!.LXAxsis * airMult);
-    if (prevIa !== undefined && ShouldFastFall(ia.LYAxsis, prevIa.LYAxsis)) {
+    p.Velocity.AddClampedXImpulse(airSpeed, ia!.LXAxis * airMult);
+    if (prevIa !== undefined && ShouldFastFall(ia.LYAxis, prevIa.LYAxis)) {
       p.Flags.FastFallOn();
     }
   },
@@ -2055,9 +2186,9 @@ export const FAerialAttack: FSMState = {
     const speedsComp = p.Speeds;
     p.Velocity.AddClampedXImpulse(
       speedsComp.AerialSpeedInpulseLimit,
-      ia.LXAxsis * speedsComp.ArielVelocityMultiplier
+      ia.LXAxis * speedsComp.ArielVelocityMultiplier
     );
-    if (prevIa !== undefined && ShouldFastFall(ia.LYAxsis, prevIa.LYAxsis)) {
+    if (prevIa !== undefined && ShouldFastFall(ia.LYAxis, prevIa.LYAxis)) {
       p.Flags.FastFallOn();
     }
   },
@@ -2081,9 +2212,9 @@ export const UAirAttack: FSMState = {
     const speedsComp = p.Speeds;
     p.Velocity.AddClampedXImpulse(
       speedsComp.AerialSpeedInpulseLimit,
-      ia.LXAxsis * speedsComp.ArielVelocityMultiplier
+      ia.LXAxis * speedsComp.ArielVelocityMultiplier
     );
-    if (prevIa !== undefined && ShouldFastFall(ia.LYAxsis, prevIa.LYAxsis)) {
+    if (prevIa !== undefined && ShouldFastFall(ia.LYAxis, prevIa.LYAxis)) {
       p.Flags.FastFallOn();
     }
   },
@@ -2107,9 +2238,9 @@ export const BAirAttack: FSMState = {
     const speedsComp = p.Speeds;
     p.Velocity.AddClampedXImpulse(
       speedsComp.AerialSpeedInpulseLimit,
-      ia.LXAxsis * speedsComp.ArielVelocityMultiplier
+      ia.LXAxis * speedsComp.ArielVelocityMultiplier
     );
-    if (prevIa !== undefined && ShouldFastFall(ia.LYAxsis, prevIa.LYAxsis)) {
+    if (prevIa !== undefined && ShouldFastFall(ia.LYAxis, prevIa.LYAxis)) {
       p.Flags.FastFallOn();
     }
   },
@@ -2133,9 +2264,9 @@ export const DAirAttack: FSMState = {
     const speedsComp = p.Speeds;
     p.Velocity.AddClampedXImpulse(
       speedsComp.AerialSpeedInpulseLimit,
-      ia.LXAxsis * speedsComp.ArielVelocityMultiplier
+      ia.LXAxis * speedsComp.ArielVelocityMultiplier
     );
-    if (prevIa !== undefined && ShouldFastFall(ia.LYAxsis, prevIa.LYAxsis)) {
+    if (prevIa !== undefined && ShouldFastFall(ia.LYAxis, prevIa.LYAxis)) {
       p.Flags.FastFallOn();
     }
   },
@@ -2150,7 +2281,7 @@ export const SideSpecial: FSMState = {
   StateId: STATE_IDS.SIDE_SPCL_S,
   OnEnter: (p: Player, w: World) => {
     const ia = w.GetPlayerCurrentInput(p.ID)!;
-    const lxAxis = ia.LXAxsis;
+    const lxAxis = ia.LXAxis;
 
     if (lxAxis < 0) {
       p.Flags.FaceLeft();
@@ -2287,7 +2418,7 @@ export const Tumble: FSMState = {
     const speeds = p.Speeds;
     const airSpeed = speeds.AerialSpeedInpulseLimit;
     const airMult = speeds.ArielVelocityMultiplier;
-    p.Velocity.AddClampedXImpulse(airSpeed, (ia!.LXAxsis * airMult) / 2);
+    p.Velocity.AddClampedXImpulse(airSpeed, (ia!.LXAxis * airMult) / 2);
   },
   OnExit: (p: Player, w: World) => {},
 };
@@ -2312,7 +2443,6 @@ export const Crouch: FSMState = {
  * neutralSpecial EX
  * upSpecial
  * upSpecial EX
- * sideCharge
  * downCharge
  * upcharge
  * grab
@@ -2371,8 +2501,8 @@ function addAttackImpulseToPlayer(p: Player, impulse: FlatVec, attack: Attack) {
 }
 
 //================================================
+
 const IDLE_STATE_RELATIONS = InitIdleRelations();
-const START_WALK_RELATIONS = InitStartWalkRelations();
 const TURN_RELATIONS = InitTurnRelations();
 const WALK_RELATIONS = InitWalkRelations();
 const DASH_RELATIONS = InitDashRelations();
@@ -2389,6 +2519,8 @@ const LEDGE_GRAB_RELATIONS = InitLedgeGrabRelations();
 const AIR_DODGE_RELATIONS = InitAirDodgeRelations();
 const HELPESS_RELATIONS = InitHelpessRelations();
 const ATTACK_RELATIONS = InitAttackRelations();
+const SIDE_CHARGE_RELATIONS = InitSideChargeRelations();
+const SIDE_CHARGE_EX_RELATIONS = InitSideChargeExRelations();
 const DOWN_TILT_RELATIONS = InitDownTiltRelations();
 const UP_TILT_RELATIONS = InitUpTiltRelations();
 const SIDE_TILT_RELATIONS = InitSideTiltRelations();
@@ -2408,7 +2540,6 @@ const CROUCH_RELATIONS = InitCrouchRelations();
 
 export const ActionMappings = new Map<StateId, ActionStateMappings>()
   .set(IDLE_STATE_RELATIONS.stateId, IDLE_STATE_RELATIONS.mappings)
-  .set(START_WALK_RELATIONS.stateId, START_WALK_RELATIONS.mappings)
   .set(TURN_RELATIONS.stateId, TURN_RELATIONS.mappings)
   .set(WALK_RELATIONS.stateId, WALK_RELATIONS.mappings)
   .set(DASH_RELATIONS.stateId, DASH_RELATIONS.mappings)
@@ -2425,6 +2556,8 @@ export const ActionMappings = new Map<StateId, ActionStateMappings>()
   .set(AIR_DODGE_RELATIONS.stateId, AIR_DODGE_RELATIONS.mappings)
   .set(HELPESS_RELATIONS.stateId, HELPESS_RELATIONS.mappings)
   .set(ATTACK_RELATIONS.stateId, ATTACK_RELATIONS.mappings)
+  .set(SIDE_CHARGE_RELATIONS.stateId, SIDE_CHARGE_RELATIONS.mappings)
+  .set(SIDE_CHARGE_EX_RELATIONS.stateId, SIDE_CHARGE_EX_RELATIONS.mappings)
   .set(DOWN_TILT_RELATIONS.stateId, DOWN_TILT_RELATIONS.mappings)
   .set(UP_TILT_RELATIONS.stateId, UP_TILT_RELATIONS.mappings)
   .set(SIDE_TILT_RELATIONS.stateId, SIDE_TILT_RELATIONS.mappings)
@@ -2444,7 +2577,6 @@ export const ActionMappings = new Map<StateId, ActionStateMappings>()
 
 export const FSMStates = new Map<StateId, FSMState>()
   .set(Idle.StateId, Idle)
-  .set(StartWalk.StateId, StartWalk)
   .set(Turn.StateId, Turn)
   .set(Walk.StateId, Walk)
   .set(Run.StateId, Run)
@@ -2461,6 +2593,8 @@ export const FSMStates = new Map<StateId, FSMState>()
   .set(AirDodge.StateId, AirDodge)
   .set(Helpess.StateId, Helpess)
   .set(NAttack.StateId, NAttack)
+  .set(SideCharge.StateId, SideCharge)
+  .set(SideChargeEx.StateId, SideChargeEx)
   .set(SideTilt.StateId, SideTilt)
   .set(DashAttack.StateId, DashAttack)
   .set(NAerialAttack.StateId, NAerialAttack)
@@ -2480,6 +2614,8 @@ export const FSMStates = new Map<StateId, FSMState>()
 
 export const AttackGameEventMappings = new Map<GameEventId, AttackId>()
   .set(GAME_EVENT_IDS.ATTACK_GE, ATTACK_IDS.N_GRND_ATK)
+  .set(GAME_EVENT_IDS.SIDE_CHARGE_GE, ATTACK_IDS.S_CHARGE_ATK)
+  .set(GAME_EVENT_IDS.SIDE_CHARGE_EX_GE, ATTACK_IDS.S_CHARGE_EX_ATK)
   .set(GAME_EVENT_IDS.DASH_ATTACK_GE, ATTACK_IDS.DASH_ATK)
   .set(GAME_EVENT_IDS.D_TILT_GE, ATTACK_IDS.D_TILT_ATK)
   .set(GAME_EVENT_IDS.S_TILT_GE, ATTACK_IDS.S_TILT_ATK)

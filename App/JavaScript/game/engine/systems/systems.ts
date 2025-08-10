@@ -211,7 +211,9 @@ export function LedgeGrabDetection(
       continue;
     }
 
-    if (p.LedgeDetector.CanGrabLedge === false) {
+    const ledgeDetector = p.LedgeDetector;
+
+    if (ledgeDetector.CanGrabLedge === false) {
       continue;
     }
 
@@ -230,9 +232,7 @@ export function LedgeGrabDetection(
     const isFacingRight = flags.IsFacingRight;
 
     const front =
-      isFacingRight == true
-        ? p.LedgeDetector.RightSide
-        : p.LedgeDetector.LeftSide;
+      isFacingRight == true ? ledgeDetector.RightSide : ledgeDetector.LeftSide;
 
     if (isFacingRight) {
       const intersectsLeftLedge = IntersectsPolygons(
@@ -245,14 +245,12 @@ export function LedgeGrabDetection(
 
       if (intersectsLeftLedge.Collision) {
         sm.UpdateFromWorld(GAME_EVENT_IDS.LEDGE_GRAB_GE);
-        p.SetPlayerPosition(
-          leftLedge[0].X - ecb.Width / 2 /*25*/,
-          p.Position.Y
-        );
+        p.SetPlayerPosition(leftLedge[0].X - ecb.Width / 2, p.Position.Y);
       }
 
       continue;
     }
+
     const intersectsRightLedge = IntersectsPolygons(
       rightLedge,
       front,
@@ -260,6 +258,7 @@ export function LedgeGrabDetection(
       colResPool,
       projResPool
     );
+
     if (intersectsRightLedge.Collision) {
       sm.UpdateFromWorld(GAME_EVENT_IDS.LEDGE_GRAB_GE);
       p.SetPlayerPosition(rightLedge[0].X + ecb.Width / 2, p.Position.Y);
@@ -384,14 +383,13 @@ export function PlayerSensors(
   if (playerCount < 2) {
     return;
   }
-  for (let pIdx_outer = 0; pIdx_outer < playerCount - 1; pIdx_outer++) {
-    const pA = players[pIdx_outer];
-    for (
-      let pIdx_inner = pIdx_outer + 1;
-      pIdx_inner < playerCount;
-      pIdx_inner++
-    ) {
-      const pB = players[pIdx_inner];
+
+  for (let outerIdx = 0; outerIdx < playerCount - 1; outerIdx++) {
+    const pA = players[outerIdx];
+
+    for (let innerIdx = outerIdx + 1; innerIdx < playerCount; innerIdx++) {
+      const pB = players[innerIdx];
+
       const pAVspB = sesnsorDetect(
         pA,
         pB,
@@ -399,6 +397,7 @@ export function PlayerSensors(
         collisionResultPool,
         closestPointsPool
       );
+
       const pBVspA = sesnsorDetect(
         pB,
         pA,

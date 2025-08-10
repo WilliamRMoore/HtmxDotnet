@@ -1270,6 +1270,9 @@ export class Attack {
   }
 
   public HasHitPlayer(playerIndex: number): boolean {
+    if (this.PlayerIdsHit.length === 0) {
+      return false;
+    }
     return this.PlayerIdsHit.includes(playerIndex);
   }
 
