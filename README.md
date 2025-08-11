@@ -2,6 +2,8 @@
 
 Jazz is a deterministic 2D game engine written in TypeScript, specifically designed for creating platform fighting games (like *Super Smash Bros. Melee*). It is built with a modern, data-driven approach using an Entity-Component-System (ECS) architecture and is designed from the ground up to support advanced features like rollback netcode.
 
+[Link to Folder](https://github.com/WilliamRMoore/HtmxDotnet/tree/main/App/JavaScript/game)
+
 ## Key Features
 
 *   **Entity-Component-System - like (ECS) Architecture**: A clean separation of data (Components) from logic (Systems) for better organization, performance, and scalability.
