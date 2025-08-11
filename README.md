@@ -17,6 +17,10 @@ Jazz is a deterministic 2D game engine written in TypeScript, specifically desig
 
 ECS-Like architecture, entitilies are "composed" of components. Components are built with Domain Driven Design, they offer some near data compute, but are only responsible for their own state and mostly dependencyless. 
 
+Advanced Finite State Machine. Supports translations, condtionals, and default conditionals. 
+
+![Diagran](https://raw.githubusercontent.com/WilliamRMoore/HtmxDotnet/refs/heads/main/game-architecture-Finite%20State%20Machine%20Arch.webp)
+
 ### 1. The Core Loop (`jazz.ts`)
 
 The main entry point to the engine is the `Jazz` class. Its responsibilities are simple:
