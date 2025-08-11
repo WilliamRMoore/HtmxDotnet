@@ -51,3 +51,18 @@ private tick() {
     // ...
     RecordHistory(frame, playerCount, players, histories, world);
 }
+```
+
+## How to
+
+You will need NPM and the .net 8 runtime. 
+You will also need a controller supported by Chrome.
+
+1. Pull down repo and navigate to inside the App folder
+2. Run NPM install
+3. via NPM run watchGame
+4. start the .net MVC application and navigate to the game page
+5. Test is 1 player to try out the controls, 2 player is versus mode
+6. Make sure your controller is plugger in, and press one of the face buttons
+7. Click the refresh button next to the controller drop downs
+8. Select your controller and start the game
