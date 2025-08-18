@@ -1179,7 +1179,7 @@ export class Attack {
   public readonly BaseKnockBack: number;
   public readonly KnockBackScaling: number;
   public readonly ImpulseClamp: number | undefined;
-  public readonly PlayerIdsHit: Array<number> = [];
+  public readonly PlayerIdsHit: Set<number> = new Set<number>();
   public readonly Impulses: Map<frameNumber, FlatVec> = new Map<
     frameNumber,
     FlatVec
@@ -1265,20 +1265,16 @@ export class Attack {
     return activeHBs;
   }
 
-  public HitPlayer(playerIndex: number): void {
-    this.PlayerIdsHit.push(playerIndex);
+  public HitPlayer(playerID: number): void {
+    this.PlayerIdsHit.add(playerID);
   }
 
-  public HasHitPlayer(playerIndex: number): boolean {
-    if (this.PlayerIdsHit.length === 0) {
-      return false;
-    }
-    return this.PlayerIdsHit.includes(playerIndex);
+  public HasHitPlayer(playerID: number): boolean {
+    return this.PlayerIdsHit.has(playerID);
   }
 
-  public ResetPlayeIdHitArray(): void {
-    this.PlayerIdsHit.length = 0;
-    this.PlayerIdsHit[0] = -1;
+  public ResetPlayerIdsHit(): void {
+    this.PlayerIdsHit.clear();
   }
 }
 
@@ -1418,7 +1414,7 @@ export class AttackComponment implements IHistoryEnabled<AttackSnapShot> {
     if (this.currentAttack === undefined) {
       return;
     }
-    this.currentAttack.ResetPlayeIdHitArray();
+    this.currentAttack.ResetPlayerIdsHit();
     this.currentAttack = undefined;
   }
 

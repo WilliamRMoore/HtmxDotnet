@@ -31,7 +31,7 @@ function getAlpha(
 
   let alpha = preClampAlpha - postClampalpha;
 
-  if (localFrame == lastFrame || alpha > 1) {
+  if (localFrame === lastFrame || alpha > 1) {
     alpha = 1;
   }
 
@@ -61,7 +61,7 @@ export class DebugRenderer {
   render(world: World, timeStampNow: number) {
     const localFrame = world.localFrame - 1 < 0 ? 0 : world.localFrame - 1; // world frame is incremented at the end of the loop, so we actually need to get the previous frame, as that is the frame with the most current render artifact.
     const previousFrameTimeStamp = world.GetFrameTimeStampForFrame(
-      localFrame == 0 ? 0 : localFrame - 1
+      localFrame === 0 ? 0 : localFrame - 1
     );
     const currentFrameTimeStamp = world.GetFrameTimeStampForFrame(localFrame);
 
@@ -81,7 +81,7 @@ export class DebugRenderer {
     const currentAttack = playerStateHistory?.AttackHistory[localFrame];
     const currentAttackString = currentAttack?.Name;
 
-    if (localFrame == 0) {
+    if (localFrame === 0) {
       return;
     }
 
@@ -525,7 +525,7 @@ function drawHitCircles(
   const currentSateFrame = fsmInfo.StateFrame;
   const circles = attack.GetActiveHitBubblesForFrame(currentSateFrame, adto); //.GetHitBubblesForFrame(currentSateFrame);
 
-  if (circles == undefined) {
+  if (circles === undefined) {
     return;
   }
 

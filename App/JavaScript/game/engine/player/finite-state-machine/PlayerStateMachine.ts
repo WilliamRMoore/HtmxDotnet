@@ -57,7 +57,7 @@ export class StateMachine {
     //ignore mapping rules and force a state change
     const state = this.states.get(sateId);
 
-    if (state == undefined) {
+    if (state === undefined) {
       return;
     }
 
@@ -134,7 +134,7 @@ export class StateMachine {
   ): boolean {
     const state = this.GetTranslation(inputAction.Action);
 
-    if (state != undefined) {
+    if (state !== undefined) {
       this.changeState(state, fsmInfo);
       this.updateState(fsmInfo);
       return true;
@@ -146,7 +146,7 @@ export class StateMachine {
   private runDefault(w: World, fsmInfo: FSMInfoComponent): boolean {
     // Check to see if we are on a default frame
     // If not, return false
-    if (this.IsDefaultFrame(fsmInfo) == false) {
+    if (this.IsDefaultFrame(fsmInfo) === false) {
       return false;
     }
 
@@ -156,7 +156,7 @@ export class StateMachine {
     );
 
     // No default transition resolved, return false
-    if (defaultTransition == undefined) {
+    if (defaultTransition === undefined) {
       return false;
     }
 
@@ -184,7 +184,7 @@ export class StateMachine {
   private GetDefaultState(stateId: StateId, w: World): FSMState | undefined {
     const stateMapping = this.stateMappings.get(stateId);
 
-    if (stateMapping == undefined) {
+    if (stateMapping === undefined) {
       return undefined;
     }
 
@@ -194,12 +194,14 @@ export class StateMachine {
       return undefined;
     }
 
-    for (let i = 0; i < defaultStateConditions.length; i++) {
+    const defaultConditionsLength = defaultStateConditions.length;
+
+    for (let i = 0; i < defaultConditionsLength; i++) {
       const condition = defaultStateConditions[i];
 
       const stateId = RunCondition(condition, w, this.player.ID);
 
-      if (stateId != undefined) {
+      if (stateId !== undefined) {
         return this.states.get(stateId);
       }
     }
@@ -226,7 +228,7 @@ export class StateMachine {
       return false;
     }
 
-    if (fl == fsmInfo.CurrentStateFrame) {
+    if (fl === fsmInfo.CurrentStateFrame) {
       return true;
     }
 

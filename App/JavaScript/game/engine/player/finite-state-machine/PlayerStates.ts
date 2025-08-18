@@ -166,18 +166,6 @@ export class ActionStateMappings {
     return this.condtions;
   }
 
-  public get HasDefaults(): boolean {
-    return this.defaultConditions !== undefined;
-  }
-
-  public get HasConditions(): boolean {
-    return this.condtions !== undefined;
-  }
-
-  public get HasDirectMappings(): boolean {
-    return this.mappings.size > 0;
-  }
-
   public SetMappings(mappingsArray: { geId: GameEventId; sId: StateId }[]) {
     mappingsArray.forEach((actSt) => {
       this.mappings.set(actSt.geId, actSt.sId);
@@ -210,7 +198,7 @@ export function RunCondition(
   w: World,
   playerIndex: number
 ): StateId | undefined {
-  if (c.ConditionFunc(w, playerIndex)) {
+  if (c.ConditionFunc(w, playerIndex) === true) {
     return c.StateId;
   }
   return undefined;
@@ -375,7 +363,7 @@ const RunToTurn: condition = {
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
     const prevIa = w.GetPlayerPreviousInput(playerIndex);
 
-    if (prevIa == undefined) {
+    if (prevIa === undefined) {
       return false;
     }
 
@@ -462,7 +450,7 @@ const ToAirDodge: condition = {
   Name: 'ToAirDodge',
   ConditionFunc: (w: World, playerIndex: number) => {
     const currentInput = w.GetPlayerCurrentInput(playerIndex);
-    if (currentInput?.Action == GAME_EVENT_IDS.GUARD_GE) {
+    if (currentInput?.Action === GAME_EVENT_IDS.GUARD_GE) {
       return true;
     }
     return false;
@@ -607,7 +595,7 @@ const ToBAir: condition = {
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
     const prevIa = w.GetPlayerPreviousInput(playerIndex);
 
-    if (ia.Action == prevIa?.Action) {
+    if (ia.Action === prevIa?.Action) {
       return false;
     }
 

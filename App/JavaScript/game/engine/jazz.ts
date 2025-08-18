@@ -218,7 +218,7 @@ export class JazzDebugger implements IJazz {
     const PausedPreviouisInput = this.previousInput?.Start ?? false;
     const PausedCurrentInput = ia.Start ?? false;
 
-    if (PausedPreviouisInput == false && PausedCurrentInput) {
+    if (PausedPreviouisInput === false && PausedCurrentInput) {
       this.paused = !this.paused;
     }
   }

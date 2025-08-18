@@ -164,7 +164,7 @@ export class FrameComparisonManager<Type>
       finalFrame
     );
 
-    if (syncFrame == undefined) {
+    if (syncFrame === undefined) {
       this.FrameStorageManager.SetSyncFrame(finalFrame);
       return;
     }

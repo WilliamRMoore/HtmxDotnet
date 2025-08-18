@@ -124,7 +124,7 @@ export function StageCollisionDetection(
         .Multiply(collisionResult.Depth);
 
       //Ground correction
-      if (normalX == 0 && normalY > 0) {
+      if (normalX === 0 && normalY > 0) {
         move.AddToY(+yOffset);
 
         playerPosDTO.AddVec(move);
@@ -139,7 +139,7 @@ export function StageCollisionDetection(
       }
 
       //Right wall correction
-      if (normalX > 0 && normalY == 0) {
+      if (normalX > 0 && normalY === 0) {
         move.AddToX(correctionDepth);
         playerPosDTO.AddVec(move);
         p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
@@ -148,7 +148,7 @@ export function StageCollisionDetection(
       }
 
       // Left Wall Correction
-      if (normalX < 0 && normalY == 0) {
+      if (normalX < 0 && normalY === 0) {
         move.AddToX(-correctionDepth);
         playerPosDTO.AddVec(move);
         p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
@@ -157,7 +157,7 @@ export function StageCollisionDetection(
       }
 
       //ceiling
-      if (normalX == 0 && normalY < 0) {
+      if (normalX === 0 && normalY < 0) {
         move.AddToY(-correctionDepth);
         playerPosDTO.AddVec(move);
         p.SetPlayerPosition(playerPosDTO.X, playerPosDTO.Y);
@@ -221,7 +221,7 @@ export function LedgeGrabDetection(
     const flags = p.Flags;
     const ecb = p.ECB;
 
-    if (p.Velocity.Y < 0 || p.FSMInfo.CurrentStatetId == STATE_IDS.JUMP_S) {
+    if (p.Velocity.Y < 0 || p.FSMInfo.CurrentStatetId === STATE_IDS.JUMP_S) {
       continue;
     }
 
@@ -232,7 +232,7 @@ export function LedgeGrabDetection(
     const isFacingRight = flags.IsFacingRight;
 
     const front =
-      isFacingRight == true ? ledgeDetector.RightSide : ledgeDetector.LeftSide;
+      isFacingRight === true ? ledgeDetector.RightSide : ledgeDetector.LeftSide;
 
     if (isFacingRight) {
       const intersectsLeftLedge = IntersectsPolygons(
@@ -281,7 +281,7 @@ export function PlayerCollisionDetection(
     const checkPlayerStateId = checkPlayer.FSMInfo.CurrentState.StateId;
 
     if (
-      checkPlayerStateId == STATE_IDS.LEDGE_GRAB_S ||
+      checkPlayerStateId === STATE_IDS.LEDGE_GRAB_S ||
       checkPlayer.Flags.IsInHitPause
     ) {
       continue;
@@ -294,7 +294,7 @@ export function PlayerCollisionDetection(
       const otherPlayerStateId = otherPlayer.FSMInfo.CurrentState.StateId;
 
       if (
-        otherPlayerStateId == STATE_IDS.LEDGE_GRAB_S ||
+        otherPlayerStateId === STATE_IDS.LEDGE_GRAB_S ||
         otherPlayer.Flags.IsInHitPause
       ) {
         continue;
