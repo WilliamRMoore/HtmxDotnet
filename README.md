@@ -2,6 +2,8 @@
 
 Jazz is a deterministic 2D game engine written in TypeScript, specifically designed for creating platform fighting games (like *Super Smash Bros. Melee*). It is built with a modern, data-driven approach using an Entity-Component-System (ECS) architecture and is designed from the ground up to support advanced features like rollback netcode.
 
+[Link to Folder](https://github.com/WilliamRMoore/HtmxDotnet/tree/main/App/JavaScript/game)
+
 ## Key Features
 
 *   **Entity-Component-System - like (ECS) Architecture**: A clean separation of data (Components) from logic (Systems) for better organization, performance, and scalability.
@@ -16,6 +18,10 @@ Jazz is a deterministic 2D game engine written in TypeScript, specifically desig
 ## Architecture
 
 ECS-Like architecture, entitilies are "composed" of components. Components are built with Domain Driven Design, they offer some near data compute, but are only responsible for their own state and mostly dependencyless. 
+
+Advanced Finite State Machine. Supports translations, condtionals, and default conditionals. 
+
+![Diagran](https://raw.githubusercontent.com/WilliamRMoore/HtmxDotnet/refs/heads/main/game-architecture-Finite%20State%20Machine%20Arch.webp)
 
 ### 1. The Core Loop (`jazz.ts`)
 
@@ -45,3 +51,18 @@ private tick() {
     // ...
     RecordHistory(frame, playerCount, players, histories, world);
 }
+```
+
+## How to
+
+You will need NPM and the .net 8 runtime. 
+You will also need a controller supported by Chrome.
+
+1. Pull down repo and navigate to inside the App folder
+2. Run NPM install
+3. via NPM run watchGame
+4. start the .net MVC application and navigate to the game page
+5. Test is 1 player to try out the controls, 2 player is versus mode
+6. Make sure your controller is plugger in, and press one of the face buttons
+7. Click the refresh button next to the controller drop downs
+8. Select your controller and start the game
