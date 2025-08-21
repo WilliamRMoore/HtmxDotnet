@@ -114,9 +114,7 @@ export function InitISM<Type>(
   return ISM;
 }
 
-export class InputStorageManagerLocal<Type>
-  implements IInputStorageManagerLocal<Type>
-{
+export class InputStoreLocal<Type> implements IInputStoreLocal<Type> {
   private readonly P1localInputStore: Array<Type>;
 
   constructor() {
@@ -132,7 +130,7 @@ export class InputStorageManagerLocal<Type>
   }
 }
 
-export interface IInputStorageManagerLocal<Type> {
+export interface IInputStoreLocal<Type> {
   StoreInputForFrame(frame: number, input: Type): void;
   GetInputForFrame(frame: number): Type;
 }

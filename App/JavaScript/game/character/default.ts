@@ -65,7 +65,8 @@ export class DefaultCharacterConfig {
     const sideTiltDown = GetSideTiltDown();
     const downTilt = GetDownTilt();
     const upTilt = GetUpTilt();
-    // sideCharge
+    const sideCharge = GetSideCharge();
+    const sideChargeExtension = GetSideChargeExtension();
     // upCharge
     // downCharge
     const dashAtk = GetDashAttack();
@@ -86,9 +87,7 @@ export class DefaultCharacterConfig {
     const bAir = GetBAir();
     const dAir = GetDAir();
 
-    this.FrameLengths
-      //.set(STATE_IDS.START_WALK_S, 5)
-      .set(STATE_IDS.JUMP_SQUAT_S, 4)
+    this.FrameLengths.set(STATE_IDS.JUMP_SQUAT_S, 4)
       .set(STATE_IDS.TURN_S, 3)
       .set(STATE_IDS.DASH_S, 20)
       .set(STATE_IDS.DASH_TURN_S, 1)
@@ -103,6 +102,8 @@ export class DefaultCharacterConfig {
       .set(STATE_IDS.DOWN_TILT_S, downTilt.TotalFrameLength)
       .set(STATE_IDS.UP_TILT_S, upTilt.TotalFrameLength)
       .set(STATE_IDS.SIDE_TILT_S, sideTilt.TotalFrameLength)
+      .set(STATE_IDS.SIDE_CHARGE_S, sideCharge.TotalFrameLength)
+      .set(STATE_IDS.SIDE_CHARGE_EX_S, sideChargeExtension.TotalFrameLength)
       .set(STATE_IDS.N_AIR_S, neutralAir.TotalFrameLength)
       .set(STATE_IDS.F_AIR_S, fAir.TotalFrameLength)
       .set(STATE_IDS.U_AIR_S, uAir.TotalFrameLength)
@@ -157,6 +158,8 @@ export class DefaultCharacterConfig {
       .set(ATTACK_IDS.S_TILT_ATK, sideTilt)
       .set(ATTACK_IDS.S_TILT_U_ATK, sideTiltUp)
       .set(ATTACK_IDS.S_TITL_D_ATK, sideTiltDown)
+      .set(ATTACK_IDS.S_CHARGE_ATK, sideCharge)
+      .set(ATTACK_IDS.S_CHARGE_EX_ATK, sideChargeExtension)
       .set(ATTACK_IDS.S_SPCL_ATK, sideSpecial)
       .set(ATTACK_IDS.S_SPCL_EX_ATK, sideSpecialEx)
       .set(ATTACK_IDS.D_SPCL_ATK, DownSpecial)
@@ -783,12 +786,62 @@ function GetUpTilt() {
   return bldr.Build();
 }
 
+function GetSideCharge() {
+  const totalFrames = 180;
+
+  const bldr = new AttackBuilder('SideCharge')
+    .WithTotalFrames(totalFrames)
+    .WithGravity(true);
+
+  return bldr.Build();
+}
+
+function GetSideChargeExtension() {
+  const totalFrames = 60;
+  const hb1Damage = 22;
+  const hb2Damage = 20;
+  const baseKnockBack = 30;
+  const knockBackScaling = 45;
+  const radius = 18;
+
+  const hitBubbleOffsets1 = new Map<frameNumber, FlatVec>();
+  const hitBubbleOffsets2 = new Map<frameNumber, FlatVec>();
+
+  hitBubbleOffsets1
+    .set(18, new FlatVec(-10, -40))
+    .set(19, new FlatVec(10, -40))
+    .set(20, new FlatVec(40, -40))
+    .set(21, new FlatVec(65, -40))
+    .set(22, new FlatVec(70, -40))
+    .set(23, new FlatVec(70, -40));
+
+  hitBubbleOffsets2
+    .set(19, new FlatVec(0, -40))
+    .set(20, new FlatVec(30, -40))
+    .set(21, new FlatVec(55, -40))
+    .set(22, new FlatVec(60, -40));
+
+  const impulses = new Map<frameNumber, FlatVec>();
+
+  impulses.set(20, new FlatVec(8, 0));
+
+  const bldr = new AttackBuilder('SideChargeExtension')
+    .WithTotalFrames(totalFrames)
+    .WithImpulses(impulses, 10)
+    .WithGravity(true)
+    .WithHitBubble(hb1Damage, radius, 0, 50, hitBubbleOffsets1)
+    .WithHitBubble(hb2Damage, radius, 1, 50, hitBubbleOffsets2)
+    .WithBaseKnockBack(baseKnockBack)
+    .WithKnockBackScaling(knockBackScaling);
+
+  return bldr.Build();
+}
+
 function GetSideSpecial() {
   const activeFrames = 80;
   const impulses = new Map<frameNumber, FlatVec>();
 
   const reactor: SensorReactor = (w, sensorOwner, detectedPlayer) => {
-    console.log('SENSOR DETECTED');
     const sm = w.GetStateMachine(sensorOwner.ID)!;
     sm.UpdateFromWorld(GAME_EVENT_IDS.SIDE_SPCL_EX_GE);
     // change the state here
@@ -816,7 +869,7 @@ function GetSideSpecial() {
     p.Sensors.DeactivateSensors();
   };
 
-  impulses.set(5, new FlatVec(-6, 0)).set(6, new FlatVec(-2, 0));
+  impulses.set(5, new FlatVec(-6, 0)).set(6, new FlatVec(-3, 0));
   for (let i = 14; i < 35; i++) {
     impulses.set(i, new FlatVec(4, 0));
   }

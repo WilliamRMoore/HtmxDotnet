@@ -1,6 +1,6 @@
 import { StateMachine } from '../player/finite-state-machine/PlayerStateMachine';
 import { InputAction } from '../../loops/Input';
-import { InputStorageManagerLocal } from '../engine-state-management/Managers';
+import { InputStoreLocal } from '../engine-state-management/Managers';
 import { ComponentHistory } from '../player/playerComponents';
 import { Player } from '../player/playerOrchestrator';
 import { Stage } from '../stage/stageComponents';
@@ -23,12 +23,13 @@ export class World {
   public readonly AtkResPool: Pool<AttackResult>;
   public readonly ClstsPntsResPool: Pool<ClosestPointsResult>;
   public localFrame = 0;
-  private readonly InputStorage: Array<InputStorageManagerLocal<InputAction>> =
-    [];
+  private readonly InputStore: Array<InputStoreLocal<InputAction>> = [];
   private readonly PlayerComponentHistories: Array<ComponentHistory> = [];
   private readonly RentedVecHistory: Array<number> = [];
   private readonly RentedColResHsitory: Array<number> = [];
   private readonly RentedProjResHistory: Array<number> = [];
+  private readonly RentedAtkResHistory: Array<number> = [];
+  private readonly RentedAtiveHitBubHistory: Array<number> = [];
   private readonly FrameTimes: Array<number> = [];
   private readonly FrameTimeStamps: Array<number> = [];
 
@@ -56,7 +57,7 @@ export class World {
   public SetPlayer(p: Player): void {
     this.players?.push(p);
     this.stateMachines.push(new StateMachine(p, this));
-    this.InputStorage.push(new InputStorageManagerLocal<InputAction>());
+    this.InputStore.push(new InputStoreLocal<InputAction>());
     const compHist = new ComponentHistory();
     compHist.StaticPlayerHistory.LedgeDetectorWidth = p.LedgeDetector.Width;
     compHist.StaticPlayerHistory.ledgDetecorHeight = p.LedgeDetector.Height;
@@ -110,15 +111,22 @@ export class World {
     return this.RentedProjResHistory[frame];
   }
 
-  public SetPoolHistory(
-    frame: number,
-    vecs: number,
-    colReses: number,
-    projReses: number
-  ): void {
-    this.RentedVecHistory[frame] = vecs;
-    this.RentedColResHsitory[frame] = colReses;
-    this.RentedProjResHistory[frame] = projReses;
+  public GetRentedAtkResForFrame(frame: number): number {
+    return this.RentedAtkResHistory[frame];
+  }
+
+  public GetRentedActiveHitBubblesForFrame(frame: number): number {
+    return this.RentedAtiveHitBubHistory[frame];
+  }
+
+  public SetPoolHistory(): void {
+    const frame = this.localFrame;
+    this.RentedVecHistory[frame] = this.VecPool.ActiveCount;
+    this.RentedColResHsitory[frame] = this.ColResPool.ActiveCount;
+    this.RentedProjResHistory[frame] = this.ProjResPool.ActiveCount;
+    this.RentedAtkResHistory[frame] = this.AtkResPool.ActiveCount;
+    this.RentedAtiveHitBubHistory[frame] =
+      this.ActiveHitBubbleDtoPool.ActiveCount;
   }
 
   public get Stage(): Stage {
@@ -139,26 +147,24 @@ export class World {
 
   public GetPlayerPreviousInput(playerId: number): InputAction | undefined {
     const localFrame = this.localFrame;
-    return this.InputStorage[playerId].GetInputForFrame(
+    return this.InputStore[playerId].GetInputForFrame(
       localFrame - 1 >= 0 ? localFrame - 1 : 0
     );
   }
 
   public GetPlayerCurrentInput(playerId: number): InputAction | undefined {
-    return this.InputStorage[playerId].GetInputForFrame(this.localFrame);
+    return this.InputStore[playerId].GetInputForFrame(this.localFrame);
   }
 
   public GetPlayeInputForFrame(
     playerId: number,
     frame: number
   ): InputAction | undefined {
-    return this.InputStorage[playerId].GetInputForFrame(frame);
+    return this.InputStore[playerId].GetInputForFrame(frame);
   }
 
-  public GetInputManager(
-    playerIndex: number
-  ): InputStorageManagerLocal<InputAction> {
-    return this.InputStorage[playerIndex];
+  public GetInputManager(playerIndex: number): InputStoreLocal<InputAction> {
+    return this.InputStore[playerIndex];
   }
 
   public get PlayerCount(): number {

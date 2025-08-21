@@ -941,10 +941,5 @@ export function RecordHistory(
     history.JumpHistroy[frameNumber] = p.Jump.SnapShot();
     history.AttackHistory[frameNumber] = p.Attacks.SnapShot();
   }
-  w.SetPoolHistory(
-    frameNumber,
-    w.VecPool.ActiveCount,
-    w.ColResPool.ActiveCount,
-    w.ProjResPool.ActiveCount
-  );
+  w.SetPoolHistory();
 }

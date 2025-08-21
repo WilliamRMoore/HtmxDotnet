@@ -1,9 +1,9 @@
-import { InputStorageManagerLocal } from '../../JavaScript/game/engine/engine-state-management/Managers';
+import { InputStoreLocal } from '../../JavaScript/game/engine/engine-state-management/Managers';
 import { GAME_EVENT_IDS } from '../../JavaScript/game/engine/player/finite-state-machine/PlayerStates';
 import { InputAction, NewInputAction } from '../../JavaScript/game/loops/Input';
 
 test('input storage manager', () => {
-  const ism = new InputStorageManagerLocal<InputAction>();
+  const ism = new InputStoreLocal<InputAction>();
 
   const firstInput = NewInputAction();
   const secondInput = NewInputAction();

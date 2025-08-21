@@ -151,19 +151,19 @@ class StateRelation {
 
 export class ActionStateMappings {
   private readonly mappings = new Map<GameEventId, StateId>();
-  private defaultConditions?: Array<condition>;
   private condtions?: Array<condition>;
+  private defaultConditions?: Array<condition>;
 
   public GetMapping(geId: GameEventId): StateId | undefined {
     return this.mappings.get(geId);
   }
 
-  public GetDefaults(): Array<condition> | undefined {
-    return this.defaultConditions;
-  }
-
   public GetConditions() {
     return this.condtions;
+  }
+
+  public GetDefaults(): Array<condition> | undefined {
+    return this.defaultConditions;
   }
 
   public SetMappings(mappingsArray: { geId: GameEventId; sId: StateId }[]) {
@@ -172,14 +172,14 @@ export class ActionStateMappings {
     });
   }
 
+  public SetConditions(conditions: Array<condition>) {
+    this.condtions = conditions;
+  }
+
   public SetDefault(conditions: Array<condition>) {
     if (!this.defaultConditions) {
       this.defaultConditions = conditions;
     }
-  }
-
-  public SetConditions(conditions: Array<condition>) {
-    this.condtions = conditions;
   }
 }
 
@@ -428,15 +428,14 @@ const DashToTurn: condition = {
 const ToJump: condition = {
   Name: 'ToJump',
   ConditionFunc: (w: World, playerIndex: number) => {
-    const player = w.GetPlayer(playerIndex);
+    const player = w.GetPlayer(playerIndex)!;
     const currentInput = w.GetPlayerCurrentInput(playerIndex)!;
     const prevInput = w.GetPlayerPreviousInput(playerIndex);
     const jumpId = GAME_EVENT_IDS.JUMP_GE;
 
     if (
-      currentInput.Action === jumpId &&
-      prevInput?.Action !== jumpId &&
-      player?.Jump.HasJumps()
+      inputMacthesTargetNotRepeating(jumpId, currentInput, prevInput) &&
+      player.Jump.HasJumps()
     ) {
       return true;
     }
@@ -832,6 +831,31 @@ const IdleToAttack: condition = {
   StateId: STATE_IDS.ATTACK_S,
 };
 
+const IdleToSideCharge: condition = {
+  Name: 'IdleToSideCharge',
+  ConditionFunc: (w: World, playerIndex: number) => {
+    const ia = w.GetPlayerCurrentInput(playerIndex)!;
+    const lastIa = w.GetPlayerPreviousInput(playerIndex)!;
+
+    if (
+      inputMacthesTargetNotRepeating(
+        GAME_EVENT_IDS.SIDE_ATTACK_GE,
+        ia,
+        lastIa
+      ) === false
+    ) {
+      return false;
+    }
+
+    if (Math.abs(ia.RXAxis) > Math.abs(ia.RYAxis) === false) {
+      return false;
+    }
+
+    return true;
+  },
+  StateId: STATE_IDS.SIDE_CHARGE_S,
+};
+
 const RunToDashAttack: condition = {
   Name: 'ToDashAttack',
   ConditionFunc: (w: World, playerIndex: number) => {
@@ -947,7 +971,18 @@ const SideChargeToEx: condition = {
   ConditionFunc: (w: World, playerIndex: number) => {
     const ia = w.GetPlayerCurrentInput(playerIndex)!;
 
-    if (ia.LXAxis === 0 || ia.Action === GAME_EVENT_IDS.IDLE_GE) {
+    if (ia.Action === GAME_EVENT_IDS.IDLE_GE) {
+      return true;
+    }
+
+    const p = w.GetPlayer(playerIndex)!;
+    const flags = p.Flags;
+
+    if (flags.IsFacingRight && ia.RXAxis <= 0) {
+      return true;
+    }
+
+    if (flags.IsFacingLeft && ia.RXAxis >= 0) {
       return true;
     }
 
@@ -975,6 +1010,7 @@ function InitIdleRelations(): StateRelation {
     IdleToDashturn,
     IdleToTurn,
     IdleToAttack,
+    IdleToSideCharge,
     ToSideSpecial,
     ToDownSpecial,
   ];
@@ -2090,7 +2126,12 @@ export const SideCharge: FSMState = {
   OnUpdate: (p, w) => {
     // Shake player maybe?
   },
-  OnExit: (p, w) => {},
+  OnExit: (p, w) => {
+    p.Flags.SetCanWalkOffTrue();
+    const attackComp = p.Attacks;
+    attackComp.ZeroCurrentAttack();
+    p.ECB.ResetECBShape();
+  },
   StateId: STATE_IDS.SIDE_CHARGE_S,
 };
 
@@ -2128,12 +2169,28 @@ export const UpCharge: FSMState = {
   StateId: STATE_IDS.UP_CHARGE_S,
 };
 
+export const UpChargeExt: FSMState = {
+  StateName: 'UpChargeExt',
+  OnEnter: (p, w) => {},
+  OnUpdate: (p, w) => {},
+  OnExit: (p, w) => {},
+  StateId: STATE_IDS.UP_CHARGE_EX_S,
+};
+
 export const DownCharge: FSMState = {
   StateName: 'DownCharge',
   OnEnter: (p, w) => {},
   OnUpdate: (p, w) => {},
   OnExit: (p, w) => {},
   StateId: STATE_IDS.DOWN_CHARGE_S,
+};
+
+export const DownChargeExt: FSMState = {
+  StateName: 'DownChargeExt',
+  OnEnter: (p, w) => {},
+  OnUpdate: (p, w) => {},
+  OnExit: (p, w) => {},
+  StateId: STATE_IDS.DOWN_CHARGE_EX_S,
 };
 
 export const NAerialAttack: FSMState = {
